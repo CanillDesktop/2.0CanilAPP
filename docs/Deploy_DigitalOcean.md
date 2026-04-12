@@ -68,7 +68,7 @@ sudo chown -R canilapp:canilapp /opt/canilapp
 No Windows (PowerShell), na pasta do Backend:
 
 ```powershell
-cd "C:\caminho\para\CanipApp\Backend"
+cd "C:\caminho\para\CanipApp\backend\Backend"
 dotnet publish -c Release -o ./publish
 ```
 
@@ -229,7 +229,7 @@ Se usar **Blazor WebView** ou requisições a partir de um **browser**, configur
 Na sua máquina:
 
 ```powershell
-cd Backend
+cd backend\Backend
 dotnet publish -c Release -o ./publish
 scp -r ./publish/* usuario@IP_DO_DROPLET:/opt/canilapp/app/
 ```
@@ -265,6 +265,15 @@ Se houver **novas migrations** do EF Core, elas rodam na subida (`Database.Migra
 
 ---
 
-## Observação: App Platform
+## Observação: App Platform (GitHub — só backend no monorepo)
 
-A **DigitalOcean App Platform** pode fazer build e deploy via Git, mas **SQLite em arquivo** exige **volume persistente**; sem isso, dados podem ser perdidos a cada deploy. Para SQLite simples em um único servidor, o **Droplet** costuma ser a opção mais direta.
+Na página **Install & Authorize DigitalOcean** (GitHub), ao escolher **Only select repositories** e marcar `2.0CanilAPP`, estás apenas a **permitir que a DO leia esse repositório**. Não existe aí opção “não enviar o frontend”: o Git continua com `frontend/` e `backend/`; o que manda é **como configurares a App** depois do redirect para `cloud.digitalocean.com`.
+
+1. **Source directory** (ou “Root Directory” / diretório de origem do componente): define **`backend/Backend`**. Assim o build da API corre em cima do projeto .NET certo, sem comando `npm` no `frontend/`.
+2. **Build command** (exemplo):  
+   `dotnet publish -c Release -o ./publish`  
+   (executado já dentro de `backend/Backend`, conforme o passo 1.)
+3. **Run command**: apontar para o DLL publicado (ex.: `dotnet publish/Backend.dll` — o caminho exato depende do `-o` que usares na build).
+4. **`.doignore`** na raiz do repositório: lista pastas a **excluir do pacote enviado para o build** (similar ao `.gitignore`). Este projeto inclui `frontend/`, `node_modules`, artefactos de build, etc., para aligeirar e deixar explícito que o front não entra no contexto de publicação da API.
+
+**SQLite na App Platform:** o ficheiro `.db` tem de ficar num **volume persistente** ligado ao componente; caso contrário os dados podem perder-se a cada deploy. Para SQLite simples num só servidor, o **Droplet** (guia acima) costuma ser mais direto.
