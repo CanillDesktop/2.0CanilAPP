@@ -10,6 +10,10 @@
 *.userosscache
 *.sln.docstates
 *.env
+.env.local
+.env.*.local
+.env.development.local
+.env.production.local
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -430,5 +434,23 @@ backend/Backend/appsettings.Development.json
 backend/Backend/canilapp.db
 backend/Backend/*.db
 backend/Backend/data/*.db
+
+# Certificados, chaves e ficheiros de credenciais (nunca commitar)
+*.pem
+*.p12
+*.cer
+*.crt
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*.secrets.json
+appsettings.Local.json
+**/appsettings.*.local.json
+**/appsettings.*.user.json
+**/secrets.json
+Thumbs.db
+.DS_Store
+
 .idea/
 .vs/

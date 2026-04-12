@@ -1,5 +1,7 @@
 # Onboarding do frontend (CanilApp Web)
 
+Para o **primeiro contacto** com o repositório (Git, `appsettings`, `npm run dev`), vê primeiro [ONBOARDING.md](../ONBOARDING.md) na raiz.
+
 Este documento descreve o frontend React na pasta `frontend/`, alinhado ao backend ASP.NET Core em `backend/`.
 
 ---
