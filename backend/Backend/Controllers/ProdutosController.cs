@@ -27,11 +27,17 @@ namespace Backend.Controllers
         public async Task<ActionResult<IEnumerable<ProdutosLeituraDTO>>> Get([FromQuery] ProdutosFiltroDTO filtro)
         {
             var filteredRequest = HttpContext.Request.GetDisplayUrl().Contains('?');
+            var produtoDto = await _service.BuscarTodosAsync(filtro);
+
+            if (produtoDto == null)
+            { Console.WriteLine("Sem produtos"); }
 
             if (filteredRequest)
-                return Ok(await _service.BuscarTodosAsync(filtro));
+                return Ok(produtoDto);
             else
-                return Ok(await _service.BuscarTodosAsync());
+                if (filtro != null)
+                    return Ok(produtoDto);
+                return Ok(produtoDto);
         }
 
         [HttpGet("{id}")]

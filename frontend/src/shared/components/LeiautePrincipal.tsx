@@ -33,7 +33,10 @@ export function LeiautePrincipal() {
               Sair
             </button>
           ) : (
-            <Link to="/login">Login</Link>
+            <>
+              <Link to="/login">Login</Link>
+              <Link to="/cadastro">Cadastro</Link>
+            </>
           )}
         </div>
       </header>

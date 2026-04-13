@@ -27,6 +27,8 @@ export function RotasApp() {
       <Route path="/" element={<LeiautePrincipal />}>
         <Route index element={<PaginaInicio />} />
         <Route path="login" element={<PaginaLogin />} />
+        {/* Cadastro público (API não exige JWT em POST /api/Usuarios). */}
+        <Route path="cadastro" element={<PaginaCadastroUsuario />} />
 
         <Route element={<RotaProtegida />}>
           <Route path="sessao" element={<PaginaDetalheSessao />} />

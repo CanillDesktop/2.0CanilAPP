@@ -29,7 +29,8 @@ export function PaginaInicio() {
         </>
       ) : (
         <p>
-          Faça <Link to="/login">login</Link> para acessar os cadastros protegidos por JWT.
+          Faça <Link to="/login">login</Link> ou crie uma conta em <Link to="/cadastro">cadastro</Link> para depois
+          aceder aos módulos protegidos por JWT.
         </p>
       )}
     </section>

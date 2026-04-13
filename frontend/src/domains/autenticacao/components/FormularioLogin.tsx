@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarregamento';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { useAcaoLogin } from '../hooks/useAcaoLogin';
@@ -24,8 +25,14 @@ export function FormularioLogin({ aoAutenticar }: Props) {
       <h1>Entrar</h1>
       <PainelErro mensagem={erro} />
       <label>
-        Login
-        <input value={login} onChange={(e) => setLogin(e.target.value)} autoComplete="username" required />
+        E-mail (login)
+        <input
+          type="email"
+          value={login}
+          onChange={(e) => setLogin(e.target.value)}
+          autoComplete="username"
+          required
+        />
       </label>
       <label>
         Senha
@@ -40,6 +47,9 @@ export function FormularioLogin({ aoAutenticar }: Props) {
       <button type="submit" disabled={carregando}>
         {carregando ? 'Entrando…' : 'Entrar'}
       </button>
+      <p className="formulario-rodape">
+        <Link to="/cadastro">Criar conta</Link>
+      </p>
       <IndicadorCarregamento visivel={carregando} />
     </form>
   );

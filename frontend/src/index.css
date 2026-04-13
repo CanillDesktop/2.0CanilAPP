@@ -155,6 +155,19 @@ code {
 
 .app-acoes {
   margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.app-acoes a {
+  color: var(--text-h);
+  text-decoration: none;
+}
+
+.app-acoes a:hover {
+  text-decoration: underline;
 }
 
 .app-conteudo {
@@ -196,6 +209,15 @@ code {
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: var(--shadow);
+}
+
+.formulario-rodape {
+  margin: 0;
+  font-size: 14px;
+}
+
+.formulario-rodape a {
+  color: var(--accent);
 }
 
 .cartao label,

@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarregamento';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { useCadastroUsuario } from '../hooks/useCadastroUsuario';
@@ -54,6 +55,9 @@ export function FormularioCadastroUsuario() {
       <button type="submit" disabled={carregando}>
         Salvar
       </button>
+      <p className="formulario-rodape">
+        Já tem conta? <Link to="/login">Entrar</Link>
+      </p>
       <IndicadorCarregamento visivel={carregando} rotulo="Salvando…" />
     </form>
   );

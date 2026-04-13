@@ -103,11 +103,10 @@ public class Program
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CanilApp API", Version = "v1" });
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    Name = "Authorization",
-                    Type = SecuritySchemeType.ApiKey,
-                    Scheme = "Bearer",
+                    Description = "JWT no header Authorization. Cole só o token ou use: Bearer {seu_token}",
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
                     BearerFormat = "JWT",
-                    In = ParameterLocation.Header,
                 });
                 c.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
