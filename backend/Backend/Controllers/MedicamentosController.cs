@@ -1,9 +1,9 @@
+using Backend.DTOs.Medicamentos;
+using Backend.Models.Medicamentos;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Shared.DTOs.Medicamentos;
-using Backend.Models.Medicamentos;
 
 namespace Backend.Controllers
 {

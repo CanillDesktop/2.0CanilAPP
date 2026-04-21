@@ -1,13 +1,9 @@
 ﻿using Backend.Context;
+using Backend.DTOs.Medicamentos;
+using Backend.Models.Enums;
 using Backend.Models.Medicamentos;
 using Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Shared.DTOs.Medicamentos;
-using Shared.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Backend.Repositories
 {

@@ -1,9 +1,8 @@
 ﻿using Backend.Context;
+using Backend.DTOs.Insumos;
 using Backend.Models.Insumos;
 using Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Shared.DTOs.Insumos;
-using Shared.Enums;
 
 namespace Backend.Repositories
 {

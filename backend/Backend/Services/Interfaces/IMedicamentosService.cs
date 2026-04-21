@@ -1,4 +1,4 @@
-﻿using Shared.DTOs.Medicamentos;
+﻿using Backend.DTOs.Medicamentos;
 
 namespace Backend.Services.Interfaces
 {

@@ -1,6 +1,6 @@
+using Backend.Models;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Models;
 
 namespace Backend.Controllers;
 

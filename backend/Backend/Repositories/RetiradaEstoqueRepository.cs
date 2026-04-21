@@ -1,7 +1,7 @@
 ﻿using Backend.Context;
+using Backend.DTOs.Estoque;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
-using Shared.DTOs.Estoque;
 
 namespace Backend.Repositories
 {

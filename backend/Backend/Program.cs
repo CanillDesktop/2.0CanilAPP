@@ -1,5 +1,7 @@
 using Backend.Context;
 using Backend.Data;
+using Backend.DTOs;
+using Backend.Models;
 using Backend.Models.Usuarios;
 using Backend.Repositories;
 using Backend.Repositories.Interfaces;
@@ -12,8 +14,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
-using Shared.DTOs;
-using Shared.Models;
 using System.Net;
 using System.Text;
 using System.Threading.RateLimiting;

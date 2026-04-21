@@ -1,5 +1,5 @@
-﻿using Backend.Models.Interfaces;
-using Shared.DTOs.Estoque;
+﻿using Backend.DTOs.Estoque;
+using Backend.Models.Interfaces;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models;

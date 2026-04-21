@@ -1,5 +1,4 @@
-using Shared.DTOs;
-using Shared.Models;
+using Backend.Models;
 
 namespace Backend.Services.Interfaces;
 

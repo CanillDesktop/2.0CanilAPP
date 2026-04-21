@@ -1,5 +1,5 @@
-﻿using Shared.DTOs;
-using Shared.Enums;
+﻿using Backend.DTOs;
+using Backend.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;

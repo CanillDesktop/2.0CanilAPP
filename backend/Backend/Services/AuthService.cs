@@ -1,12 +1,11 @@
+using Backend.DTOs;
+using Backend.Models;
+using Backend.Services.Interfaces;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Backend.Services.Interfaces;
-using Microsoft.IdentityModel.Tokens;
-using Shared.DTOs;
-using Shared.Enums;
-using Shared.Models;
 
 namespace Backend.Services;
 

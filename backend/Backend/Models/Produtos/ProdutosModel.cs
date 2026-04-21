@@ -1,6 +1,6 @@
-﻿using Shared.DTOs.Estoque;
-using Shared.DTOs.Produtos;
-using Shared.Enums;
+﻿using Backend.DTOs.Estoque;
+using Backend.DTOs.Produtos;
+using Backend.Models.Enums;
 
 namespace Backend.Models.Produtos;
 

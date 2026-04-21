@@ -1,9 +1,8 @@
-﻿using Backend.Models.Insumos;
+﻿using Backend.DTOs.Insumos;
+using Backend.Models.Insumos;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Shared.DTOs.Insumos;
 
 namespace Backend.Controllers
 {

@@ -1,11 +1,11 @@
+using Backend.DTOs.Produtos;
+using Backend.Exceptions;
+using Backend.Models;
 using Backend.Models.Produtos;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Models;
-using Shared.DTOs.Produtos;
-using Backend.Exceptions;
 
 namespace Backend.Controllers
 {

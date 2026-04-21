@@ -1,11 +1,8 @@
-﻿using Backend.Exceptions;
+﻿using Backend.DTOs.Medicamentos;
+using Backend.Exceptions;
+using Backend.Models.Enums;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
-using Shared.DTOs;
-using System.Globalization;
-using System.Net.Http.Headers;
-using Shared.Enums;
-using Shared.DTOs.Medicamentos;
 namespace Backend.Services
 {
     public class MedicamentosService : IMedicamentosService

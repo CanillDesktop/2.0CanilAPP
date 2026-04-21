@@ -1,5 +1,5 @@
-﻿using Backend.Models.Produtos;
-using Shared.DTOs.Produtos;
+﻿using Backend.DTOs.Produtos;
+using Backend.Models.Produtos;
 
 namespace Backend.Repositories.Interfaces
 {

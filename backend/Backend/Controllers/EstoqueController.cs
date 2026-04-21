@@ -1,10 +1,9 @@
-﻿using Backend.Exceptions;
+﻿using Backend.DTOs.Estoque;
+using Backend.Exceptions;
 using Backend.Models;
 using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.DTOs.Estoque;
-using Shared.Models;
 
 namespace Backend.Controllers
 {

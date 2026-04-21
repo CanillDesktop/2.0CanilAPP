@@ -1,14 +1,9 @@
-﻿using Backend.Exceptions;
-using Backend.Models.Insumos;
+﻿using Backend.DTOs.Insumos;
+using Backend.Exceptions;
 using Backend.Models;
+using Backend.Models.Enums;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
-using Shared.DTOs.Insumos;
-using Shared.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Diagnostics;
 
 namespace Backend.Services

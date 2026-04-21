@@ -1,7 +1,7 @@
-﻿using Backend.Models.Usuarios;
+﻿using Backend.DTOs;
+using Backend.Models.Usuarios;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
-using Shared.DTOs;
 
 namespace Backend.Services;
 

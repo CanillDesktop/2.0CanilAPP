@@ -1,4 +1,4 @@
-﻿using Shared.DTOs.Insumos;
+﻿using Backend.DTOs.Insumos;
 
 namespace Backend.Services.Interfaces
 {

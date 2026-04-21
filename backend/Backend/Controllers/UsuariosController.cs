@@ -1,6 +1,6 @@
-﻿using Backend.Services.Interfaces;
+﻿using Backend.DTOs;
+using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Shared.DTOs;
 
 namespace Backend.Controllers;
 

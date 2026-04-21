@@ -1,6 +1,6 @@
-﻿using Shared.DTOs.Estoque;
-using Shared.DTOs.Medicamentos;
-using Shared.Enums;
+﻿using Backend.DTOs.Estoque;
+using Backend.DTOs.Medicamentos;
+using Backend.Models.Enums;
 
 namespace Backend.Models.Medicamentos;
 
