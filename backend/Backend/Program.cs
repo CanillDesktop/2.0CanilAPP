@@ -1,4 +1,3 @@
-using System.Text;
 using Backend.Context;
 using Backend.Data;
 using Backend.Models.Usuarios;
@@ -6,10 +5,8 @@ using Backend.Repositories;
 using Backend.Repositories.Interfaces;
 using Backend.Services;
 using Backend.Services.Interfaces;
-using System.Net;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -17,6 +14,8 @@ using Serilog;
 using Serilog.Events;
 using Shared.DTOs;
 using Shared.Models;
+using System.Net;
+using System.Text;
 using System.Threading.RateLimiting;
 
 namespace Backend;
@@ -36,13 +35,13 @@ public class Program
             .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .WriteTo.Console()
-            .WriteTo.File(Path.Combine(logsPath, "backend-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 30,
+            .WriteTo.File(Path.Combine(logsPath, "console-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 30,
                 outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
             .CreateLogger();
 
         try
         {
-            Log.Information("Iniciando CanilApp Backend...");
+            Log.Information("Inicializando api...");
 
             var urls = builder.Configuration["Urls"];
             if (!string.IsNullOrWhiteSpace(urls))
@@ -66,7 +65,7 @@ public class Program
             var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AppCors", policy =>
+                options.AddPolicy("General", policy =>
                 {
                     if (corsOrigins.Length > 0)
                     {
@@ -123,6 +122,7 @@ public class Program
             var rawConnection = builder.Configuration.GetConnectionString("DefaultConnection")
                 ?? "Data Source=data/canilapp.db";
             var sqliteConnection = SqliteConnectionResolver.Resolve(rawConnection, builder.Environment.ContentRootPath);
+
             builder.Services.AddDbContext<CanilAppDbContext>(options =>
                 options.UseSqlite(sqliteConnection));
 
@@ -208,38 +208,43 @@ public class Program
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseExceptionHandler(errorApp =>
+            app.UseExceptionHandler(exception =>
             {
-                errorApp.Run(async context =>
+                exception.Run(async context =>
                 {
-                    context.Response.StatusCode = 500;
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     context.Response.ContentType = "application/json";
                     var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+
+                    var message = app.Environment.IsDevelopment() ?
+                        (feature?.Error?.Message ?? "Erro desconhecido")
+                        : "Erro desconhecido";
+
                     var response = new ErrorResponse
                     {
                         Title = "Erro interno no servidor",
-                        StatusCode = 500,
-                        Message = feature?.Error.Message ?? "Erro desconhecido"
+                        Status = StatusCodes.Status500InternalServerError,
+                        Details = message
                     };
                     Log.Error(feature?.Error, "Erro não tratado");
                     await context.Response.WriteAsJsonAsync(response);
                 });
             });
 
-            app.UseCors("AppCors");
+            app.UseCors("General");
             app.UseRateLimiter();
             app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
 
-            app.MapGet("/", () => new { status = "backend rodando", version = "1.0.0", timestamp = DateTime.UtcNow });
+            app.MapGet("/", () => new { status = "api rodando", version = "1.0.0", timestamp = DateTime.UtcNow });
             app.MapGet("/api/health", () => Results.Ok("OK"));
 
             app.Run();
         }
         catch (Exception ex)
         {
-            Log.Fatal(ex, "Backend falhou ao iniciar");
+            Log.Fatal(ex, "Api falhou ao iniciar");
             throw;
         }
         finally

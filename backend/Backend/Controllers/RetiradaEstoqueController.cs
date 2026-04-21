@@ -35,11 +35,11 @@ namespace Backend.Controllers
             {
                 var erro = new ErrorResponse
                 {
-                    StatusCode = 400,
                     Title = "Erro ao salvar log de retirada de estoque",
-                    Message = ex.Message
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message
                 };
-                return StatusCode(erro.StatusCode, erro);
+                return StatusCode(erro.Status, erro);
             }
         }
     }

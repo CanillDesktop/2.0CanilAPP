@@ -66,11 +66,11 @@ namespace Backend.Controllers
             {
                 var erro = new ErrorResponse
                 {
-                    StatusCode = 400,
                     Title = "Erro ao criar produto",
-                    Message = ex.Message
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message
                 };
-                return StatusCode(erro.StatusCode, erro);
+                return StatusCode(erro.Status, erro);
             }
             catch (Exception ex)
             {

@@ -27,8 +27,8 @@ public class LoginController : ControllerBase
                 return BadRequest(new ErrorResponse
                 {
                     Title = "Requisição inválida",
-                    StatusCode = 400,
-                    Message = "Login e senha são obrigatórios"
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = "Login e senha são obrigatórios"
                 });
             }
 
@@ -41,8 +41,8 @@ public class LoginController : ControllerBase
             return Unauthorized(new ErrorResponse
             {
                 Title = "Acesso não autorizado",
-                StatusCode = 401,
-                Message = ex.Message
+                Status = StatusCodes.Status401Unauthorized,
+                Details = ex.Message
             });
         }
         catch (Exception ex)
@@ -51,8 +51,8 @@ public class LoginController : ControllerBase
             return StatusCode(500, new ErrorResponse
             {
                 Title = "Erro interno",
-                StatusCode = 500,
-                Message = "Erro ao processar login"
+                Status = StatusCodes.Status500InternalServerError,
+                Details = "Erro ao processar login"
             });
         }
     }
@@ -67,8 +67,8 @@ public class LoginController : ControllerBase
                 return BadRequest(new ErrorResponse
                 {
                     Title = "Requisição inválida",
-                    StatusCode = 400,
-                    Message = "RefreshToken obrigatório"
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = "RefreshToken obrigatório"
                 });
             }
 
@@ -80,8 +80,8 @@ public class LoginController : ControllerBase
             return Unauthorized(new ErrorResponse
             {
                 Title = "Token inválido",
-                StatusCode = 401,
-                Message = ex.Message
+                Status = StatusCodes.Status401Unauthorized,
+                Details = ex.Message
             });
         }
         catch (Exception ex)
@@ -90,8 +90,8 @@ public class LoginController : ControllerBase
             return StatusCode(500, new ErrorResponse
             {
                 Title = "Erro interno",
-                StatusCode = 500,
-                Message = "Erro ao renovar token"
+                Status = StatusCodes.Status500InternalServerError,
+                Details = "Erro ao renovar token"
             });
         }
     }

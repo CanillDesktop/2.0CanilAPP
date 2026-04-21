@@ -431,6 +431,8 @@ backend/Backend/Properties/launchSettings.json
 # Backend — configuração local (não commitar; use appsettings.example.json como modelo)
 backend/Backend/appsettings.json
 backend/Backend/appsettings.Development.json
+backend/Backend/appsettings.Staging.json
+backend/Backend/appsettings.Production.json
 backend/Backend/canilapp.db
 backend/Backend/*.db
 backend/Backend/data/*.db
