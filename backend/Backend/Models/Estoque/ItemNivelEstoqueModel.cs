@@ -2,15 +2,13 @@
 using Backend.Models.Interfaces;
 using System.Text.Json.Serialization;
 
-namespace Backend.Models;
+namespace Backend.Models.Estoque;
 
-public class ItemNivelEstoqueModel : ISaveInsertDateModel
+public class ItemNivelEstoqueModel : BaseModel
 {
     public int IdItem { get; set; }
 
     public int NivelMinimoEstoque { get; set; }
-
-    public DateTime DataHoraInsercaoRegistro { get; set; } = DateTime.UtcNow;
 
     [JsonIgnore]
     public ItemComEstoqueBaseModel ItemBase { get; set; } = null!;

@@ -1,4 +1,4 @@
-using Backend.DTOs;
+using Backend.DTOs.Usuario;
 using Backend.Models;
 using Backend.Services.Interfaces;
 using Microsoft.IdentityModel.Tokens;

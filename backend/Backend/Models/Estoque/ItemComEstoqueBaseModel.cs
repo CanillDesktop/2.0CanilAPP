@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Backend.Models;
+namespace Backend.Models.Estoque;
 
-public class ItemComEstoqueBaseModel
+public abstract class ItemComEstoqueBaseModel : BaseModel
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -12,6 +12,4 @@ public class ItemComEstoqueBaseModel
     public ItemNivelEstoqueModel ItemNivelEstoque { get; set; } = new();
 
     public ICollection<ItemEstoqueModel> ItensEstoque { get; set; } = [];
-
-    public DateTime DataHoraInsercaoRegistro { get; set; } = DateTime.UtcNow;
 }

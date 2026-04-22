@@ -82,7 +82,7 @@ namespace Backend.Repositories
             medicamento.IsDeleted = true;
 
             // 2. Atualiza a data para vencer a versão da Nuvem
-            medicamento.DataAtualizacao = DateTime.UtcNow;
+            medicamento.DataHoraAtualizacao = DateTime.UtcNow;
 
             // 3. Atualiza em vez de remover
             _context.Medicamentos.Update(medicamento);

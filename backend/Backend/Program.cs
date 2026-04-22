@@ -1,6 +1,6 @@
 using Backend.Context;
 using Backend.Data;
-using Backend.DTOs;
+using Backend.DTOs.Usuario;
 using Backend.Models;
 using Backend.Models.Usuarios;
 using Backend.Repositories;
@@ -212,7 +212,10 @@ public class Program
             {
                 exception.Run(async context =>
                 {
-                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    if (context.Response.StatusCode == 0)
+                    {
+                        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    }
                     context.Response.ContentType = "application/json";
                     var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
 
@@ -222,8 +225,8 @@ public class Program
 
                     var response = new ErrorResponse
                     {
-                        Title = "Erro interno no servidor",
-                        Status = StatusCodes.Status500InternalServerError,
+                        Title = "Erro",
+                        Status = context.Response.StatusCode,
                         Details = message
                     };
                     Log.Error(feature?.Error, "Erro não tratado");

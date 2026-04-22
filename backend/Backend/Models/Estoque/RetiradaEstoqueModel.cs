@@ -2,12 +2,10 @@
 using Backend.Models.Interfaces;
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Models;
+namespace Backend.Models.Estoque;
 
-public class RetiradaEstoqueModel : ISaveInsertDateModel
+public class RetiradaEstoqueModel : BaseModel
 {
-    private DateTime _dataHoraInsercaoRegistro;
-
     [Key]
     public int IdRetirada { get; set; }
 
@@ -23,15 +21,6 @@ public class RetiradaEstoqueModel : ISaveInsertDateModel
 
     public string Para { get; set; } = string.Empty;
 
-    public DateTime DataHoraInsercaoRegistro
-    {
-        get => _dataHoraInsercaoRegistro;
-        set => _dataHoraInsercaoRegistro = value == DateTime.MinValue ? DateTime.UtcNow : value;
-    }
-
-    public DateTime DataAtualizacao { get; set; } = DateTime.UtcNow;
-
-    public bool IsDeleted { get; set; } = false;
 
     public static implicit operator RetiradaEstoqueModel(RetiradaEstoqueDTO dto)
     {
@@ -43,8 +32,8 @@ public class RetiradaEstoqueModel : ISaveInsertDateModel
             De = dto.De,
             Para = dto.Para,
             Quantidade = dto.Quantidade,
-            DataHoraInsercaoRegistro = dto.DataHoraInsercaoRegistro,
-            DataAtualizacao = DateTime.UtcNow
+            DataHoraCriacao = dto.DataHoraInsercaoRegistro,
+            DataHoraAtualizacao = DateTime.UtcNow
         };
     }
 
@@ -58,7 +47,7 @@ public class RetiradaEstoqueModel : ISaveInsertDateModel
             De = model.De,
             Para = model.Para,
             Quantidade = model.Quantidade,
-            DataHoraInsercaoRegistro = model.DataHoraInsercaoRegistro
+            DataHoraInsercaoRegistro = model.DataHoraCriacao
         };
     }
 }

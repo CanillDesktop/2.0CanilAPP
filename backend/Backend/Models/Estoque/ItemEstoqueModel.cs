@@ -2,9 +2,9 @@
 using Backend.Models.Interfaces;
 using System.Text.Json.Serialization;
 
-namespace Backend.Models;
+namespace Backend.Models.Estoque;
 
-public class ItemEstoqueModel : ISaveInsertDateModel
+public class ItemEstoqueModel : BaseModel
 {
     private string? _lote = string.Empty;
 
@@ -35,7 +35,6 @@ public class ItemEstoqueModel : ISaveInsertDateModel
     [JsonIgnore]
     public ItemComEstoqueBaseModel? ItemBase { get; set; }
 
-    public DateTime DataHoraInsercaoRegistro { get; set; } = DateTime.UtcNow;
 
     public static implicit operator ItemEstoqueDTO(ItemEstoqueModel model)
     {

@@ -1,6 +1,7 @@
 ﻿using Backend.DTOs.Estoque;
 using Backend.DTOs.Produtos;
 using Backend.Models.Enums;
+using Backend.Models.Estoque;
 
 namespace Backend.Models.Produtos;
 
@@ -22,9 +23,6 @@ public class ProdutosModel : ItemComEstoqueBaseModel
 
     public CategoriaEnum Categoria { get; set; }
 
-    public bool IsDeleted { get; set; } = false;
-
-    public DateTime DataAtualizacao { get; set; } = DateTime.UtcNow;
 
     public static implicit operator ProdutosModel(ProdutosCadastroDTO dto)
     {

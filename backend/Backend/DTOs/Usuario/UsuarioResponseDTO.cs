@@ -1,6 +1,6 @@
 ﻿using Backend.Models.Enums;
 
-namespace Backend.DTOs;
+namespace Backend.DTOs.Usuario;
 
 public class UsuarioResponseDTO
 {

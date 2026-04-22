@@ -74,7 +74,7 @@ namespace Backend.Repositories
             }
 
             Insumosrepository.IsDeleted = true;
-            Insumosrepository.DataAtualizacao = DateTime.UtcNow;
+            Insumosrepository.DataHoraAtualizacao = DateTime.UtcNow;
 
             _context.Insumos.Update(Insumosrepository);
             await _context.SaveChangesAsync();

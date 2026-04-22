@@ -72,7 +72,7 @@ namespace Backend.Repositories
             produto.IsDeleted = true;
 
             // 2. Atualiza a data para vencer a versão da Nuvem
-            produto.DataAtualizacao = DateTime.UtcNow;
+            produto.DataHoraAtualizacao = DateTime.UtcNow;
 
             // 3. Atualiza em vez de remover
             _context.Produtos.Update(produto);

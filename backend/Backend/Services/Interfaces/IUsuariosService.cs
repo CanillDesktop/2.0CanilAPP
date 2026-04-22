@@ -1,4 +1,4 @@
-﻿using Backend.DTOs;
+﻿using Backend.DTOs.Usuario;
 
 namespace Backend.Services.Interfaces;
 

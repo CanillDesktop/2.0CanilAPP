@@ -1,6 +1,7 @@
 ﻿using Backend.DTOs.Estoque;
 using Backend.Exceptions;
 using Backend.Models;
+using Backend.Models.Estoque;
 using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
