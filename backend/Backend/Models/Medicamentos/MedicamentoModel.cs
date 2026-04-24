@@ -1,6 +1,7 @@
-﻿using Shared.DTOs.Estoque;
-using Shared.DTOs.Medicamentos;
-using Shared.Enums;
+﻿using Backend.DTOs.Estoque;
+using Backend.DTOs.Medicamentos;
+using Backend.Models.Enums;
+using Backend.Models.Estoque;
 
 namespace Backend.Models.Medicamentos;
 
@@ -18,9 +19,6 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
 
     public PublicoAlvoMedicamentoEnum PublicoAlvo { get; set; }
 
-    public bool IsDeleted { get; set; } = false;
-
-    public DateTime DataAtualizacao { get; set; } = DateTime.UtcNow;
 
     public static implicit operator MedicamentosModel(MedicamentoCadastroDTO dto)
     {

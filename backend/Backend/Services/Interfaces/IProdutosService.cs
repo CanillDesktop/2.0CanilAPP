@@ -1,4 +1,4 @@
-﻿using Shared.DTOs.Produtos;
+﻿using Backend.DTOs.Produtos;
 
 namespace Backend.Services.Interfaces
 {

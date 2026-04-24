@@ -1,8 +1,8 @@
-﻿using Backend.Exceptions;
+﻿using Backend.DTOs.Produtos;
+using Backend.Exceptions;
+using Backend.Models.Enums;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
-using Shared.DTOs.Produtos;
-using Shared.Enums;
 
 namespace Backend.Services
 {

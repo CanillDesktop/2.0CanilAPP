@@ -1,11 +1,10 @@
 ﻿using Backend.Models.Usuarios;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
-using Shared.DTOs;
 
 namespace Backend.Services;
 
-public class UsuariosService : IUsuariosService<UsuarioResponseDTO>
+public class UsuariosService : IUsuariosService
 {
     private readonly IUsuariosRepository<UsuariosModel> _repository;
 
@@ -14,38 +13,28 @@ public class UsuariosService : IUsuariosService<UsuarioResponseDTO>
         _repository = repository;
     }
 
-    public async Task<UsuarioResponseDTO?> CriarAsync(UsuarioRequestDTO dto)
+    public async Task<UsuariosModel?> CriarAsync(UsuariosModel usuario)
     {
-        try
-        {
-            if (await _repository.GetByEmailAsync(dto.Email) != null)
-                throw new InvalidOperationException("Usuário já existe");
+        if (await _repository.GetByEmailAsync(usuario.Email) != null)
+            throw new InvalidOperationException("Usuário já existe");
 
-            var usuarioModel = UsuariosModel.FromDTO(dto);
-            usuarioModel.HashSenha = BCrypt.Net.BCrypt.HashPassword(dto.Senha);
+        usuario.HashSenha = BCrypt.Net.BCrypt.HashPassword(usuario.HashSenha);
 
-            var usuarioCriado = await _repository.CreateAsync(usuarioModel);
-            return usuarioCriado?.ToDTO();
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException("Erro ao criar usuário", ex);
-        }
+        var novoUsuario = await _repository.CreateAsync(usuario);
+        return novoUsuario;
     }
 
-    public async Task<UsuarioResponseDTO?> AtualizarAsync(UsuarioRequestDTO dto)
+    public async Task<UsuariosModel?> AtualizarAsync(UsuariosModel usuario)
     {
         try
         {
-            var usuarioModel = UsuariosModel.FromDTO(dto);
-
-            if (!string.IsNullOrEmpty(dto.Senha))
+            if (!string.IsNullOrEmpty(usuario.HashSenha))
             {
-                usuarioModel.HashSenha = BCrypt.Net.BCrypt.HashPassword(dto.Senha);
+                usuario.HashSenha = BCrypt.Net.BCrypt.HashPassword(usuario.HashSenha);
             }
 
-            var atualizado = await _repository.UpdateAsync(usuarioModel);
-            return atualizado?.ToDTO();
+            var atualizado = await _repository.UpdateAsync(usuario);
+            return atualizado;
         }
         catch (Exception ex)
         {
@@ -58,66 +47,28 @@ public class UsuariosService : IUsuariosService<UsuarioResponseDTO>
         return await _repository.DeleteAsync(id);
     }
 
-    public async Task<IEnumerable<UsuarioResponseDTO>> BuscarTodosAsync()
+    public async Task<IEnumerable<UsuariosModel>> BuscarTodosAsync()
     {
-        var usuarios = await _repository.GetAsync();
-        return usuarios.Select(u => u.ToDTO()).ToList();
+        return await _repository.GetAsync();
     }
 
-    public async Task<UsuarioResponseDTO?> BuscarPorIdAsync(int id)
+    public async Task<UsuariosModel?> BuscarPorIdAsync(int id)
     {
-        var usuario = await _repository.GetByIdAsync(id);
-        return usuario?.ToDTO();
+        return await _repository.GetByIdAsync(id);
     }
 
-    public async Task<UsuarioResponseDTO?> ValidarUsuarioAsync(string login, string senha)
+    public async Task<UsuariosModel?> ValidarUsuarioAsync(string login, string senha)
     {
-        try
-        {
-            var usuario = await _repository.GetByEmailAsync(login);
-
-            if (usuario == null)
-                return null;
-
-            if (string.IsNullOrEmpty(usuario.HashSenha))
-                return null;
-
-            var senhaValida = BCrypt.Net.BCrypt.Verify(senha, usuario.HashSenha);
-
-            return senhaValida ? usuario.ToDTO() : null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public async Task SalvarRefreshTokenAsync(int usuarioId, string refreshToken, DateTime expiry)
-    {
-        var usuario = await _repository.GetByIdAsync(usuarioId);
-
-        if (usuario == null)
-            throw new ArgumentNullException(nameof(usuario), "Usuário não encontrado");
-
-        usuario.RefreshToken = refreshToken;
-        usuario.DataHoraExpiracaoRefreshToken = expiry;
-
-        await _repository.UpdateAsync(usuario);
-    }
-
-    public async Task<UsuarioResponseDTO?> BuscaPorRefreshTokenAsync(string? refreshToken)
-    {
-        if (string.IsNullOrWhiteSpace(refreshToken))
-            return null;
-
-        var usuario = await _repository.GetByRefreshTokenAsync(refreshToken);
+        var usuario = await _repository.GetByEmailAsync(login);
 
         if (usuario == null)
             return null;
 
-        if (usuario.DataHoraExpiracaoRefreshToken < DateTime.UtcNow)
+        if (string.IsNullOrEmpty(usuario.HashSenha))
             return null;
 
-        return usuario.ToDTO();
+        var senhaValida = BCrypt.Net.BCrypt.Verify(senha, usuario.HashSenha);
+
+        return senhaValida ? usuario : null;
     }
 }

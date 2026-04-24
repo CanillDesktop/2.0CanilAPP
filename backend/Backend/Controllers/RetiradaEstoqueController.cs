@@ -1,10 +1,10 @@
-﻿using Backend.Exceptions;
+﻿using Backend.DTOs.Estoque;
+using Backend.Exceptions;
 using Backend.Models;
+using Backend.Models.Estoque;
 using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.DTOs.Estoque;
-using Shared.Models;
 
 namespace Backend.Controllers
 {
@@ -35,11 +35,11 @@ namespace Backend.Controllers
             {
                 var erro = new ErrorResponse
                 {
-                    StatusCode = 400,
                     Title = "Erro ao salvar log de retirada de estoque",
-                    Message = ex.Message
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message
                 };
-                return StatusCode(erro.StatusCode, erro);
+                return StatusCode(erro.Status, erro);
             }
         }
     }

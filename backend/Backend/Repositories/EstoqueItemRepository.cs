@@ -1,5 +1,5 @@
 ﻿using Backend.Context;
-using Backend.Models;
+using Backend.Models.Estoque;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Repositories
