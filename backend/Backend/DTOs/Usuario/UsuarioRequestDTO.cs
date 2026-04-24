@@ -21,5 +21,5 @@ public class UsuarioRequestDTO
     public PermissoesEnum Permissao { get; set; } = PermissoesEnum.LEITURA;
 
     [Required]
-    public bool IsDeleted { get; set; }
+    public bool IsDeleted { get; set; } = false;
 }

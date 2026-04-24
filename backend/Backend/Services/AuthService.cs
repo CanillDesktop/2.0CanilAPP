@@ -35,7 +35,7 @@ public class AuthService : IAuthService
         if (usuario == null)
         {
             _logger.LogWarning("Falha de autenticação para {Login}.", login);
-            throw new ArgumentNullException(nameof(usuario), "Usuário ou senha inválidos");
+            throw new ArgumentNullException(null, "Usuário ou senha inválidos");
         }
 
         var refreshTokenHash = GenerateOpaqueRefreshToken();

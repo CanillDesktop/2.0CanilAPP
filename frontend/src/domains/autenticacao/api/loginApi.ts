@@ -1,27 +1,19 @@
 import { obterClienteHttp } from '../../../infrastructure/http/clienteHttpSingleton';
-import type { CorpoRefresh, CredenciaisLogin, RespostaLogin } from '../types/tiposAutenticacao';
+import type { CredenciaisLogin, RespostaLogin } from '../types/tiposAutenticacao';
 
 /**
  * Chamadas HTTP do domínio de autenticação (sem regras de negócio).
  */
 export async function solicitarLoginApi(corpo: CredenciaisLogin): Promise<RespostaLogin> {
   const cliente = obterClienteHttp();
-  const { data } = await cliente.post<RespostaLogin>('/api/Login', corpo);
+  const { data } = await cliente.post<RespostaLogin>('/api/Auth/login', corpo);
   return data;
 }
 
-export type TokenRespostaApi = NonNullable<RespostaLogin['accessToken']>;
+export type TokenRespostaApi = RespostaLogin['accessToken'];
 
-// export async function solicitarRenovacaoTokenApi(refreshToken: string): Promise<TokenRespostaApi> {
-//   const cliente = obterClienteHttp();
-//   const corpo: CorpoRefresh = { refreshToken };
-//   const { data } = await cliente.post<TokenRespostaApi>('/api/Login/refresh', corpo);
-//   return data;
-// }
-
-export async function solicitarRenovacaoTokenApi() {
-//   const cliente = obterClienteHttp();
-//   const corpo: CorpoRefresh = { refreshToken };
-//   const { data } = await cliente.post<TokenRespostaApi>('/api/Login/refresh', corpo);
-//   return data;
+export async function solicitarRenovacaoTokenApi(): Promise<TokenRespostaApi> {
+  const cliente = obterClienteHttp();
+  const { data } = await cliente.post<TokenRespostaApi>('/api/Auth/refresh');
+  return data;
 }

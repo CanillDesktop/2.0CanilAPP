@@ -13,7 +13,7 @@ export function PaginaDetalheSessao() {
       <dl className="lista-detalhe">
         <dt>Nome</dt>
         <dd>
-          {usuario.nome} {usuario.sobrenome}
+          {usuario.primeiroNome} {usuario.sobrenome}
         </dd>
         <dt>E-mail</dt>
         <dd>{usuario.email}</dd>

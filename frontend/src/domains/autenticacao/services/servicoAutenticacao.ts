@@ -1,7 +1,8 @@
 import { solicitarLoginApi, solicitarRenovacaoTokenApi } from '../api/loginApi';
+import { solicitarLogoutApi } from '../api/logoutApi';
 import type { CredenciaisLogin, RespostaLogin } from '../types/tiposAutenticacao';
 import {
-  atualizarTokens,
+  atualizarAccessToken,
   limparSessao,
   salvarSessao,
 } from '../../../shared/services/armazenamentoSessao';
@@ -21,16 +22,15 @@ export const servicoAutenticacao = {
     return resposta;
   },
 
-  sair(): void {
+  async sair(): Promise<void> {
+    await solicitarLogoutApi();
     limparSessao();
   },
 
-  // async renovarSePossivel(): Promise<boolean> {
-  //   const refresh = obterRefreshToken();
-  //   if (!refresh) return false;
-  //   const token = await solicitarRenovacaoTokenApi(refresh);
-  //   if (!token?.accessToken || !token.refreshToken) return false;
-  //   atualizarTokens(token.accessToken, token.refreshToken);
-  //   return true;
-  // },
+  async renovarSePossivel(): Promise<boolean> {
+    const accessToken = await solicitarRenovacaoTokenApi();
+    if (!accessToken) return false;
+    atualizarAccessToken(accessToken);
+    return true;
+  },
 };

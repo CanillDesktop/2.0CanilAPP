@@ -11,7 +11,3 @@ export type RespostaLogin = {
   accessToken: string,
   usuario?: UsuarioSessao;
 };
-
-export type CorpoRefresh = {
-  refreshToken: string;
-};

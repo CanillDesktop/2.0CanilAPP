@@ -10,7 +10,7 @@ export function PaginaInicio() {
       {autenticado ? (
         <>
           <p>
-            Olá, <strong>{usuario?.nome}</strong>. Use o menu superior para navegar entre os módulos.
+            Olá, <strong>{usuario?.primeiroNome}</strong>. Use o menu superior para navegar entre os módulos.
           </p>
           <ul className="lista-links">
             <li>
@@ -29,8 +29,7 @@ export function PaginaInicio() {
         </>
       ) : (
         <p>
-          Faça <Link to="/login">login</Link> ou crie uma conta em <Link to="/cadastro">cadastro</Link> para depois
-          aceder aos módulos protegidos por JWT.
+          Faça <Link to="/login">login</Link> ou <Link to="/cadastro">cadastre-se</Link>.
         </p>
       )}
     </section>

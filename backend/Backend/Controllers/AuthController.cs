@@ -7,27 +7,27 @@ namespace Backend.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class LoginController : ControllerBase
+public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IRefreshTokenService _refreshTokenService;
-    private readonly ILogger<LoginController> _logger;
+    private readonly ILogger<AuthController> _logger;
 
-    public LoginController(IAuthService authService, IRefreshTokenService refreshTokenService, ILogger<LoginController> logger)
+    public AuthController(IAuthService authService, IRefreshTokenService refreshTokenService, ILogger<AuthController> logger)
     {
         _authService = authService;
         _refreshTokenService = refreshTokenService;
         _logger = logger;
     }
 
-    [HttpPost]
+    [HttpPost("login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest? request, CancellationToken cancellationToken)
     {
         try
         {
             if (request is null || string.IsNullOrWhiteSpace(request.Login) || string.IsNullOrWhiteSpace(request.Senha))
             {
-                throw new ArgumentNullException(nameof(request), "Login e senha são obrigatórios");
+                throw new ArgumentNullException(null, "Login e senha são obrigatórios");
             }
 
             _logger.LogInformation("Solicitação de login recebida para {Login}.", request.Login);
@@ -70,10 +70,7 @@ public class LoginController : ControllerBase
 
             SetRefreshCookie(result.RefreshToken);
 
-            return Ok(new
-            {
-                result.AccessToken
-            });
+            return Ok(result.AccessToken);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -88,7 +85,7 @@ public class LoginController : ControllerBase
 
     [Authorize]
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+    public async Task<IActionResult> Logout()
     {
         try
         {
@@ -118,8 +115,8 @@ public class LoginController : ControllerBase
     {
         var cookieOptions = new CookieOptions
         {
-            HttpOnly = true,
-            Secure = true,
+            HttpOnly = true, // javascript não pode acessar
+            Secure = true, // só envia em HTTPS
             SameSite = SameSiteMode.Lax,
             Expires = refreshToken.ExpiresAt
         };

@@ -1,15 +1,15 @@
 import type { UsuarioSessao } from '../types/usuarioSessao';
 
-const CHAVE_ACCESS = 'canilapp_access_token';
+const CHAVE_TOKEN = 'canilapp_access_token';
 const CHAVE_USUARIO = 'canilapp_usuario';
 
 export function salvarSessao(accessToken: string, usuario: UsuarioSessao): void {
-  localStorage.setItem(CHAVE_ACCESS, accessToken);
+  localStorage.setItem(CHAVE_TOKEN, accessToken);
   localStorage.setItem(CHAVE_USUARIO, JSON.stringify(usuario));
 }
 
 export function obterAccessToken(): string | null {
-  return localStorage.getItem(CHAVE_ACCESS);
+  return localStorage.getItem(CHAVE_TOKEN);
 }
 
 export function obterUsuarioArmazenado(): UsuarioSessao | null {
@@ -23,10 +23,10 @@ export function obterUsuarioArmazenado(): UsuarioSessao | null {
 }
 
 export function limparSessao(): void {
-  localStorage.removeItem(CHAVE_ACCESS);
+  localStorage.removeItem(CHAVE_TOKEN);
   localStorage.removeItem(CHAVE_USUARIO);
 }
 
-export function atualizarTokens(accessToken: string): void {
-  localStorage.setItem(CHAVE_ACCESS, accessToken);
+export function atualizarAccessToken(accessToken: string): void {
+  localStorage.setItem(CHAVE_TOKEN, accessToken);
 }
