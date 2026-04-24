@@ -5,12 +5,10 @@ namespace Backend.DTOs.Usuario;
 
 public class UsuarioRequestDTO
 {
-    public int? Id { get; set; }
-
     [Required(ErrorMessage = "Nome é obrigatório")]
-    public string Nome { get; set; } = string.Empty;
+    public string PrimeiroNome { get; set; } = string.Empty;
 
-    public string Sobrenome { get; set; } = string.Empty;
+    public string? Sobrenome { get; set; }
 
     [Required(ErrorMessage = "Email é obrigatório")]
     [EmailAddress(ErrorMessage = "Email inválido")]
@@ -21,4 +19,7 @@ public class UsuarioRequestDTO
     public string Senha { get; set; } = string.Empty;
 
     public PermissoesEnum Permissao { get; set; } = PermissoesEnum.LEITURA;
+
+    [Required]
+    public bool IsDeleted { get; set; }
 }

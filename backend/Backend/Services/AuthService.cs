@@ -11,16 +11,19 @@ namespace Backend.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly IUsuariosService<UsuarioResponseDTO> _usuariosService;
+    private readonly IUsuariosService _usuariosService;
+    private readonly IRefreshTokenService _refreshTokenService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
-        IUsuariosService<UsuarioResponseDTO> usuariosService,
+        IUsuariosService usuariosService,
+        IRefreshTokenService refreshTokenService,
         IConfiguration configuration,
         ILogger<AuthService> logger)
     {
         _usuariosService = usuariosService;
+        _refreshTokenService = refreshTokenService;
         _configuration = configuration;
         _logger = logger;
     }
@@ -28,54 +31,60 @@ public class AuthService : IAuthService
     public async Task<LoginResponseModel> AuthenticateAsync(string login, string senha, CancellationToken cancellationToken = default)
     {
         var usuario = await _usuariosService.ValidarUsuarioAsync(login, senha);
-        if (usuario == null || usuario.Id is not int userId)
+        if (usuario == null)
         {
             _logger.LogWarning("Falha de autenticação para {Login}.", login);
             throw new UnauthorizedAccessException("Usuário ou senha inválidos");
         }
 
-        var refreshToken = GenerateOpaqueRefreshToken();
-        var refreshDays = _configuration.GetValue("Jwt:RefreshTokenDays", 14);
-        await _usuariosService.SalvarRefreshTokenAsync(userId, refreshToken, DateTime.UtcNow.AddDays(refreshDays));
+        var refreshTokenHash = GenerateOpaqueRefreshToken();
+        var refreshTokenExpiryDate = _configuration.GetValue("Jwt:RefreshTokenDays", 7);
+        var refreshToken = new RefreshToken(refreshTokenHash, DateTime.UtcNow.AddDays(refreshTokenExpiryDate), usuario.Id);
+
+        await _refreshTokenService.SaveRefreshTokenAsync(refreshToken);
 
         var accessToken = CreateJwtToken(usuario);
-        var expiresIn = _configuration.GetValue("Jwt:AccessTokenMinutes", 60) * 60;
-
-        usuario.CognitoSub = userId.ToString();
 
         return new LoginResponseModel
         {
-            Token = new TokenResponse
+            TokenResponse = new TokenResponse
             {
                 AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                IdToken = accessToken,
-                ExpiresIn = expiresIn
+                RefreshToken = refreshToken
             },
             Usuario = usuario
         };
     }
 
-    public async Task<TokenResponse> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+    public async Task<TokenResponse> RefreshTokenAsync(string refreshTokenHash, CancellationToken cancellationToken = default)
     {
-        var usuario = await _usuariosService.BuscaPorRefreshTokenAsync(refreshToken);
-        if (usuario == null || usuario.Id is not int userId)
-            throw new UnauthorizedAccessException("Sessão expirada. Por favor, faça login novamente.");
+        var refreshToken = await _refreshTokenService.GetRefreshTokenAsync(refreshTokenHash);
 
-        var newRefresh = GenerateOpaqueRefreshToken();
-        var refreshDays = _configuration.GetValue("Jwt:RefreshTokenDays", 14);
-        await _usuariosService.SalvarRefreshTokenAsync(userId, newRefresh, DateTime.UtcNow.AddDays(refreshDays));
+        if (refreshToken == null || !refreshToken.IsActive)
+        {
+            throw new UnauthorizedAccessException();
+        }
 
-        usuario.CognitoSub = userId.ToString();
+        var usuario = await _usuariosService.BuscarPorIdAsync(refreshToken.UserId);
+
+        if (usuario == null)
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        var newRefreshTokenHash = GenerateOpaqueRefreshToken();
+        var newRefreshTokenExpiryDate = _configuration.GetValue("Jwt:RefreshTokenDays", 7);
+
+        var newRefreshToken = new RefreshToken(newRefreshTokenHash, DateTime.UtcNow.AddDays(newRefreshTokenExpiryDate), usuario.Id);
+
+        await _refreshTokenService.ReplaceRefreshTokenAsync(refreshToken, newRefreshToken);
+
         var accessToken = CreateJwtToken(usuario);
-        var expiresIn = _configuration.GetValue("Jwt:AccessTokenMinutes", 60) * 60;
 
         return new TokenResponse
         {
             AccessToken = accessToken,
-            RefreshToken = newRefresh,
-            IdToken = accessToken,
-            ExpiresIn = expiresIn
+            RefreshToken = newRefreshToken
         };
     }
 
@@ -88,14 +97,14 @@ public class AuthService : IAuthService
 
         var issuer = _configuration["Jwt:Issuer"] ?? "CanilApp";
         var audience = _configuration["Jwt:Audience"] ?? "CanilApp";
-        var accessMinutes = _configuration.GetValue("Jwt:AccessTokenMinutes", 60);
+        var accessMinutes = _configuration.GetValue("Jwt:AccessTokenMinutes", 15);
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, usuario.Id?.ToString() ?? ""),
+            new(JwtRegisteredClaimNames.Sub, usuario.Id.ToString() ?? ""),
             new(JwtRegisteredClaimNames.Email, usuario.Email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new("permissao", usuario.Permissao.ToString())

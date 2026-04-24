@@ -55,10 +55,4 @@ public class UsuariosRepository : IUsuariosRepository<UsuariosModel>
         return await _context.Usuarios
             .FirstOrDefaultAsync(u => u.Email == email);
     }
-
-    public async Task<UsuariosModel?> GetByRefreshTokenAsync(string refreshToken)
-    {
-        return await _context.Usuarios
-            .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
-    }
 }

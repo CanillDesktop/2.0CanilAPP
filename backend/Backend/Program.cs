@@ -174,7 +174,7 @@ public class Program
             builder.Services.AddScoped<IProdutosRepository, ProdutosRepository>();
             builder.Services.AddScoped<IProdutosService, ProdutosService>();
             builder.Services.AddScoped<IUsuariosRepository<UsuariosModel>, UsuariosRepository>();
-            builder.Services.AddScoped<IUsuariosService<UsuarioResponseDTO>, UsuariosService>();
+            builder.Services.AddScoped<IUsuariosService, UsuariosService>();
             builder.Services.AddScoped<IInsumosRepository, InsumosRepository>();
             builder.Services.AddScoped<IInsumosService, InsumosService>();
             builder.Services.AddScoped<EstoqueItemService>();
@@ -182,6 +182,8 @@ public class Program
             builder.Services.AddScoped<RetiradaEstoqueService>();
             builder.Services.AddScoped<RetiradaEstoqueRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+            builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
             var app = builder.Build();
 
@@ -212,16 +214,13 @@ public class Program
             {
                 exception.Run(async context =>
                 {
-                    if (context.Response.StatusCode == 0)
-                    {
-                        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                    }
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     context.Response.ContentType = "application/json";
                     var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
 
                     var message = app.Environment.IsDevelopment() ?
-                        (feature?.Error?.Message ?? "Erro desconhecido")
-                        : "Erro desconhecido";
+                        (feature?.Error?.Message ?? "Erro interno do servidor.")
+                        : "Erro interno do servidor.";
 
                     var response = new ErrorResponse
                     {

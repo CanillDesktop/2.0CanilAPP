@@ -4,12 +4,12 @@ namespace Backend.DTOs.Usuario;
 
 public class UsuarioResponseDTO
 {
-    public int? Id { get; set; }
+    public int Id { get; set; }
     public string Email { get; set; } = string.Empty;
-    public string Nome { get; set; } = string.Empty;
-    public string Sobrenome { get; set; } = string.Empty;
+    public string PrimeiroNome { get; set; } = string.Empty;
+    public string? Sobrenome { get; set; }
     public PermissoesEnum Permissao { get; set; }
-    public string? CognitoSub { get; set; }
-
-    public string NomeCompleto() => $"{Nome} {Sobrenome}".Trim();
+    public DateTime DataHoraCriacao { get; set; }
+    public DateTime DataHoraAtualizacao { get; set; }
+    public bool IsDeleted { get; set; }
 }

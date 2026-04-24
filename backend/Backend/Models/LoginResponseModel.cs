@@ -4,7 +4,7 @@ namespace Backend.Models
 {
     public class LoginResponseModel
     {
-        public TokenResponse? Token { get; set; }
+        public TokenResponse? TokenResponse { get; set; }
         public UsuarioResponseDTO? Usuario { get; set; }
 
     }
