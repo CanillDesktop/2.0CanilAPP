@@ -17,7 +17,7 @@ namespace Backend.Repositories
         {
             if (refreshToken is null)
             {
-                throw new ArgumentNullException(nameof(refreshToken));
+                throw new ArgumentNullException("O token não pode ser nulo.", nameof(refreshToken));
             }
 
             _context.RefreshTokens.Add(refreshToken);
@@ -49,6 +49,16 @@ namespace Backend.Repositories
 
 
             return newToken;
+        }
+
+        public async Task RevokeRefreshTokenAsync(RefreshToken refreshToken)
+        {
+            if (refreshToken == null)
+            {
+                throw new ArgumentNullException("O token não pode ser nulo.", nameof(refreshToken));
+            }
+            _context.RefreshTokens.Update(refreshToken);
+            await _context.SaveChangesAsync();
         }
     }
 }

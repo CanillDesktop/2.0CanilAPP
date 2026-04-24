@@ -10,11 +10,13 @@ namespace Backend.Controllers;
 public class LoginController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IRefreshTokenService _refreshTokenService;
     private readonly ILogger<LoginController> _logger;
 
-    public LoginController(IAuthService authService, ILogger<LoginController> logger)
+    public LoginController(IAuthService authService, IRefreshTokenService refreshTokenService, ILogger<LoginController> logger)
     {
         _authService = authService;
+        _refreshTokenService = refreshTokenService;
         _logger = logger;
     }
 
@@ -25,12 +27,7 @@ public class LoginController : ControllerBase
         {
             if (request is null || string.IsNullOrWhiteSpace(request.Login) || string.IsNullOrWhiteSpace(request.Senha))
             {
-                return BadRequest(new ErrorResponse
-                {
-                    Title = "Requisição inválida",
-                    Status = StatusCodes.Status400BadRequest,
-                    Details = "Login e senha são obrigatórios"
-                });
+                throw new ArgumentNullException(nameof(request), "Login e senha são obrigatórios");
             }
 
             _logger.LogInformation("Solicitação de login recebida para {Login}.", request.Login);
@@ -45,12 +42,12 @@ public class LoginController : ControllerBase
                 result.Usuario
             });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (ArgumentNullException ex)
         {
-            return Unauthorized(new ErrorResponse
+            return BadRequest(new ErrorResponse
             {
                 Title = "Acesso não autorizado",
-                Status = StatusCodes.Status401Unauthorized,
+                Status = StatusCodes.Status400BadRequest,
                 Details = ex.Message
             });
         }
@@ -78,13 +75,41 @@ public class LoginController : ControllerBase
                 result.AccessToken
             });
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
             return Unauthorized(new ErrorResponse
             {
                 Title = "Sessão inválida",
                 Status = StatusCodes.Status401Unauthorized,
-                Details = "Sessão inválida. Por favor, faça login novamente"
+                Details = ex.Message ?? "Sessão inválida. Por favor, faça login novamente"
+            });
+        }
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var refreshToken = Request.Cookies["refreshToken"];
+
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            await _refreshTokenService.RevokeRefreshTokenAsync(refreshToken);
+
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new ErrorResponse
+            {
+                Title = "Acesso não autorizado",
+                Status = StatusCodes.Status401Unauthorized,
+                Details = ex.Message ?? "Sessão inválida"
             });
         }
     }
