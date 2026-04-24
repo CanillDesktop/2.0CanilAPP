@@ -1,7 +1,7 @@
 ﻿using Backend.Context;
-using Backend.Models;
+using Backend.DTOs.Estoque;
+using Backend.Models.Estoque;
 using Microsoft.EntityFrameworkCore;
-using Shared.DTOs.Estoque;
 
 namespace Backend.Repositories
 {
@@ -17,7 +17,7 @@ namespace Backend.Repositories
         public async Task<RetiradaEstoqueDTO?> CreateAsync(RetiradaEstoqueDTO dto)
         {
             RetiradaEstoqueModel model = dto;
-            model.DataAtualizacao = DateTime.UtcNow; // ✅ Atualizar timestamp
+            model.DataHoraAtualizacao = DateTime.UtcNow; // ✅ Atualizar timestamp
 
             await _context.RetiradaEstoque.AddAsync(model);
             await _context.SaveChangesAsync();
@@ -39,7 +39,7 @@ namespace Backend.Repositories
             existing.Lote = dto.Lote;
             existing.De = dto.De;
             existing.Para = dto.Para;
-            existing.DataAtualizacao = DateTime.UtcNow; // ✅ Atualizar timestamp
+            existing.DataHoraAtualizacao = DateTime.UtcNow; // ✅ Atualizar timestamp
 
             await _context.SaveChangesAsync();
             return existing;
@@ -54,7 +54,7 @@ namespace Backend.Repositories
             if (existing == null) return false;
 
             existing.IsDeleted = true;
-            existing.DataAtualizacao = DateTime.UtcNow; // ✅ Atualizar timestamp
+            existing.DataHoraAtualizacao = DateTime.UtcNow; // ✅ Atualizar timestamp
 
             await _context.SaveChangesAsync();
             return true;

@@ -1,6 +1,6 @@
-﻿using Backend.Exceptions;
+﻿using Backend.DTOs.Estoque;
+using Backend.Exceptions;
 using Backend.Repositories;
-using Shared.DTOs.Estoque;
 
 namespace Backend.Services
 {

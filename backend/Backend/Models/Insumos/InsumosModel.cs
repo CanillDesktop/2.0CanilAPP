@@ -1,6 +1,7 @@
-﻿using Shared.DTOs.Estoque;
-using Shared.DTOs.Insumos;
-using Shared.Enums;
+﻿using Backend.DTOs.Estoque;
+using Backend.DTOs.Insumos;
+using Backend.Models.Enums;
+using Backend.Models.Estoque;
 
 namespace Backend.Models.Insumos;
 
@@ -14,9 +15,6 @@ public class InsumosModel : ItemComEstoqueBaseModel
 
     public UnidadeInsumosEnum Unidade { get; set; }
 
-    public bool IsDeleted { get; set; } = false;
-
-    public DateTime DataAtualizacao { get; set; } = DateTime.UtcNow;
 
     public static implicit operator InsumosModel(InsumosCadastroDTO dto)
     {

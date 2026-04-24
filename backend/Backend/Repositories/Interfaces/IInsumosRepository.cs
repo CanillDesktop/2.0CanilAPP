@@ -1,5 +1,5 @@
-﻿using Backend.Models.Insumos;
-using Shared.DTOs.Insumos;
+﻿using Backend.DTOs.Insumos;
+using Backend.Models.Insumos;
 
 namespace Backend.Repositories.Interfaces
 {

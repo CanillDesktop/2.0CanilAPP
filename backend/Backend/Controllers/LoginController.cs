@@ -1,11 +1,12 @@
+using Backend.Models;
 using Backend.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Models;
 
 namespace Backend.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
+[ApiController]
 public class LoginController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -27,75 +28,77 @@ public class LoginController : ControllerBase
                 return BadRequest(new ErrorResponse
                 {
                     Title = "Requisição inválida",
-                    StatusCode = 400,
-                    Message = "Login e senha são obrigatórios"
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = "Login e senha são obrigatórios"
                 });
             }
 
             _logger.LogInformation("Solicitação de login recebida para {Login}.", request.Login);
+
             var result = await _authService.AuthenticateAsync(request.Login, request.Senha, cancellationToken);
-            return Ok(result);
+
+            SetRefreshCookie(result.TokenResponse!.RefreshToken);
+
+            return Ok(new
+            {
+                result.TokenResponse!.AccessToken,
+                result.Usuario
+            });
         }
         catch (UnauthorizedAccessException ex)
         {
             return Unauthorized(new ErrorResponse
             {
                 Title = "Acesso não autorizado",
-                StatusCode = 401,
-                Message = ex.Message
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Falha no login por erro inesperado.");
-            return StatusCode(500, new ErrorResponse
-            {
-                Title = "Erro interno",
-                StatusCode = 500,
-                Message = "Erro ao processar login"
+                Status = StatusCodes.Status401Unauthorized,
+                Details = ex.Message
             });
         }
     }
 
+    [Authorize]
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Refresh(CancellationToken cancellationToken)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(request.RefreshToken))
+            var refreshToken = Request.Cookies["refreshToken"];
+
+            if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                return BadRequest(new ErrorResponse
-                {
-                    Title = "Requisição inválida",
-                    StatusCode = 400,
-                    Message = "RefreshToken obrigatório"
-                });
+                throw new UnauthorizedAccessException();
             }
 
-            var result = await _authService.RefreshTokenAsync(request.RefreshToken, cancellationToken);
-            return Ok(result);
+            var result = await _authService.RefreshTokenAsync(refreshToken, cancellationToken);
+
+            SetRefreshCookie(result.RefreshToken);
+
+            return Ok(new
+            {
+                result.AccessToken
+            });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
             return Unauthorized(new ErrorResponse
             {
-                Title = "Token inválido",
-                StatusCode = 401,
-                Message = ex.Message
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Falha na renovação do token por erro inesperado.");
-            return StatusCode(500, new ErrorResponse
-            {
-                Title = "Erro interno",
-                StatusCode = 500,
-                Message = "Erro ao renovar token"
+                Title = "Sessão inválida",
+                Status = StatusCodes.Status401Unauthorized,
+                Details = "Sessão inválida. Por favor, faça login novamente"
             });
         }
     }
-}
 
-public record RefreshTokenRequest(string RefreshToken);
+    private void SetRefreshCookie(RefreshToken refreshToken)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Lax,
+            Expires = refreshToken.ExpiresAt
+        };
+        Response.Cookies.Append("refreshToken", refreshToken.TokenHash, cookieOptions);
+    }
+}
 public record LoginRequest(string Login, string Senha);

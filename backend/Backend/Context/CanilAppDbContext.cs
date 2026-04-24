@@ -1,4 +1,5 @@
 ﻿using Backend.Models;
+using Backend.Models.Estoque;
 using Backend.Models.Insumos;
 using Backend.Models.Medicamentos;
 using Backend.Models.Produtos;
@@ -20,6 +21,7 @@ public class CanilAppDbContext : DbContext
     public DbSet<ItemNivelEstoqueModel> ItensNivelEstoque { get; set; }
     public DbSet<ItemEstoqueModel> ItensEstoque { get; set; }
     public DbSet<RetiradaEstoqueModel> RetiradaEstoque { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; } 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,7 +65,11 @@ public class CanilAppDbContext : DbContext
             .ValueGeneratedOnAdd();
 
         modelBuilder.Entity<RetiradaEstoqueModel>()
-            .Property(r => r.DataAtualizacao)
+            .Property(r => r.DataHoraCriacao)
+            .HasDefaultValue(DateTime.UtcNow);
+
+        modelBuilder.Entity<RetiradaEstoqueModel>()
+            .Property(r => r.DataHoraAtualizacao)
             .HasDefaultValue(DateTime.UtcNow);
 
         modelBuilder.Entity<RetiradaEstoqueModel>()

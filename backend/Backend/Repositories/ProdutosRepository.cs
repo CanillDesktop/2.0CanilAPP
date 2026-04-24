@@ -1,12 +1,9 @@
 ﻿using Backend.Context;
-using Backend.Exceptions;
+using Backend.DTOs.Produtos;
+using Backend.Models.Enums;
 using Backend.Models.Produtos;
 using Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Shared.DTOs.Produtos;
-using Shared.Enums;
-using System.Linq;
-using System.Linq.Expressions;
 
 namespace Backend.Repositories
 {
@@ -75,7 +72,7 @@ namespace Backend.Repositories
             produto.IsDeleted = true;
 
             // 2. Atualiza a data para vencer a versão da Nuvem
-            produto.DataAtualizacao = DateTime.UtcNow;
+            produto.DataHoraAtualizacao = DateTime.UtcNow;
 
             // 3. Atualiza em vez de remover
             _context.Produtos.Update(produto);

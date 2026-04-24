@@ -1,11 +1,11 @@
+using Backend.DTOs.Produtos;
+using Backend.Exceptions;
+using Backend.Models;
 using Backend.Models.Produtos;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Shared.Models;
-using Shared.DTOs.Produtos;
-using Backend.Exceptions;
 
 namespace Backend.Controllers
 {
@@ -66,11 +66,11 @@ namespace Backend.Controllers
             {
                 var erro = new ErrorResponse
                 {
-                    StatusCode = 400,
                     Title = "Erro ao criar produto",
-                    Message = ex.Message
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message
                 };
-                return StatusCode(erro.StatusCode, erro);
+                return StatusCode(erro.Status, erro);
             }
             catch (Exception ex)
             {

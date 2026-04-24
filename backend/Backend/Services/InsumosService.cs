@@ -1,14 +1,9 @@
-﻿using Backend.Exceptions;
-using Backend.Models.Insumos;
-using Backend.Models;
+﻿using Backend.DTOs.Insumos;
+using Backend.Exceptions;
+using Backend.Models.Enums;
+using Backend.Models.Estoque;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
-using Shared.DTOs.Insumos;
-using Shared.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Diagnostics;
 
 namespace Backend.Services
@@ -121,9 +116,9 @@ namespace Backend.Services
                         loteExistente.NFe = dto.NFe;
 
                         // 🔥 ATUALIZAR TIMESTAMP DO LOTE
-                        loteExistente.DataHoraInsercaoRegistro = DateTime.UtcNow;
+                        loteExistente.DataHoraCriacao = DateTime.UtcNow;
 
-                        Debug.WriteLine($"   DataHoraInsercaoRegistro: {loteExistente.DataHoraInsercaoRegistro}");
+                        Debug.WriteLine($"   DataHoraCriacao: {loteExistente.DataHoraCriacao}");
                     }
                     else
                     {
@@ -140,7 +135,7 @@ namespace Backend.Services
                             DataEntrega = dto.DataEntrega,
                             DataValidade = dto.DataValidade,
                             NFe = dto.NFe,
-                            DataHoraInsercaoRegistro = DateTime.UtcNow
+                            DataHoraCriacao = DateTime.UtcNow
                         };
 
                         if (insumoExistente.ItensEstoque == null)
@@ -150,7 +145,7 @@ namespace Backend.Services
 
                         insumoExistente.ItensEstoque.Add(novoLote);
 
-                        Debug.WriteLine($"   DataHoraInsercaoRegistro: {novoLote.DataHoraInsercaoRegistro}");
+                        Debug.WriteLine($"   DataHoraCriacao: {novoLote.DataHoraCriacao}");
                     }
 
                     var quantidadeTotal = insumoExistente.ItensEstoque?.Sum(x => x.Quantidade) ?? 0;
@@ -180,9 +175,9 @@ namespace Backend.Services
                 // ════════════════════════════════════════════════════════════
                 // 5. 🔥 CRÍTICO: ATUALIZAR TIMESTAMP DA ENTIDADE PAI
                 // ════════════════════════════════════════════════════════════
-                insumoExistente.DataAtualizacao = DateTime.UtcNow;
+                insumoExistente.DataHoraAtualizacao = DateTime.UtcNow;
              
-                Debug.WriteLine($"[InsumosService] 🔥 DataAtualizacao atualizado: {insumoExistente.DataAtualizacao}");
+                Debug.WriteLine($"[InsumosService] 🔥 DataHoraAtualizacao atualizado: {insumoExistente.DataHoraAtualizacao}");
 
                 // ════════════════════════════════════════════════════════════
                 // 6. SALVAR VIA REPOSITORY
