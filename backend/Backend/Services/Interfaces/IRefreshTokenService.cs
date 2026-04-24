@@ -1,5 +1,4 @@
 ﻿using Backend.Models;
-using Backend.Models.Usuarios;
 
 namespace Backend.Services.Interfaces
 {

@@ -10,6 +10,6 @@ public class UsuarioResponseDTO
     public string? Sobrenome { get; set; }
     public PermissoesEnum Permissao { get; set; }
     public DateTime DataHoraCriacao { get; set; } = DateTime.UtcNow;
-    public DateTime DataHoraAtualizacao { get; set; }
+    public DateTime DataHoraAtualizacao { get; set; } = DateTime.UtcNow;
     public bool IsDeleted { get; set; } = false;
 }

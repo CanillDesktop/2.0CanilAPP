@@ -2,7 +2,6 @@ using Backend.DTOs.Usuario;
 using Backend.Models;
 using Backend.Services.Interfaces;
 using Microsoft.IdentityModel.Tokens;
-using Serilog;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;

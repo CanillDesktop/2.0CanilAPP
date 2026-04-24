@@ -1,5 +1,6 @@
 ﻿using Backend.DTOs.Usuario;
 using Backend.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
@@ -17,6 +18,7 @@ public class UsuariosController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize]
     [HttpGet("{id}", Name = "GetUsuario")]
     public async Task<ActionResult<UsuarioResponseDTO>> GetById(int id)
     {

@@ -63,17 +63,5 @@ public class CanilAppDbContext : DbContext
         modelBuilder.Entity<RetiradaEstoqueModel>()
             .Property(r => r.IdRetirada)
             .ValueGeneratedOnAdd();
-
-        modelBuilder.Entity<RetiradaEstoqueModel>()
-            .Property(r => r.DataHoraCriacao)
-            .HasDefaultValue(DateTime.UtcNow);
-
-        modelBuilder.Entity<RetiradaEstoqueModel>()
-            .Property(r => r.DataHoraAtualizacao)
-            .HasDefaultValue(DateTime.UtcNow);
-
-        modelBuilder.Entity<RetiradaEstoqueModel>()
-            .Property(r => r.IsDeleted)
-            .HasDefaultValue(false);
     }
 }
