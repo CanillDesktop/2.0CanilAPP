@@ -1,5 +1,4 @@
 ﻿using Backend.Models;
-using Backend.Models.Usuarios;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
 
@@ -28,7 +27,25 @@ namespace Backend.Services
             RevokeRefreshToken(oldToken, newToken);
 
             return await _repository.ReplaceRefreshTokenAsync(oldToken, newToken);
+        }
 
+        public async Task RevokeRefreshTokenAsync(string refreshTokenHash)
+        {
+            var refreshToken = await _repository.GetRefreshTokenAsync(refreshTokenHash);
+
+            if (refreshToken == null || !refreshToken.IsActive)
+            {
+                throw new UnauthorizedAccessException("Sua sessão expirou. Por favor, faça login novamente");
+            }
+
+            RevokeRefreshToken(refreshToken!);
+
+            await _repository.RevokeRefreshTokenAsync(refreshToken!);
+        }
+
+        private static void RevokeRefreshToken(RefreshToken refreshToken)
+        {
+            refreshToken.RevokedAt = DateTime.UtcNow;
         }
 
         private static void RevokeRefreshToken(RefreshToken oldToken, RefreshToken newToken)
@@ -36,5 +53,6 @@ namespace Backend.Services
             oldToken.ReplacedByTokenHash = newToken.TokenHash;
             oldToken.RevokedAt = DateTime.UtcNow;
         }
+
     }
 }

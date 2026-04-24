@@ -1,5 +1,6 @@
 ﻿using Backend.DTOs.Usuario;
 using Backend.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
@@ -17,6 +18,17 @@ public class UsuariosController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize]
+    [HttpGet("{id}", Name = "GetUsuario")]
+    public async Task<ActionResult<UsuarioResponseDTO>> GetById(int id)
+    {
+        var usuario = await _usuariosService.BuscarPorIdAsync(id);
+        if (usuario == null)
+            return NotFound(new { error = "Usuário não encontrado." });
+
+        return Ok(usuario);
+    }
+
     [HttpPost]
     public async Task<ActionResult<UsuarioResponseDTO>> Create([FromBody] UsuarioRequestDTO dto)
     {
@@ -25,10 +37,10 @@ public class UsuariosController : ControllerBase
             var novoUsuario = await _usuariosService.CriarAsync(dto);
 
             if (novoUsuario == null)
-                throw new NullReferenceException();
+                throw new ArgumentNullException();
 
             return new CreatedAtRouteResult("GetUsuario",
-                new { id = novoUsuario.Id}, novoUsuario);
+                new { id = novoUsuario.Id }, novoUsuario);
         }
         catch (InvalidOperationException ex)
         {

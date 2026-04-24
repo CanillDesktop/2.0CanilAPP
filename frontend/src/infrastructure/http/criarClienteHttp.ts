@@ -13,6 +13,7 @@ export function criarClienteHttp(): AxiosInstance {
     baseURL: urlBaseApi,
     headers: { 'Content-Type': 'application/json' },
     timeout: 30_000,
+    withCredentials: true
   });
 
   cliente.interceptors.request.use((config) => {
@@ -29,8 +30,8 @@ export function criarClienteHttp(): AxiosInstance {
       const status = erro.response?.status ?? 0;
       const dados = erro.response?.data as RespostaErroApi | undefined;
       const mensagem =
-        dados && typeof dados.message === 'string'
-          ? dados.message
+        dados && typeof dados.details === 'string'
+          ? dados.details
           : erro.message ?? 'Falha na requisição';
       return Promise.reject(new ErroApi(mensagem, status, dados ?? erro.response?.data));
     },

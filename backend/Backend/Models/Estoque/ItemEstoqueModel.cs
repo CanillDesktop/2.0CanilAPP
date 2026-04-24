@@ -1,5 +1,4 @@
 ﻿using Backend.DTOs.Estoque;
-using Backend.Models.Interfaces;
 using System.Text.Json.Serialization;
 
 namespace Backend.Models.Estoque;

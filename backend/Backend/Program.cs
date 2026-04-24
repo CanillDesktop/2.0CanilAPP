@@ -1,6 +1,5 @@
 using Backend.Context;
 using Backend.Data;
-using Backend.DTOs.Usuario;
 using Backend.Models;
 using Backend.Models.Usuarios;
 using Backend.Repositories;

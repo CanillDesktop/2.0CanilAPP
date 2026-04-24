@@ -1,25 +1,28 @@
 ﻿using Backend.Models.Enums;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.DTOs.Usuario;
 
 public class UsuarioRequestDTO
 {
-    [Required(ErrorMessage = "Nome é obrigatório")]
+    [DisplayName("Primeiro nome")]
+    [Required(ErrorMessage = "{0} é obrigatório")]
     public string PrimeiroNome { get; set; } = string.Empty;
 
     public string? Sobrenome { get; set; }
 
     [Required(ErrorMessage = "Email é obrigatório")]
-    [EmailAddress(ErrorMessage = "Email inválido")]
+    [EmailAddress(ErrorMessage = "Formato de email inválido")]
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Senha é obrigatória")]
     [MinLength(6, ErrorMessage = "Senha deve ter no mínimo 6 caracteres")]
     public string Senha { get; set; } = string.Empty;
 
+    [DisplayName("Permissão")]
     public PermissoesEnum Permissao { get; set; } = PermissoesEnum.LEITURA;
 
-    [Required]
-    public bool IsDeleted { get; set; }
+    [DisplayName("Ativo")]
+    public bool IsDeleted { get; set; } = false;
 }
