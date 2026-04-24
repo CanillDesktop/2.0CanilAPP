@@ -10,11 +10,18 @@ export async function solicitarLoginApi(corpo: CredenciaisLogin): Promise<Respos
   return data;
 }
 
-export type TokenRespostaApi = NonNullable<RespostaLogin['token']>;
+export type TokenRespostaApi = NonNullable<RespostaLogin['accessToken']>;
 
-export async function solicitarRenovacaoTokenApi(refreshToken: string): Promise<TokenRespostaApi> {
-  const cliente = obterClienteHttp();
-  const corpo: CorpoRefresh = { refreshToken };
-  const { data } = await cliente.post<TokenRespostaApi>('/api/Login/refresh', corpo);
-  return data;
+// export async function solicitarRenovacaoTokenApi(refreshToken: string): Promise<TokenRespostaApi> {
+//   const cliente = obterClienteHttp();
+//   const corpo: CorpoRefresh = { refreshToken };
+//   const { data } = await cliente.post<TokenRespostaApi>('/api/Login/refresh', corpo);
+//   return data;
+// }
+
+export async function solicitarRenovacaoTokenApi() {
+//   const cliente = obterClienteHttp();
+//   const corpo: CorpoRefresh = { refreshToken };
+//   const { data } = await cliente.post<TokenRespostaApi>('/api/Login/refresh', corpo);
+//   return data;
 }

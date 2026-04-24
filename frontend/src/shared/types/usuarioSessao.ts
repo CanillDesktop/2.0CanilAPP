@@ -2,8 +2,10 @@
 export type UsuarioSessao = {
   id?: number | null;
   email: string;
-  nome: string;
+  primeiroNome: string;
   sobrenome: string;
   permissao: number;
-  cognitoSub?: string | null;
+  dataHoraCriacao: Date,
+  dataHoraAtualizacao: Date,
+  isDeleted: boolean
 };

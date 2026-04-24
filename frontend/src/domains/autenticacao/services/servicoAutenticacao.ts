@@ -3,7 +3,6 @@ import type { CredenciaisLogin, RespostaLogin } from '../types/tiposAutenticacao
 import {
   atualizarTokens,
   limparSessao,
-  obterRefreshToken,
   salvarSessao,
 } from '../../../shared/services/armazenamentoSessao';
 
@@ -13,13 +12,12 @@ import {
 export const servicoAutenticacao = {
   async entrar(credenciais: CredenciaisLogin): Promise<RespostaLogin> {
     const resposta = await solicitarLoginApi(credenciais);
-    const access = resposta.token?.accessToken;
-    const refresh = resposta.token?.refreshToken;
+    const access = resposta.accessToken;
     const usuario = resposta.usuario;
-    if (!access || !refresh || !usuario) {
+    if (!access || !usuario) {
       throw new Error('Resposta de login incompleta.');
     }
-    salvarSessao(access, refresh, usuario);
+    salvarSessao(access, usuario);
     return resposta;
   },
 
@@ -27,12 +25,12 @@ export const servicoAutenticacao = {
     limparSessao();
   },
 
-  async renovarSePossivel(): Promise<boolean> {
-    const refresh = obterRefreshToken();
-    if (!refresh) return false;
-    const token = await solicitarRenovacaoTokenApi(refresh);
-    if (!token?.accessToken || !token.refreshToken) return false;
-    atualizarTokens(token.accessToken, token.refreshToken);
-    return true;
-  },
+  // async renovarSePossivel(): Promise<boolean> {
+  //   const refresh = obterRefreshToken();
+  //   if (!refresh) return false;
+  //   const token = await solicitarRenovacaoTokenApi(refresh);
+  //   if (!token?.accessToken || !token.refreshToken) return false;
+  //   atualizarTokens(token.accessToken, token.refreshToken);
+  //   return true;
+  // },
 };
