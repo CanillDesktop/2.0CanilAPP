@@ -30,3 +30,11 @@ export function limparSessao(): void {
 export function atualizarAccessToken(accessToken: string): void {
   localStorage.setItem(CHAVE_TOKEN, accessToken);
 }
+
+/** Atualiza o JSON do usuário na sessão sem novo login (ex.: após PUT de perfil). */
+export function mesclarUsuarioArmazenado(atualizacao: Partial<UsuarioSessao>): void {
+  const atual = obterUsuarioArmazenado();
+  const token = obterAccessToken();
+  if (!atual || !token) return;
+  salvarSessao(token, { ...atual, ...atualizacao });
+}

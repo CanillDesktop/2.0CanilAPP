@@ -12,11 +12,10 @@ export function FormularioCadastroUsuario() {
   const [sobrenome, setSobrenome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [permissao, setPermissao] = useState(2);
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
-    const dto: UsuarioCadastroDto = { nome, sobrenome, email, senha, permissao };
+    const dto: UsuarioCadastroDto = { primeiroNome: nome, sobrenome, email, senha };
     await cadastrar(dto);
   }
 
@@ -45,13 +44,11 @@ export function FormularioCadastroUsuario() {
         Senha
         <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} minLength={6} required />
       </label>
-      <label>
-        Permissão
-        <select value={permissao} onChange={(e) => setPermissao(Number(e.target.value))}>
-          <option value={1}>Administrador</option>
-          <option value={2}>Leitura</option>
-        </select>
-      </label>
+      <p className="formulario-rodape" style={{ marginTop: '0.5rem' }}>
+        Enquanto o sistema tiver menos de <strong>dois</strong> usuários cadastrados no total, novas contas recebem
+        permissão de <strong>Administrador</strong> automaticamente. Depois disso, a permissão padrão é{' '}
+        <strong>Leitura</strong>; um administrador pode alterar isso em Usuários.
+      </p>
       <button type="submit" disabled={carregando}>
         Salvar
       </button>
