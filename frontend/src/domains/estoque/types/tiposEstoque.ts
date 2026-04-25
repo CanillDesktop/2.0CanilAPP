@@ -12,3 +12,20 @@ export type RetiradaEstoqueDto = {
   quantidade: number;
   dataHoraInsercaoRegistro: string;
 };
+
+export type RetiradaRequest = {
+  loteId: string;
+  quantidade: number;
+  origem: string;
+  destino: string;
+};
+
+export type RetiradaNavegacaoState = {
+  produtoId: number;
+  produtoNome: string;
+  codItem: string;
+  loteId: string;
+  loteCodigo: string;
+  quantidadeDisponivel: number;
+  retornoRota?: string;
+};

@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarregamento';
 import { PainelErro } from '../../../shared/components/PainelErro';
+import { LoteSection } from '../components/LoteSection';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
 import { useProdutoDetalhe } from '../hooks/useProdutos';
 
 export function PaginaDetalheProduto() {
   const params = useParams();
+  const location = useLocation();
   const id = Number(params.id);
   const navegar = useNavigate();
   const { estado, carregar } = useProdutoDetalhe(Number.isFinite(id) ? id : undefined);
@@ -14,7 +16,7 @@ export function PaginaDetalheProduto() {
 
   useEffect(() => {
     void carregar();
-  }, [carregar]);
+  }, [carregar, location.search]);
 
   async function aoExcluir() {
     if (!Number.isFinite(id)) return;
@@ -49,22 +51,13 @@ export function PaginaDetalheProduto() {
             <dt>Nível mínimo</dt>
             <dd>{p.itemNivelEstoque.nivelMinimoEstoque}</dd>
           </dl>
-          <h2>Lotes</h2>
-          <ul>
-            {p.itensEstoque.map((l) => (
-              <li key={`${l.lote}-${l.codItem}`}>
-                Lote {l.lote}: {l.quantidade} un. (validade {l.dataValidade ?? '—'})
-              </li>
-            ))}
-          </ul>
-          <div className="linha-botoes">
-            <button type="button" onClick={aoExcluir}>
-              Excluir
-            </button>
-            <Link className="botao-secundario" to={`/estoque/lotes/novo?idItem=${p.idItem}&codItem=${encodeURIComponent(p.codItem)}`}>
-              Adicionar lote
-            </Link>
-          </div>
+          <LoteSection
+            idItem={p.idItem}
+            codItem={p.codItem}
+            produtoNome={p.nomeItem}
+            lotesOriginais={p.itensEstoque}
+            onExcluirProduto={aoExcluir}
+          />
         </>
       )}
     </section>
