@@ -1,5 +1,9 @@
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
-import { Box, Button, CssBaseline, IconButton, Stack, Tab, Tabs, TextField, ThemeProvider, Typography, createTheme, useMediaQuery, useTheme } from '@mui/material';
+import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
+import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
+import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
+import { Box, Button, CssBaseline, IconButton, Stack, ThemeProvider, Typography, createTheme, useMediaQuery, useTheme } from '@mui/material';
+import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState, type FormEvent, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
@@ -7,7 +11,9 @@ import { mapearPapelUsuario } from '../../../shared/types/papelUsuario';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
 import { listarProdutosApi } from '../../produtos/api/produtosApi';
-import { DataTableEstoque } from '../components/DataTableEstoque';
+import { DesktopEstoque } from '../components/DesktopEstoque';
+import { MobileEstoque } from '../components/MobileEstoque';
+import type { AcaoRapida } from '../components/QuickActions';
 import { SidebarEstoque } from '../components/SidebarEstoque';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 
@@ -31,6 +37,7 @@ const temaDashboard = createTheme({
   },
 });
 
+const MotionBox = motion(Box);
 const CHAVE_ABA_ESTOQUE = 'canipapp_estoque_aba_tipo';
 
 function lerAbaEstoqueSalva(): number {
@@ -44,17 +51,20 @@ function lerAbaEstoqueSalva(): number {
   return 0;
 }
 
-export function PaginaListagemEstoque() {
+export function DashboardPage() {
   const navigate = useNavigate();
-  const { usuario } = useAutenticacao();
+  const { usuario, sair } = useAutenticacao();
   const papelUsuario = mapearPapelUsuario(usuario?.permissao);
   const [filtroNome, setFiltroNome] = useState('');
   const [abaTipo, setAbaTipo] = useState(lerAbaEstoqueSalva);
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
   const [linhasOperacionais, setLinhasOperacionais] = useState<LinhaOperacionalEstoque[]>([]);
+  const [produtosAVencer, setProdutosAVencer] = useState(0);
   const [drawerAbertoMobile, setDrawerAbertoMobile] = useState(false);
+  const [emTransicao, setEmTransicao] = useState(false);
   const theme = useTheme();
+  const ehMobileLayoutConteudo = useMediaQuery(theme.breakpoints.down('sm'));
   const ehMobileMenu = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
@@ -79,6 +89,18 @@ export function PaginaListagemEstoque() {
           ...medicamentos.map((item) => ({ ...item, origem: 'medicamento' as const })),
           ...insumos.map((item) => ({ ...item, origem: 'insumo' as const })),
         ];
+
+        const idsComVencimentoProximo = new Set<number>();
+        itensComOrigem.forEach((item) => {
+          item.itensEstoque.forEach((lote) => {
+            if (!lote.dataValidade) return;
+            const validade = new Date(lote.dataValidade);
+            if (Number.isNaN(validade.getTime())) return;
+            if (validade >= hoje && validade <= limiteVencimento) {
+              idsComVencimentoProximo.add(item.idItem);
+            }
+          });
+        });
 
         const itens = itensComOrigem.map((item) => {
           const quantidadeAtual = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
@@ -119,6 +141,7 @@ export function PaginaListagemEstoque() {
 
         if (!ativo) return;
         setLinhasOperacionais(itens);
+        setProdutosAVencer(idsComVencimentoProximo.size);
       } catch {
         if (!ativo) return;
         setErroCarregamento('Nao foi possivel carregar os estoques atuais do backend.');
@@ -132,6 +155,14 @@ export function PaginaListagemEstoque() {
       ativo = false;
     };
   }, []);
+
+  function navegarComTransicao(rota: string) {
+    setEmTransicao(true);
+    window.setTimeout(() => {
+      navigate(rota);
+      setEmTransicao(false);
+    }, 160);
+  }
 
   function aoConsultar(e: FormEvent) {
     e.preventDefault();
@@ -151,6 +182,10 @@ export function PaginaListagemEstoque() {
     else if (item.origem === 'medicamento') navigate(`/medicamentos/${item.id}`);
     else navigate(`/insumos/${item.id}`);
   }
+
+  const totalBaixoEstoque = linhasOperacionais.filter((item) => item.quantidade < item.minimo).length;
+  const itensAbaixoMinimo = linhasOperacionais.filter((item) => item.quantidade < item.minimo);
+  const itensProximoVencimento = linhasOperacionais.filter((item) => item.status === 'proximo_vencimento');
 
   const contagemPorOrigem = useMemo(() => {
     let produtos = 0;
@@ -174,6 +209,32 @@ export function PaginaListagemEstoque() {
     }
     return lista;
   }, [linhasOperacionais, abaTipo, filtroNome]);
+
+  const acoesRapidas: AcaoRapida[] = [
+    {
+      id: 'cadastrar-produto',
+      titulo: 'Cadastrar Produto',
+      descricao: 'Abrir formulario de cadastro',
+      icone: 'produto',
+      onClick: () => navegarComTransicao('/produtos/novo'),
+    },
+    {
+      id: 'entrada-estoque',
+      titulo: 'Entrada de Estoque',
+      descricao: 'Registrar novo lote',
+      icone: 'entrada',
+      onClick: () => navegarComTransicao('/estoque/lotes/novo'),
+    },
+    {
+      id: 'saida-estoque',
+      titulo: 'Saida de Estoque',
+      descricao: 'Registrar retirada',
+      icone: 'saida',
+      onClick: () => navegarComTransicao('/estoque/retirada'),
+    },
+  ];
+
+  const totalItens = linhasOperacionais.length;
 
   return (
     <ThemeProvider theme={temaDashboard}>
@@ -203,78 +264,73 @@ export function PaginaListagemEstoque() {
             )}
             <Button
               variant="outlined"
+              color="inherit"
               sx={{ borderColor: 'rgba(148,163,184,0.35)', color: '#e2e8f0' }}
-              onClick={() => navigate('/dashboard')}
+              onClick={() => {
+                sair();
+                navigate('/login');
+              }}
             >
-              Voltar ao inicio
+              Sair
             </Button>
           </Stack>
 
           <Box sx={{ mb: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 700, color: '#e2e8f0' }}>
-              Estoque
+              Ola, {usuario?.primeiroNome ?? 'equipe'}
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(203, 213, 225, 0.85)' }}>
-              Visao operacional com filtros e tabela de itens
+              {ehMobileLayoutConteudo ? 'Operação de estoque' : 'Visão analítica do estoque'}
             </Typography>
           </Box>
 
-          <Box sx={{ mt: 1 }}>
-            <Stack direction="row" sx={{ justifyContent: 'space-between', mb: 1.4, gap: 1, flexWrap: 'wrap' }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#e2e8f0' }}>
-                Operacao de estoque
-              </Typography>
-              <Box
-                component="form"
-                onSubmit={aoConsultar}
-                sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}
-              >
-                <TextField
-                  value={filtroNome}
-                  onChange={(e) => setFiltroNome(e.target.value)}
-                  placeholder="Consultar item por nome"
-                  size="small"
-                  sx={{
-                    minWidth: 240,
-                    '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#0f172a' },
-                    '& .MuiInputBase-input': { color: '#e2e8f0' },
-                  }}
+          <MotionBox
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: emTransicao ? 0.7 : 1, y: 0 }}
+            transition={{ duration: 0.32 }}
+            sx={{ mt: 1 }}
+          >
+            <Box sx={{ p: { xs: 0, sm: 0 } }}>
+              {ehMobileLayoutConteudo ? (
+                <MobileEstoque
+                  carregando={carregando}
+                  erroCarregamento={erroCarregamento}
+                  totalItens={totalItens}
+                  totalBaixoEstoque={totalBaixoEstoque}
+                  produtosAVencer={produtosAVencer}
+                  itensAbaixoMinimo={itensAbaixoMinimo}
+                  itensProximoVencimento={itensProximoVencimento}
+                  acoesRapidas={acoesRapidas}
+                  iconeTotal={<WarehouseOutlinedIcon />}
+                  iconeBaixo={<ReportProblemOutlinedIcon />}
+                  iconeVencer={<SwapHorizOutlinedIcon />}
+                  onItemClick={navegarParaDetalhe}
                 />
-                <Button type="submit" variant="contained">
-                  Consultar
-                </Button>
-              </Box>
-            </Stack>
-
-            <Tabs
-              value={abaTipo}
-              onChange={aoMudarAba}
-              textColor="inherit"
-              indicatorColor="primary"
-              variant="scrollable"
-              scrollButtons="auto"
-              sx={{
-                mb: 2,
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
-                '& .MuiTab-root': { color: 'rgba(226,232,240,0.72)' },
-                '& .Mui-selected': { color: '#e2e8f0' },
-              }}
-            >
-              <Tab label={`Produtos (${contagemPorOrigem.produtos})`} sx={{ textTransform: 'none', fontWeight: 500 }} />
-              <Tab
-                label={`Medicamentos (${contagemPorOrigem.medicamentos})`}
-                sx={{ textTransform: 'none', fontWeight: 500 }}
-              />
-              <Tab label={`Insumos (${contagemPorOrigem.insumos})`} sx={{ textTransform: 'none', fontWeight: 500 }} />
-            </Tabs>
-
-            {erroCarregamento ? (
-              <Typography variant="body2" color="error" sx={{ mb: 2 }}>
-                {erroCarregamento}
-              </Typography>
-            ) : null}
-            <DataTableEstoque linhas={linhasFiltradas} carregando={carregando} aoClicarItem={navegarParaDetalhe} />
-          </Box>
+              ) : (
+                <DesktopEstoque
+                  carregando={carregando}
+                  erroCarregamento={erroCarregamento}
+                  linhasFiltradas={linhasFiltradas}
+                  filtroNome={filtroNome}
+                  onFiltroNomeChange={setFiltroNome}
+                  onConsultar={aoConsultar}
+                  abaTipo={abaTipo}
+                  onAbaChange={aoMudarAba}
+                  contagemPorOrigem={contagemPorOrigem}
+                  totalItens={totalItens}
+                  totalBaixoEstoque={totalBaixoEstoque}
+                  produtosAVencer={produtosAVencer}
+                  itensAbaixoMinimo={itensAbaixoMinimo}
+                  itensProximoVencimento={itensProximoVencimento}
+                  acoesRapidas={acoesRapidas}
+                  iconeTotal={<WarehouseOutlinedIcon />}
+                  iconeBaixo={<ReportProblemOutlinedIcon />}
+                  iconeVencer={<SwapHorizOutlinedIcon />}
+                  onItemClick={navegarParaDetalhe}
+                />
+              )}
+            </Box>
+          </MotionBox>
         </Box>
       </Box>
     </ThemeProvider>

@@ -138,13 +138,14 @@ export function PaginaListagemProdutos() {
           <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
             <Button
               startIcon={<ArrowBackIcon />}
-              onClick={() => navigate(-1)}
+              variant="outlined"
+              onClick={() => navigate('/dashboard')}
               sx={{
                 textTransform: 'none',
                 borderRadius: 2,
               }}
             >
-              Voltar
+              Voltar ao inicio
             </Button>
             <Typography variant="h5" sx={{ fontWeight: 700, color: '#e2e8f0' }}>
               Produtos

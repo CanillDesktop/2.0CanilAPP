@@ -2,6 +2,17 @@ import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 
 export type { ItemEstoqueDto };
 
+export type LinhaOperacionalEstoque = {
+  id: number;
+  nome: string;
+  quantidade: number;
+  minimo: number;
+  validade: string;
+  origem: 'produto' | 'medicamento' | 'insumo';
+  status: 'ok' | 'baixo' | 'critico' | 'proximo_vencimento';
+  ultimaMovimentacao: string;
+};
+
 export type RetiradaEstoqueDto = {
   idRetirada: number;
   codItem: string;

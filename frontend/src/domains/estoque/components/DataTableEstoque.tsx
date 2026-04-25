@@ -7,22 +7,12 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
-
-export type LinhaOperacionalEstoque = {
-  id: number;
-  nome: string;
-  quantidade: number;
-  minimo: number;
-  origem: 'produto' | 'medicamento' | 'insumo';
-  status: 'ok' | 'baixo' | 'critico' | 'proximo_vencimento';
-  ultimaMovimentacao: string;
-};
+import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 
 function obterCorStatus(status: LinhaOperacionalEstoque['status']): 'success' | 'warning' | 'error' {
   if (status === 'ok') return 'success';
@@ -37,6 +27,11 @@ function labelStatus(status: LinhaOperacionalEstoque['status']) {
   return 'Critico';
 }
 
+const sxCelula = {
+  color: '#e2e8f0',
+  borderColor: 'rgba(148, 163, 184, 0.12)',
+};
+
 export function DataTableEstoque({
   linhas,
   carregando = false,
@@ -46,89 +41,76 @@ export function DataTableEstoque({
   carregando?: boolean;
   aoClicarItem?: (linha: LinhaOperacionalEstoque) => void;
 }) {
-  const theme = useTheme();
-  const ehMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
   if (carregando) {
     return (
       <Stack spacing={1.2}>
-        <Skeleton variant="rounded" height={58} />
-        <Skeleton variant="rounded" height={58} />
-        <Skeleton variant="rounded" height={58} />
+        <Skeleton variant="rounded" height={58} sx={{ bgcolor: 'rgba(148,163,184,0.12)' }} />
+        <Skeleton variant="rounded" height={58} sx={{ bgcolor: 'rgba(148,163,184,0.12)' }} />
+        <Skeleton variant="rounded" height={58} sx={{ bgcolor: 'rgba(148,163,184,0.12)' }} />
       </Stack>
     );
   }
 
   if (!linhas.length) {
     return (
-      <Card sx={{ borderRadius: 3 }}>
+      <Card sx={{ borderRadius: 3, bgcolor: '#0f172a', border: '1px solid rgba(148, 163, 184, 0.12)' }}>
         <CardContent>
-          <Typography variant="h6">Sem dados operacionais no momento</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Novas movimentacoes aparecerao aqui assim que houver atualizacao de estoque.
+          <Typography variant="h6" sx={{ color: '#e2e8f0' }}>
+            Sem dados neste filtro
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(203, 213, 225, 0.85)' }}>
+            Ajuste a aba ou o nome consultado para ver outros itens.
           </Typography>
         </CardContent>
       </Card>
     );
   }
 
-  if (ehMobile) {
-    return (
-      <Stack sx={{ gap: 1.2 }}>
-        {linhas.map((linha) => (
-          <Card
-            key={linha.id}
-            sx={{ borderRadius: 3, cursor: aoClicarItem ? 'pointer' : 'default' }}
-            onClick={() => aoClicarItem?.(linha)}
-          >
-            <CardContent>
-              <Stack spacing={0.8}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  {linha.nome}
-                </Typography>
-                <Typography variant="body2">Quantidade: {linha.quantidade}</Typography>
-                <Typography variant="body2">Minimo: {linha.minimo}</Typography>
-                <Typography variant="body2">Ultima movimentacao: {linha.ultimaMovimentacao}</Typography>
-                <Chip
-                  label={labelStatus(linha.status)}
-                  color={obterCorStatus(linha.status)}
-                  size="small"
-                  sx={{ alignSelf: 'flex-start' }}
-                />
-              </Stack>
-            </CardContent>
-          </Card>
-        ))}
-      </Stack>
-    );
-  }
-
   return (
-    <Card sx={{ borderRadius: 3 }}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Nome</TableCell>
-            <TableCell>Quantidade</TableCell>
-            <TableCell>Minimo</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Ultima movimentacao</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {linhas.map((linha) => (
-            <TableRow key={linha.id} hover onClick={() => aoClicarItem?.(linha)} sx={{ cursor: 'pointer' }}>
-              <TableCell>{linha.nome}</TableCell>
-              <TableCell>{linha.quantidade}</TableCell>
-              <TableCell>{linha.minimo}</TableCell>
-              <TableCell>
-                <Chip label={labelStatus(linha.status)} color={obterCorStatus(linha.status)} size="small" />
-              </TableCell>
-              <TableCell>{linha.ultimaMovimentacao}</TableCell>
+    <Card
+      sx={{
+        borderRadius: 3,
+        bgcolor: '#0f172a',
+        border: '1px solid rgba(148, 163, 184, 0.12)',
+        overflow: 'hidden',
+      }}
+    >
+      <TableContainer sx={{ overflowX: 'auto' }}>
+        <Table size="small" sx={{ minWidth: 720 }}>
+          <TableHead>
+            <TableRow sx={{ bgcolor: 'rgba(15, 23, 42, 0.95)' }}>
+              <TableCell sx={{ ...sxCelula, fontWeight: 700 }}>Nome</TableCell>
+              <TableCell sx={{ ...sxCelula, fontWeight: 700 }}>Quantidade</TableCell>
+              <TableCell sx={{ ...sxCelula, fontWeight: 700 }}>Data de validade</TableCell>
+              <TableCell sx={{ ...sxCelula, fontWeight: 700 }}>Status</TableCell>
+              <TableCell sx={{ ...sxCelula, fontWeight: 700 }}>Última movimentação</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {linhas.map((linha) => (
+              <TableRow
+                key={`${linha.origem}-${linha.id}`}
+                hover
+                onClick={() => aoClicarItem?.(linha)}
+                sx={{
+                  cursor: aoClicarItem ? 'pointer' : 'default',
+                  '&:hover': { bgcolor: 'rgba(30, 41, 59, 0.65)' },
+                }}
+              >
+                <TableCell sx={sxCelula}>{linha.nome}</TableCell>
+                <TableCell sx={sxCelula}>{linha.quantidade}</TableCell>
+                <TableCell sx={sxCelula}>{linha.validade}</TableCell>
+                <TableCell sx={sxCelula}>
+                  <Chip label={labelStatus(linha.status)} color={obterCorStatus(linha.status)} size="small" />
+                </TableCell>
+                <TableCell sx={sxCelula}>{linha.ultimaMovimentacao}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </Card>
   );
 }
+
+export type { LinhaOperacionalEstoque } from '../types/tiposEstoque';

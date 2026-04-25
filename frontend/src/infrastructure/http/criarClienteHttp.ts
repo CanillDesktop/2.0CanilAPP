@@ -32,10 +32,13 @@ export function criarClienteHttp(): AxiosInstance {
     (erro) => {
       const status = erro.response?.status ?? 0;
       const dados = erro.response?.data as RespostaErroApi | undefined;
-      const mensagem =
+      let mensagem =
         dados && typeof dados.details === 'string'
           ? dados.details
           : erro.message ?? 'Falha na requisição';
+      if (status === 403) {
+        mensagem = 'Você não tem permissão para acessar este recurso.';
+      }
       return Promise.reject(new ErroApi(mensagem, status, dados ?? erro.response?.data));
     },
   );

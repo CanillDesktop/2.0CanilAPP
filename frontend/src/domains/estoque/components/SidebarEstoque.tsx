@@ -1,10 +1,10 @@
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicationOutlinedIcon from '@mui/icons-material/MedicationOutlined';
+import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
-import SyncOutlinedIcon from '@mui/icons-material/SyncOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
-import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
 import type { ReactElement } from 'react';
 import {
   Box,
@@ -17,6 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
+import type { PapelUsuarioApp } from '../../../shared/types/papelUsuario';
 
 export const larguraSidebar = 252;
 
@@ -24,27 +25,40 @@ type ItemNavegacao = {
   titulo: string;
   rota: string;
   icone: ReactElement;
+  papeis?: PapelUsuarioApp[];
 };
 
 const itensNavegacao: ItemNavegacao[] = [
-  { titulo: 'Dashboard', rota: '/estoque', icone: <DashboardOutlinedIcon /> },
+  { titulo: 'Dashboard', rota: '/dashboard', icone: <DashboardOutlinedIcon /> },
   { titulo: 'Produtos', rota: '/produtos', icone: <Inventory2OutlinedIcon /> },
   { titulo: 'Medicamentos', rota: '/medicamentos', icone: <MedicationOutlinedIcon /> },
   { titulo: 'Insumos', rota: '/insumos', icone: <ScienceOutlinedIcon /> },
   { titulo: 'Estoque', rota: '/estoque', icone: <WarehouseOutlinedIcon /> },
-  { titulo: 'Sincronizacao', rota: '/sincronizacao', icone: <SyncOutlinedIcon /> },
-  { titulo: 'Usuarios', rota: '/usuarios', icone: <GroupOutlinedIcon /> },
+  { titulo: 'Meu perfil', rota: '/perfil', icone: <PersonOutlinedIcon /> },
+  { titulo: 'Usuários', rota: '/usuarios', icone: <PeopleOutlinedIcon />, papeis: ['ADMIN'] },
 ];
+
+function itensVisiveisParaPapel(papel: PapelUsuarioApp): ItemNavegacao[] {
+  return itensNavegacao.filter((item) => !item.papeis || item.papeis.includes(papel));
+}
 
 type SidebarEstoqueProps = {
   abertoMobile: boolean;
   aoFecharMobile: () => void;
   ehMobile: boolean;
+  papelUsuario: PapelUsuarioApp;
 };
 
-function ConteudoSidebar({ aoClicarItem }: { aoClicarItem?: () => void }) {
+function ConteudoSidebar({
+  aoClicarItem,
+  papelUsuario,
+}: {
+  aoClicarItem?: () => void;
+  papelUsuario: PapelUsuarioApp;
+}) {
   const location = useLocation();
   const navigate = useNavigate();
+  const itens = itensVisiveisParaPapel(papelUsuario);
 
   return (
     <Box sx={{ width: larguraSidebar, bgcolor: 'background.paper', height: '100%' }}>
@@ -54,7 +68,7 @@ function ConteudoSidebar({ aoClicarItem }: { aoClicarItem?: () => void }) {
         </Typography>
       </Toolbar>
       <List sx={{ px: 1.2 }}>
-        {itensNavegacao.map((item) => {
+        {itens.map((item) => {
           const ativo = location.pathname === item.rota || location.pathname.startsWith(`${item.rota}/`);
 
           return (
@@ -77,10 +91,10 @@ function ConteudoSidebar({ aoClicarItem }: { aoClicarItem?: () => void }) {
   );
 }
 
-export function SidebarEstoque({ abertoMobile, aoFecharMobile, ehMobile }: SidebarEstoqueProps) {
+export function SidebarEstoque({ abertoMobile, aoFecharMobile, ehMobile, papelUsuario }: SidebarEstoqueProps) {
   return ehMobile ? (
     <Drawer open={abertoMobile} onClose={aoFecharMobile} variant="temporary">
-      <ConteudoSidebar aoClicarItem={aoFecharMobile} />
+      <ConteudoSidebar aoClicarItem={aoFecharMobile} papelUsuario={papelUsuario} />
     </Drawer>
   ) : (
     <Drawer
@@ -101,7 +115,7 @@ export function SidebarEstoque({ abertoMobile, aoFecharMobile, ehMobile }: Sideb
         },
       }}
     >
-      <ConteudoSidebar />
+      <ConteudoSidebar papelUsuario={papelUsuario} />
     </Drawer>
   );
 }

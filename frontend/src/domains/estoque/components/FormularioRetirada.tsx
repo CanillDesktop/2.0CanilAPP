@@ -13,6 +13,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import CheckIcon from '@mui/icons-material/Check';
+import SaveIcon from '@mui/icons-material/Save';
+import { LoadingButton } from '@mui/lab';
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
@@ -28,7 +31,17 @@ export function FormularioRetirada() {
   const [quantidade, setQuantidade] = useState(0);
   const [erroValidacao, setErroValidacao] = useState<string | null>(null);
   const [confirmarAberto, setConfirmarAberto] = useState(false);
-  const [sucesso, setSucesso] = useState(false);
+  const [submitSucesso, setSubmitSucesso] = useState(false);
+  const [submitErro, setSubmitErro] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   const quantidadeDisponivel = data?.quantidadeDisponivel ?? 0;
   const retiradaValida = useMemo(() => {
@@ -45,10 +58,17 @@ export function FormularioRetirada() {
   }
 
   async function confirmarRetirada() {
+    if (carregando) return;
     const validacao = validarFormulario();
     if (validacao) {
       setErroValidacao(validacao);
       setConfirmarAberto(false);
+      setSubmitErro(true);
+      setSnackbar({
+        open: true,
+        message: validacao,
+        severity: 'error',
+      });
       return;
     }
 
@@ -73,12 +93,26 @@ export function FormularioRetirada() {
     const ok = await registrarRetirada(dto);
     setConfirmarAberto(false);
     if (ok) {
-      setSucesso(true);
+      setSubmitSucesso(true);
+      setSubmitErro(false);
+      setSnackbar({
+        open: true,
+        message: 'Retirada realizada com sucesso.',
+        severity: 'success',
+      });
       window.setTimeout(() => {
         if (data?.retornoRota) navegar(`${data.retornoRota}?refresh=${Date.now()}`);
         else navegar(-1);
       }, 850);
+      return;
     }
+    setSubmitErro(true);
+    setSubmitSucesso(false);
+    setSnackbar({
+      open: true,
+      message: erro ?? 'Erro ao registrar retirada.',
+      severity: 'error',
+    });
   }
 
   const campoSx = {
@@ -187,17 +221,24 @@ export function FormularioRetirada() {
           />
 
           <Box sx={{ display: 'flex' }}>
-            <Button
+            <LoadingButton
+              loading={carregando}
+              loadingPosition="start"
+              startIcon={submitSucesso ? <CheckIcon /> : <SaveIcon />}
+              color={submitSucesso ? 'success' : submitErro ? 'error' : 'primary'}
               variant="contained"
               fullWidth
               size="large"
               onClick={() => {
+                if (carregando) return;
                 const validacao = validarFormulario();
                 if (validacao) {
                   setErroValidacao(validacao);
+                  setSubmitErro(true);
                   return;
                 }
                 setErroValidacao(null);
+                setSubmitErro(false);
                 setConfirmarAberto(true);
               }}
               disabled={!retiradaValida || carregando}
@@ -216,8 +257,8 @@ export function FormularioRetirada() {
                 },
               }}
             >
-              {carregando ? 'Confirmando...' : 'Confirmar retirada'}
-            </Button>
+              {submitSucesso ? 'Retirada confirmada' : 'Confirmar retirada'}
+            </LoadingButton>
           </Box>
         </Stack>
       </CardContent>
@@ -245,7 +286,10 @@ export function FormularioRetirada() {
           <Button onClick={() => setConfirmarAberto(false)} sx={{ color: '#93c5fd' }}>
             Cancelar
           </Button>
-          <Button
+          <LoadingButton
+            loading={carregando}
+            loadingPosition="start"
+            startIcon={<SaveIcon />}
             variant="contained"
             onClick={confirmarRetirada}
             disabled={carregando}
@@ -255,13 +299,21 @@ export function FormularioRetirada() {
             }}
           >
             Confirmar
-          </Button>
+          </LoadingButton>
         </DialogActions>
       </Dialog>
 
-      <Snackbar open={sucesso} autoHideDuration={2000} onClose={() => setSucesso(false)}>
-        <Alert severity="success" onClose={() => setSucesso(false)}>
-          Retirada realizada com sucesso
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((estado) => ({ ...estado, open: false }))}
+      >
+        <Alert
+          severity={snackbar.severity}
+          variant="filled"
+          onClose={() => setSnackbar((estado) => ({ ...estado, open: false }))}
+        >
+          {snackbar.message}
         </Alert>
       </Snackbar>
     </Card>
