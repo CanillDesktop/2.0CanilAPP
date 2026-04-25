@@ -13,8 +13,14 @@ public class UsuarioAtualizacaoRequestDTO
     public string PrimeiroNome { get; set; } = string.Empty;
 
     [DisplayName("Sobrenome")]
-    [StringLength(80, MinimumLength = 2, ErrorMessage = "{0} deve ter entre 2 e 80 caracteres")]
+    [MaxLength(80, ErrorMessage = "{0} deve ter no máximo 80 caracteres")]
     public string? Sobrenome { get; set; }
+
+    [DisplayName("Email")]
+    [Required(ErrorMessage = "{0} é obrigatório")]
+    [EmailAddress(ErrorMessage = "{0} inválido")]
+    [MaxLength(255, ErrorMessage = "{0} deve ter no máximo 255 caracteres")]
+    public string Email { get; set; } = string.Empty;
 
     /// <summary>Somente administrador alterando outro usuário; demais requisições ignoram.</summary>
     public PermissoesEnum? Permissao { get; set; }

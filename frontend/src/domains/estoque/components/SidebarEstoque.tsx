@@ -2,7 +2,6 @@ import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicationOutlinedIcon from '@mui/icons-material/MedicationOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import type { ReactElement } from 'react';
@@ -34,8 +33,7 @@ const itensNavegacao: ItemNavegacao[] = [
   { titulo: 'Medicamentos', rota: '/medicamentos', icone: <MedicationOutlinedIcon /> },
   { titulo: 'Insumos', rota: '/insumos', icone: <ScienceOutlinedIcon /> },
   { titulo: 'Estoque', rota: '/estoque', icone: <WarehouseOutlinedIcon /> },
-  { titulo: 'Meu perfil', rota: '/perfil', icone: <PersonOutlinedIcon /> },
-  { titulo: 'Usuários', rota: '/usuarios', icone: <PeopleOutlinedIcon />, papeis: ['ADMIN'] },
+  { titulo: 'Usuários', rota: '/usuarios', icone: <PeopleOutlinedIcon /> },
 ];
 
 function itensVisiveisParaPapel(papel: PapelUsuarioApp): ItemNavegacao[] {

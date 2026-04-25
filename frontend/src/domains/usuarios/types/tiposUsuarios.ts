@@ -27,8 +27,14 @@ export type UsuarioCriadoDto = {
 export type UsuarioAtualizacaoDto = {
   primeiroNome: string;
   sobrenome?: string | null;
+  email: string;
   /** Só aplicado quando um administrador edita outro usuário. */
   permissao?: number;
+};
+
+export type TrocarSenhaDto = {
+  senhaAtual: string;
+  senhaNova: string;
 };
 
 export type ConfirmacaoSenhaDto = {

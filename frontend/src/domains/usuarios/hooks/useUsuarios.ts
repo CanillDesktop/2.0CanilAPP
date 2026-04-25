@@ -1,10 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
+import { mesclarUsuarioArmazenado } from '../../../shared/services/armazenamentoSessao';
 import type { UsuarioSessao } from '../../../shared/types/usuarioSessao';
 import { usuariosService } from '../services/usuariosService';
 import type {
   ConfirmacaoSenhaDto,
   FiltrosUsuarios,
+  TrocarSenhaDto,
   UsuarioAtualizacaoDto,
   UsuarioCadastroComConfirmacaoDto,
   UsuarioCriadoDto,
@@ -65,15 +67,39 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
     setErro(null);
     setSucesso(null);
     try {
-        const atualizado = await usuariosService.atualizar(id, dto);
+      const atualizado = await usuariosService.atualizar(id, dto);
       setUsuarios((atual) =>
         atual.some((u) => u.id === id) ? atual.map((u) => (u.id === id ? atualizado : u)) : atual,
       );
+      if (usuario?.id === id) {
+        mesclarUsuarioArmazenado({
+          primeiroNome: atualizado.primeiroNome,
+          sobrenome: atualizado.sobrenome ?? '',
+          email: atualizado.email,
+          dataHoraAtualizacao: new Date(atualizado.dataHoraAtualizacao),
+        });
+      }
       setSucesso('Dados do usuário atualizados com sucesso.');
       return atualizado;
     } catch (e) {
       setErro(extrairMensagemErroApi(e));
       return null;
+    } finally {
+      setCarregandoAcao(false);
+    }
+  }, [usuario?.id]);
+
+  const trocarSenha = useCallback(async (id: number, dto: TrocarSenhaDto): Promise<boolean> => {
+    setCarregandoAcao(true);
+    setErro(null);
+    setSucesso(null);
+    try {
+      await usuariosService.trocarSenha(id, dto);
+      setSucesso('Senha alterada com sucesso.');
+      return true;
+    } catch (e) {
+      setErro(extrairMensagemErroApi(e));
+      return false;
     } finally {
       setCarregandoAcao(false);
     }
@@ -153,6 +179,7 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
     limparFeedback,
     carregarUsuarios,
     atualizarUsuario,
+    trocarSenha,
     criarUsuario,
     executarAcaoCritica,
     filtrarUsuarios,

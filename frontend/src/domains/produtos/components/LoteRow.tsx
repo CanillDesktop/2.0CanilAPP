@@ -45,7 +45,14 @@ export function LoteRow({ lote, isMobile, onRetirar }: LoteRowProps) {
               fullWidth
               onClick={() => onRetirar(lote)}
               disabled={lote.quantidade <= 0}
-              sx={{ mt: 0.5 }}
+              sx={{
+                mt: 0.5,
+                color: '#e2e8f0',
+                backgroundColor: '#2563eb',
+                '&:hover': {
+                  backgroundColor: '#1d4ed8',
+                },
+              }}
             >
               Retirar
             </Button>

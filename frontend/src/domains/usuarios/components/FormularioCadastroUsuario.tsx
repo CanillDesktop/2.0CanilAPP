@@ -45,8 +45,9 @@ export function FormularioCadastroUsuario() {
         <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} minLength={6} required />
       </label>
       <p className="formulario-rodape" style={{ marginTop: '0.5rem' }}>
-        Sua conta será criada com permissão <strong>Leitura</strong>. Para virar administrador, outro admin precisa
-        alterar sua permissão em Usuários.
+        Enquanto o sistema tiver menos de <strong>dois</strong> usuários cadastrados no total, novas contas recebem
+        permissão de <strong>Administrador</strong> automaticamente. Depois disso, a permissão padrão é{' '}
+        <strong>Leitura</strong>; um administrador pode alterar isso em Usuários.
       </p>
       <button type="submit" disabled={carregando}>
         Salvar

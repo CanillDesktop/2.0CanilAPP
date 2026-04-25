@@ -35,8 +35,8 @@ export function AlertaCard({
 }: AlertaCardProps) {
   const ehMinimo = variante === 'abaixo_minimo';
   const chipOutline = ehMinimo
-    ? { borderColor: 'rgba(251, 191, 36, 0.55)', color: '#fde68a' }
-    : { borderColor: 'rgba(248, 113, 113, 0.55)', color: '#fecaca' };
+    ? { borderColor: 'rgba(248, 113, 113, 0.55)', color: '#fecaca' }
+    : { borderColor: 'rgba(251, 191, 36, 0.55)', color: '#fde68a' };
 
   const lista = itens.slice(0, maxItens);
 
@@ -45,9 +45,17 @@ export function AlertaCard({
       sx={{
         borderRadius: 3,
         p: { xs: 2, sm: 2.5 },
-        bgcolor: '#0f172a',
-        border: '1px solid rgba(148, 163, 184, 0.12)',
+        bgcolor: ehMinimo ? 'rgba(127,29,29,0.12)' : 'rgba(113,63,18,0.12)',
+        border: ehMinimo
+          ? '1px solid rgba(248, 113, 113, 0.24)'
+          : '1px solid rgba(251, 191, 36, 0.24)',
         color: '#e2e8f0',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 10px 24px rgba(0,0,0,0.28)',
+          borderColor: ehMinimo ? 'rgba(248, 113, 113, 0.45)' : 'rgba(251, 191, 36, 0.45)',
+        },
       }}
     >
       <Stack spacing={2}>
@@ -58,7 +66,7 @@ export function AlertaCard({
             </Typography>
             <Chip
               size="small"
-              color={ehMinimo ? 'warning' : 'error'}
+              color={ehMinimo ? 'error' : 'warning'}
               variant="outlined"
               sx={{ fontWeight: 700, ...chipOutline }}
               label={rotuloChipContagem(carregando, itens.length)}
@@ -79,7 +87,7 @@ export function AlertaCard({
                 ehMinimo && item.minimo > 0
                   ? Math.min(100, Math.round((item.quantidade / item.minimo) * 100))
                   : 0;
-              const bordaHover = ehMinimo ? 'rgba(251, 191, 36, 0.45)' : 'rgba(248, 113, 113, 0.45)';
+              const bordaHover = ehMinimo ? 'rgba(248, 113, 113, 0.45)' : 'rgba(251, 191, 36, 0.45)';
 
               return (
                 <Box
@@ -99,8 +107,9 @@ export function AlertaCard({
                     cursor: 'pointer',
                     border: '1px solid rgba(71, 85, 105, 0.45)',
                     bgcolor: 'rgba(2, 6, 23, 0.55)',
-                    transition: 'border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
+                    transition: 'transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
                     '&:hover': {
+                      transform: 'translateY(-2px)',
                       borderColor: bordaHover,
                       bgcolor: 'rgba(15, 23, 42, 0.85)',
                       boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
@@ -137,7 +146,7 @@ export function AlertaCard({
                           }}
                         />
                         {!ehMinimo ? (
-                          <Chip label="Próximo do vencimento" size="small" color="error" sx={{ height: 24 }} />
+                          <Chip label="Próximo do vencimento" size="small" color="warning" sx={{ height: 24 }} />
                         ) : null}
                       </Stack>
                     </Stack>
@@ -151,7 +160,7 @@ export function AlertaCard({
                           component="p"
                           sx={{
                             fontWeight: 800,
-                            color: ehMinimo ? '#fbbf24' : '#fca5a5',
+                            color: ehMinimo ? '#fca5a5' : '#fde68a',
                             m: 0,
                             lineHeight: 1.2,
                           }}
@@ -176,7 +185,7 @@ export function AlertaCard({
                     <LinearProgress
                       variant="determinate"
                       value={pct}
-                      color="warning"
+                      color="error"
                       sx={{
                         mt: 1.5,
                         height: 6,

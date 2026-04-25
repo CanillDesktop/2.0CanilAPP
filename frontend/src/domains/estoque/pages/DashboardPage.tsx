@@ -1,19 +1,32 @@
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
-import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
-import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
-import { Box, Button, CssBaseline, IconButton, Stack, ThemeProvider, Typography, createTheme, useMediaQuery, useTheme } from '@mui/material';
+import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import {
+  Alert,
+  Box,
+  Button,
+  CssBaseline,
+  Grid,
+  IconButton,
+  Stack,
+  ThemeProvider,
+  Typography,
+  createTheme,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import { motion } from 'framer-motion';
-import { useEffect, useMemo, useState, type FormEvent, type SyntheticEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { mapearPapelUsuario } from '../../../shared/types/papelUsuario';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
 import { listarProdutosApi } from '../../produtos/api/produtosApi';
-import { DesktopEstoque } from '../components/DesktopEstoque';
-import { MobileEstoque } from '../components/MobileEstoque';
-import type { AcaoRapida } from '../components/QuickActions';
+import { AlertaCard } from '../components/AlertaCard';
+import { BuscaCategoriaTabs } from '../components/BuscaCategoriaTabs';
+import { ResumoItensCadastrados, type ContagemPorClasse } from '../components/ResumoItensCadastrados';
 import { SidebarEstoque } from '../components/SidebarEstoque';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 
@@ -38,29 +51,37 @@ const temaDashboard = createTheme({
 });
 
 const MotionBox = motion(Box);
-const CHAVE_ABA_ESTOQUE = 'canipapp_estoque_aba_tipo';
+const SPACING = {
+  sm: 2,
+  md: 3,
+  lg: 4,
+} as const;
 
-function lerAbaEstoqueSalva(): number {
-  try {
-    const raw = localStorage.getItem(CHAVE_ABA_ESTOQUE);
-    const n = raw === null ? NaN : Number(raw);
-    if (n === 0 || n === 1 || n === 2) return n;
-  } catch {
-    /* ignore */
-  }
-  return 0;
-}
+const sxBotaoCadastro = {
+  textTransform: 'none' as const,
+  fontWeight: 700,
+  color: '#f8fafc',
+  backgroundColor: '#2563eb',
+  transition: 'transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease',
+  '&:hover': {
+    backgroundColor: '#1d4ed8',
+    transform: 'translateY(-2px)',
+    boxShadow: '0 12px 20px rgba(29, 78, 216, 0.35)',
+  },
+  '& .MuiButton-startIcon': { color: '#e2e8f0' },
+};
+
+const contagemInicial: ContagemPorClasse = { produtos: 0, medicamentos: 0, insumos: 0 };
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const { usuario, sair } = useAutenticacao();
   const papelUsuario = mapearPapelUsuario(usuario?.permissao);
-  const [filtroNome, setFiltroNome] = useState('');
-  const [abaTipo, setAbaTipo] = useState(lerAbaEstoqueSalva);
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
+  const [contagemPorOrigem, setContagemPorOrigem] = useState<ContagemPorClasse>(contagemInicial);
+  const [totalItens, setTotalItens] = useState(0);
   const [linhasOperacionais, setLinhasOperacionais] = useState<LinhaOperacionalEstoque[]>([]);
-  const [produtosAVencer, setProdutosAVencer] = useState(0);
   const [drawerAbertoMobile, setDrawerAbertoMobile] = useState(false);
   const [emTransicao, setEmTransicao] = useState(false);
   const theme = useTheme();
@@ -70,7 +91,7 @@ export function DashboardPage() {
   useEffect(() => {
     let ativo = true;
 
-    async function carregarDashboard() {
+    async function carregarResumo() {
       setCarregando(true);
       setErroCarregamento(null);
       try {
@@ -79,6 +100,13 @@ export function DashboardPage() {
           listarMedicamentosApi(),
           listarInsumosApi(),
         ]);
+        if (!ativo) return;
+        setContagemPorOrigem({
+          produtos: produtos.length,
+          medicamentos: medicamentos.length,
+          insumos: insumos.length,
+        });
+        setTotalItens(produtos.length + medicamentos.length + insumos.length);
 
         const hoje = new Date();
         const limiteVencimento = new Date();
@@ -89,18 +117,6 @@ export function DashboardPage() {
           ...medicamentos.map((item) => ({ ...item, origem: 'medicamento' as const })),
           ...insumos.map((item) => ({ ...item, origem: 'insumo' as const })),
         ];
-
-        const idsComVencimentoProximo = new Set<number>();
-        itensComOrigem.forEach((item) => {
-          item.itensEstoque.forEach((lote) => {
-            if (!lote.dataValidade) return;
-            const validade = new Date(lote.dataValidade);
-            if (Number.isNaN(validade.getTime())) return;
-            if (validade >= hoje && validade <= limiteVencimento) {
-              idsComVencimentoProximo.add(item.idItem);
-            }
-          });
-        });
 
         const itens = itensComOrigem.map((item) => {
           const quantidadeAtual = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
@@ -141,16 +157,18 @@ export function DashboardPage() {
 
         if (!ativo) return;
         setLinhasOperacionais(itens);
-        setProdutosAVencer(idsComVencimentoProximo.size);
       } catch {
         if (!ativo) return;
         setErroCarregamento('Nao foi possivel carregar os estoques atuais do backend.');
+        setContagemPorOrigem(contagemInicial);
+        setTotalItens(0);
+        setLinhasOperacionais([]);
       } finally {
         if (ativo) setCarregando(false);
       }
     }
 
-    void carregarDashboard();
+    void carregarResumo();
     return () => {
       ativo = false;
     };
@@ -164,77 +182,20 @@ export function DashboardPage() {
     }, 160);
   }
 
-  function aoConsultar(e: FormEvent) {
-    e.preventDefault();
-  }
-
-  function aoMudarAba(_event: SyntheticEvent, novoValor: number) {
-    setAbaTipo(novoValor);
-    try {
-      localStorage.setItem(CHAVE_ABA_ESTOQUE, String(novoValor));
-    } catch {
-      /* ignore */
-    }
-  }
-
   function navegarParaDetalhe(item: LinhaOperacionalEstoque) {
     if (item.origem === 'produto') navigate(`/produtos/${item.id}`);
     else if (item.origem === 'medicamento') navigate(`/medicamentos/${item.id}`);
     else navigate(`/insumos/${item.id}`);
   }
 
-  const totalBaixoEstoque = linhasOperacionais.filter((item) => item.quantidade < item.minimo).length;
-  const itensAbaixoMinimo = linhasOperacionais.filter((item) => item.quantidade < item.minimo);
-  const itensProximoVencimento = linhasOperacionais.filter((item) => item.status === 'proximo_vencimento');
-
-  const contagemPorOrigem = useMemo(() => {
-    let produtos = 0;
-    let medicamentos = 0;
-    let insumos = 0;
-    for (const linha of linhasOperacionais) {
-      if (linha.origem === 'produto') produtos += 1;
-      else if (linha.origem === 'medicamento') medicamentos += 1;
-      else insumos += 1;
-    }
-    return { produtos, medicamentos, insumos };
-  }, [linhasOperacionais]);
-
-  const linhasFiltradas = useMemo(() => {
-    const origemAlvo =
-      abaTipo === 0 ? 'produto' : abaTipo === 1 ? 'medicamento' : ('insumo' as const);
-    let lista = linhasOperacionais.filter((item) => item.origem === origemAlvo);
-    const termo = filtroNome.trim().toLowerCase();
-    if (termo) {
-      lista = lista.filter((item) => item.nome.toLowerCase().includes(termo));
-    }
-    return lista;
-  }, [linhasOperacionais, abaTipo, filtroNome]);
-
-  const acoesRapidas: AcaoRapida[] = [
-    {
-      id: 'cadastrar-produto',
-      titulo: 'Cadastrar Produto',
-      descricao: 'Abrir formulario de cadastro',
-      icone: 'produto',
-      onClick: () => navegarComTransicao('/produtos/novo'),
-    },
-    {
-      id: 'entrada-estoque',
-      titulo: 'Entrada de Estoque',
-      descricao: 'Registrar novo lote',
-      icone: 'entrada',
-      onClick: () => navegarComTransicao('/estoque/lotes/novo'),
-    },
-    {
-      id: 'saida-estoque',
-      titulo: 'Saida de Estoque',
-      descricao: 'Registrar retirada',
-      icone: 'saida',
-      onClick: () => navegarComTransicao('/estoque/retirada'),
-    },
-  ];
-
-  const totalItens = linhasOperacionais.length;
+  const itensAbaixoMinimo = useMemo(
+    () => linhasOperacionais.filter((item) => item.quantidade < item.minimo),
+    [linhasOperacionais],
+  );
+  const itensProximoVencimento = useMemo(
+    () => linhasOperacionais.filter((item) => item.status === 'proximo_vencimento'),
+    [linhasOperacionais],
+  );
 
   return (
     <ThemeProvider theme={temaDashboard}>
@@ -249,12 +210,14 @@ export function DashboardPage() {
         <Box
           sx={{
             flex: 1,
-            px: { xs: 2, sm: 3, md: 4 },
-            pt: 2,
-            pb: 4,
+            px: { xs: SPACING.sm, sm: SPACING.md, md: SPACING.lg },
+            pt: SPACING.sm,
+            pb: SPACING.lg,
+            borderLeft: { md: '1px solid rgba(148, 163, 184, 0.12)' },
+            backgroundColor: '#040b1f',
           }}
         >
-          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: SPACING.md }}>
             {ehMobileMenu ? (
               <IconButton color="inherit" onClick={() => setDrawerAbertoMobile(true)} sx={{ color: '#e2e8f0' }}>
                 <MenuOutlinedIcon />
@@ -275,12 +238,12 @@ export function DashboardPage() {
             </Button>
           </Stack>
 
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ mb: SPACING.md }}>
             <Typography variant="h6" sx={{ fontWeight: 700, color: '#e2e8f0' }}>
               Ola, {usuario?.primeiroNome ?? 'equipe'}
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(203, 213, 225, 0.85)' }}>
-              {ehMobileLayoutConteudo ? 'Operação de estoque' : 'Visão analítica do estoque'}
+              {ehMobileLayoutConteudo ? 'Operação de estoque' : 'Busca guiada e visão rápida do estoque'}
             </Typography>
           </Box>
 
@@ -288,48 +251,83 @@ export function DashboardPage() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: emTransicao ? 0.7 : 1, y: 0 }}
             transition={{ duration: 0.32 }}
-            sx={{ mt: 1 }}
+            sx={{ mt: SPACING.sm }}
           >
-            <Box sx={{ p: { xs: 0, sm: 0 } }}>
-              {ehMobileLayoutConteudo ? (
-                <MobileEstoque
+            <Stack spacing={SPACING.lg} sx={{ p: 0 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#e2e8f0', mb: SPACING.sm }}>
+                  Acoes principais
+                </Typography>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={SPACING.sm}>
+                  <Button
+                    variant="contained"
+                    startIcon={<Inventory2OutlinedIcon />}
+                    onClick={() => navegarComTransicao('/produtos/novo')}
+                    fullWidth
+                    sx={sxBotaoCadastro}
+                  >
+                    Cadastrar Produtos
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<MedicalServicesOutlinedIcon />}
+                    onClick={() => navegarComTransicao('/medicamentos/novo')}
+                    fullWidth
+                    sx={sxBotaoCadastro}
+                  >
+                    Cadastrar Medicamentos
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<ScienceOutlinedIcon />}
+                    onClick={() => navegarComTransicao('/insumos/novo')}
+                    fullWidth
+                    sx={sxBotaoCadastro}
+                  >
+                    Cadastrar Insumos
+                  </Button>
+                </Stack>
+              </Box>
+
+              <BuscaCategoriaTabs itens={linhasOperacionais} onSelecionarItem={navegarParaDetalhe} />
+
+              {erroCarregamento && <Alert severity="error">{erroCarregamento}</Alert>}
+
+              <Box>
+                <ResumoItensCadastrados
                   carregando={carregando}
-                  erroCarregamento={erroCarregamento}
                   totalItens={totalItens}
-                  totalBaixoEstoque={totalBaixoEstoque}
-                  produtosAVencer={produtosAVencer}
-                  itensAbaixoMinimo={itensAbaixoMinimo}
-                  itensProximoVencimento={itensProximoVencimento}
-                  acoesRapidas={acoesRapidas}
-                  iconeTotal={<WarehouseOutlinedIcon />}
-                  iconeBaixo={<ReportProblemOutlinedIcon />}
-                  iconeVencer={<SwapHorizOutlinedIcon />}
-                  onItemClick={navegarParaDetalhe}
-                />
-              ) : (
-                <DesktopEstoque
-                  carregando={carregando}
-                  erroCarregamento={erroCarregamento}
-                  linhasFiltradas={linhasFiltradas}
-                  filtroNome={filtroNome}
-                  onFiltroNomeChange={setFiltroNome}
-                  onConsultar={aoConsultar}
-                  abaTipo={abaTipo}
-                  onAbaChange={aoMudarAba}
                   contagemPorOrigem={contagemPorOrigem}
-                  totalItens={totalItens}
-                  totalBaixoEstoque={totalBaixoEstoque}
-                  produtosAVencer={produtosAVencer}
-                  itensAbaixoMinimo={itensAbaixoMinimo}
-                  itensProximoVencimento={itensProximoVencimento}
-                  acoesRapidas={acoesRapidas}
-                  iconeTotal={<WarehouseOutlinedIcon />}
-                  iconeBaixo={<ReportProblemOutlinedIcon />}
-                  iconeVencer={<SwapHorizOutlinedIcon />}
-                  onItemClick={navegarParaDetalhe}
                 />
+              </Box>
+
+              {!erroCarregamento && (
+                <Grid container spacing={SPACING.md}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <AlertaCard
+                      variante="abaixo_minimo"
+                      titulo="Itens abaixo do mínimo"
+                      descricao="Itens com quantidade abaixo do mínimo cadastrado."
+                      itens={itensAbaixoMinimo}
+                      carregando={carregando}
+                      vazioLabel="Nenhum item abaixo do nível mínimo no momento."
+                      onItemClick={navegarParaDetalhe}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <AlertaCard
+                      variante="proximo_vencimento"
+                      titulo="Próximo do vencimento"
+                      descricao="Itens com validade em até 30 dias."
+                      itens={itensProximoVencimento}
+                      carregando={carregando}
+                      vazioLabel="Nenhum item próximo do vencimento no momento."
+                      onItemClick={navegarParaDetalhe}
+                    />
+                  </Grid>
+                </Grid>
               )}
-            </Box>
+            </Stack>
           </MotionBox>
         </Box>
       </Box>

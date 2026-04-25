@@ -55,6 +55,12 @@ public class UsuariosController : ControllerBase
         var autenticado = User?.Identity?.IsAuthenticated == true;
         var permissaoCriacao = PermissoesEnum.LEITURA;
 
+        if (!autenticado)
+        {
+            var totalUsuarios = await _usuariosService.ContarUsuariosAsync();
+            permissaoCriacao = totalUsuarios < 2 ? PermissoesEnum.ADMIN : PermissoesEnum.LEITURA;
+        }
+
         if (autenticado)
         {
             if (!EhAdmin())
@@ -114,11 +120,39 @@ public class UsuariosController : ControllerBase
         if (ehAdmin && usuarioLogadoId.Value != id && dto.Permissao.HasValue)
             novaPermissao = dto.Permissao;
 
-        var atualizado = await _usuariosService.AtualizarDadosBasicosAsync(id, dto.PrimeiroNome, dto.Sobrenome, novaPermissao);
-        if (atualizado == null)
-            return NotFound(new { error = "Usuário não encontrado." });
+        try
+        {
+            var atualizado = await _usuariosService.AtualizarDadosBasicosAsync(id, dto.PrimeiroNome, dto.Sobrenome, dto.Email, novaPermissao);
+            if (atualizado == null)
+                return NotFound(new { error = "Usuário não encontrado." });
 
-        return Ok((UsuarioResponseDTO)atualizado);
+            return Ok((UsuarioResponseDTO)atualizado);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [Authorize]
+    [HttpPatch("{id}/senha")]
+    public async Task<IActionResult> TrocarSenha(int id, [FromBody] TrocarSenhaRequestDTO dto)
+    {
+        var usuarioLogadoId = ObterUsuarioLogadoId();
+        if (usuarioLogadoId == null)
+            return Unauthorized();
+        if (usuarioLogadoId.Value != id)
+            return Forbid();
+
+        try
+        {
+            await _usuariosService.TrocarSenhaAsync(id, dto.SenhaAtual, dto.SenhaNova);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [Authorize]
@@ -138,11 +172,18 @@ public class UsuariosController : ControllerBase
         if (!senhaConfirmada)
             return Unauthorized(new { error = "Senha de confirmação inválida." });
 
-        var inativado = await _usuariosService.InativarAsync(id);
-        if (!inativado)
-            return NotFound(new { error = "Usuário não encontrado." });
+        try
+        {
+            var inativado = await _usuariosService.InativarAsync(id);
+            if (!inativado)
+                return NotFound(new { error = "Usuário não encontrado." });
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [Authorize]
@@ -162,11 +203,18 @@ public class UsuariosController : ControllerBase
         if (!senhaConfirmada)
             return Unauthorized(new { error = "Senha de confirmação inválida." });
 
-        var removido = await _usuariosService.DeletarAsync(id);
-        if (!removido)
-            return NotFound(new { error = "Usuário não encontrado." });
+        try
+        {
+            var removido = await _usuariosService.DeletarAsync(id);
+            if (!removido)
+                return NotFound(new { error = "Usuário não encontrado." });
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     private int? ObterUsuarioLogadoId()
@@ -177,7 +225,6 @@ public class UsuariosController : ControllerBase
 
     private bool EhAdmin()
     {
-        var claimPermissao = User.FindFirstValue("permissao");
-        return int.TryParse(claimPermissao, out var permissao) && permissao == (int)PermissoesEnum.ADMIN;
+        return User.FindFirstValue("permissao") ?.Equals(nameof(PermissoesEnum.ADMIN), StringComparison.OrdinalIgnoreCase) == true;
     }
 }

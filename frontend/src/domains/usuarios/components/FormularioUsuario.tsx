@@ -11,6 +11,8 @@ function rotuloPermissao(permissao: number) {
 type Props = {
   usuario?: UsuarioCriadoDto | null;
   incluirEmailSenha?: boolean;
+  /** Edição: exibe email (preenchido) para qualquer papel. */
+  incluirEmailEdicao?: boolean;
   incluirPermissao?: boolean;
   /** Na edição de perfil: todos veem a permissão; só admin editando outro usuário usa "editavel". */
   permissaoEdicao?: 'oculto' | 'somenteLeitura' | 'editavel';
@@ -27,6 +29,7 @@ type Props = {
 export function FormularioUsuario({
   usuario,
   incluirEmailSenha = false,
+  incluirEmailEdicao = false,
   incluirPermissao = false,
   permissaoEdicao = 'oculto',
   carregando = false,
@@ -41,19 +44,21 @@ export function FormularioUsuario({
   useEffect(() => {
     setPrimeiroNome(usuario?.primeiroNome ?? '');
     setSobrenome(usuario?.sobrenome ?? '');
+    setEmail(usuario?.email ?? '');
     setPermissao(usuario?.permissao ?? 2);
-  }, [usuario?.id, usuario?.primeiroNome, usuario?.sobrenome, usuario?.permissao]);
+  }, [usuario?.id, usuario?.primeiroNome, usuario?.sobrenome, usuario?.permissao, usuario?.email]);
 
   const formularioValido = useMemo(() => {
     const nomeValido = primeiroNome.trim().length >= 2 && primeiroNome.trim().length <= 60;
     const sobrenomeNormalizado = sobrenome.trim();
     const sobrenomeValido =
       sobrenomeNormalizado.length === 0 || (sobrenomeNormalizado.length >= 2 && sobrenomeNormalizado.length <= 80);
-    const camposExtrasValidos =
+    const emailCriacaoValido =
       !incluirEmailSenha ||
       (email.trim().length >= 6 && email.includes('@') && senha.trim().length >= 6 && senha.trim().length <= 100);
-    return nomeValido && sobrenomeValido && camposExtrasValidos;
-  }, [primeiroNome, sobrenome, incluirEmailSenha, email, senha]);
+    const emailEdicaoValido = !incluirEmailEdicao || (email.trim().length >= 6 && email.includes('@'));
+    return nomeValido && sobrenomeValido && emailCriacaoValido && emailEdicaoValido;
+  }, [primeiroNome, sobrenome, incluirEmailSenha, incluirEmailEdicao, email, senha]);
 
   function enviar(e: FormEvent) {
     e.preventDefault();
@@ -61,7 +66,7 @@ export function FormularioUsuario({
     onSubmit({
       primeiroNome: primeiroNome.trim(),
       sobrenome: sobrenome.trim() || null,
-      email: incluirEmailSenha ? email.trim() : undefined,
+      email: incluirEmailSenha || incluirEmailEdicao ? email.trim() : undefined,
       senha: incluirEmailSenha ? senha.trim() : undefined,
       permissao: incluirPermissao ? permissao : permissaoEdicao === 'editavel' ? permissao : undefined,
     });
@@ -83,9 +88,20 @@ export function FormularioUsuario({
           value={sobrenome}
           onChange={(e) => setSobrenome(e.target.value)}
           fullWidth
-          slotProps={{ htmlInput: { minLength: 2, maxLength: 80 } }}
+          slotProps={{ htmlInput: { maxLength: 80 } }}
           helperText="Opcional. Se informado, use de 2 a 80 caracteres."
         />
+        {incluirEmailEdicao && !incluirEmailSenha ? (
+          <TextField
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            fullWidth
+            slotProps={{ htmlInput: { maxLength: 255 } }}
+          />
+        ) : null}
         {permissaoEdicao === 'somenteLeitura' ? (
           <Typography variant="body2" color="text.secondary">
             <strong>Permissão:</strong> {rotuloPermissao(permissao)} (somente um administrador pode alterar permissões de

@@ -93,7 +93,14 @@ export function LoteList({ idItem, codItem, lotes, isMobile, onRetirar, onExclui
             to={`/estoque/lotes/novo?idItem=${idItem}&codItem=${encodeURIComponent(codItem)}`}
             variant="contained"
             size="large"
-            sx={{ fontWeight: 700 }}
+            sx={{
+              fontWeight: 700,
+              color: '#e2e8f0',
+              backgroundColor: '#2563eb',
+              '&:hover': {
+                backgroundColor: '#1d4ed8',
+              },
+            }}
           >
             Adicionar lote
           </Button>

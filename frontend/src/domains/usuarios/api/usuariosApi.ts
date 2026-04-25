@@ -1,6 +1,7 @@
 import { obterClienteHttp } from '../../../infrastructure/http/clienteHttpSingleton';
 import type {
   ConfirmacaoSenhaDto,
+  TrocarSenhaDto,
   UsuarioAtualizacaoDto,
   UsuarioCadastroComConfirmacaoDto,
   UsuarioCadastroDto,
@@ -29,6 +30,11 @@ export async function atualizarUsuarioApi(id: number, dto: UsuarioAtualizacaoDto
   const cliente = obterClienteHttp();
   const { data } = await cliente.put<UsuarioCriadoDto>(`/api/Usuarios/${id}`, dto);
   return data;
+}
+
+export async function trocarSenhaUsuarioApi(id: number, dto: TrocarSenhaDto): Promise<void> {
+  const cliente = obterClienteHttp();
+  await cliente.patch(`/api/Usuarios/${id}/senha`, dto);
 }
 
 export async function removerUsuarioApi(id: number, dto: ConfirmacaoSenhaDto): Promise<void> {

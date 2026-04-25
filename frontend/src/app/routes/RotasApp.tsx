@@ -7,7 +7,6 @@ import { PaginaDetalheSessao } from '../../domains/autenticacao/pages/PaginaDeta
 import { PaginaLogin } from '../../domains/autenticacao/pages/PaginaLogin';
 import { PaginaCadastroUsuario } from '../../domains/usuarios/pages/PaginaCadastroUsuario';
 import { PaginaListagemUsuarios } from '../../domains/usuarios/pages/PaginaListagemUsuarios';
-import { PaginaPerfilUsuario } from '../../domains/usuarios/pages/PaginaPerfilUsuario';
 import { PaginaDetalheProduto } from '../../domains/produtos/pages/PaginaDetalheProduto';
 import { PaginaFormularioProduto } from '../../domains/produtos/pages/PaginaFormularioProduto';
 import { PaginaListagemProdutos } from '../../domains/produtos/pages/PaginaListagemProdutos';
@@ -34,10 +33,10 @@ export function RotasApp() {
 
         <Route element={<RotaProtegida />}>
           <Route path="sessao" element={<PaginaDetalheSessao />} />
-          <Route path="perfil" element={<PaginaPerfilUsuario />} />
+          <Route path="perfil" element={<Navigate to="/usuarios" replace />} />
+          <Route path="usuarios" element={<PaginaListagemUsuarios />} />
 
           <Route element={<RotaProtegidaPorPapel roles={['ADMIN']} />}>
-            <Route path="usuarios" element={<PaginaListagemUsuarios />} />
             <Route path="usuarios/novo" element={<PaginaCadastroUsuario />} />
           </Route>
 
@@ -58,6 +57,7 @@ export function RotasApp() {
           <Route path="estoque/item/:id" element={<PaginaDetalheItemEstoque />} />
           <Route path="estoque/lotes/novo" element={<PaginaFormularioLote />} />
           <Route path="estoque/retirada" element={<PaginaFormularioRetirada />} />
+          <Route path="retirada/:id" element={<PaginaDetalheProduto />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

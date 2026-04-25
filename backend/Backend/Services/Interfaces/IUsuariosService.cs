@@ -12,6 +12,8 @@ public interface IUsuariosService
     Task<bool> DeletarAsync(int id);
     Task<UsuariosModel?> ValidarUsuarioAsync(string login, string senha);
     Task<bool> ConfirmarSenhaUsuarioAsync(int usuarioId, string senha);
-    Task<UsuariosModel?> AtualizarDadosBasicosAsync(int alvoUsuarioId, string primeiroNome, string? sobrenome, PermissoesEnum? novaPermissao = null);
+    Task<UsuariosModel?> AtualizarDadosBasicosAsync(int alvoUsuarioId, string primeiroNome, string? sobrenome, string email, PermissoesEnum? novaPermissao = null);
+    Task TrocarSenhaAsync(int usuarioId, string senhaAtual, string senhaNova);
     Task<bool> InativarAsync(int id);
+    Task<int> ContarUsuariosAsync();
 }
