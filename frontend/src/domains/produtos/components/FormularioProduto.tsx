@@ -1,10 +1,13 @@
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarregamento';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
 import type { ProdutoCadastroDto } from '../types/tiposProdutos';
+
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import SendIcon from '@mui/icons-material/Send';
 
 function gerarCodigoProduto(): string {
   const sufixo = crypto.randomUUID().replace(/\D/g, '').slice(0, 10);
@@ -99,10 +102,15 @@ export function FormularioProduto() {
           min={0}
         />
       </label>
-      <button type="submit" disabled={carregando}>
-        Criar
-      </button>
-      <IndicadorCarregamento visivel={carregando} />
-    </form>
+<Button
+  type="submit"
+  variant="contained"
+  disabled={carregando}
+  endIcon={!carregando && <SendIcon />}
+>
+  {carregando ? <CircularProgress size={20} color="inherit" /> : 'Criar'}
+</Button>
+
+</form>
   );
 }

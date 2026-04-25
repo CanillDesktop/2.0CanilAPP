@@ -16,7 +16,7 @@ export function FormularioCadastroUsuario() {
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
-    const dto: UsuarioCadastroDto = { nome, sobrenome, email, senha, permissao };
+  const dto: UsuarioCadastroDto = { primeiroNome: nome, sobrenome, email, senha, permissao };
     await cadastrar(dto);
   }
 

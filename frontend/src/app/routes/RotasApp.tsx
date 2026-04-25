@@ -19,13 +19,12 @@ import { PaginaFormularioLote } from '../../domains/estoque/pages/PaginaFormular
 import { PaginaFormularioRetirada } from '../../domains/estoque/pages/PaginaFormularioRetirada';
 import { PaginaListagemEstoque } from '../../domains/estoque/pages/PaginaListagemEstoque';
 import { PaginaSincronizacao } from '../../domains/sincronizacao/pages/PaginaSincronizacao';
-import { PaginaInicio } from '../pages/PaginaInicio';
 
 export function RotasApp() {
   return (
     <Routes>
       <Route path="/" element={<LeiautePrincipal />}>
-        <Route index element={<PaginaInicio />} />
+        <Route index element={<Navigate to="/estoque" replace />} />
         <Route path="login" element={<PaginaLogin />} />
         {/* Cadastro público (API não exige JWT em POST /api/Usuarios). */}
         <Route path="cadastro" element={<PaginaCadastroUsuario />} />

@@ -17,7 +17,12 @@ export class ErroApi extends Error {
 }
 
 export function extrairMensagemErroApi(erro: unknown): string {
-  if (erro instanceof ErroApi) return erro.message;
+  if (erro instanceof ErroApi) {
+    if (erro.statusCode === 0 && /network error/i.test(erro.message)) {
+      return 'Sem resposta da API (serviço parado, URL errada ou bloqueio CORS). Em dev, deixe VITE_URL_BASE_API vazio e use o proxy do Vite; confira se o backend está em 127.0.0.1:5000.';
+    }
+    return erro.message;
+  }
   const ax = erro as AxiosError<RespostaErroApi & { error?: string }>;
   const dados = ax.response?.data;
   if (dados && typeof dados === 'object' && 'message' in dados && typeof dados.message === 'string') {
@@ -25,6 +30,9 @@ export function extrairMensagemErroApi(erro: unknown): string {
   }
   if (dados && typeof dados === 'object' && 'error' in dados && typeof dados.error === 'string') {
     return dados.error;
+  }
+  if (!ax.response && ax.message && /network error/i.test(ax.message)) {
+    return 'Sem resposta da API (serviço parado, URL errada ou bloqueio CORS). Em dev, deixe VITE_URL_BASE_API vazio e use o proxy do Vite; confira se o backend está em 127.0.0.1:5000.';
   }
   if (ax.message) return ax.message;
   return 'Erro inesperado ao comunicar com a API.';

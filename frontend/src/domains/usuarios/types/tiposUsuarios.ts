@@ -1,7 +1,7 @@
 /** Corpo de criação de usuário (UsuarioRequestDTO). */
 export type UsuarioCadastroDto = {
   id?: number | null;
-  nome: string;
+  primeiroNome: string;
   sobrenome: string;
   email: string;
   senha: string;
@@ -11,7 +11,7 @@ export type UsuarioCadastroDto = {
 export type UsuarioCriadoDto = {
   id?: number | null;
   email: string;
-  nome: string;
+  primeiroNome: string;
   sobrenome: string;
   permissao: number;
   cognitoSub?: string | null;
