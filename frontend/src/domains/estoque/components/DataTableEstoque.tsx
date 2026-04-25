@@ -20,7 +20,7 @@ export type LinhaOperacionalEstoque = {
   quantidade: number;
   minimo: number;
   origem: 'produto' | 'medicamento' | 'insumo';
-  status: 'ok' | 'baixo' | 'critico';
+  status: 'ok' | 'baixo' | 'critico' | 'proximo_vencimento';
   ultimaMovimentacao: string;
 };
 
@@ -32,7 +32,8 @@ function obterCorStatus(status: LinhaOperacionalEstoque['status']): 'success' | 
 
 function labelStatus(status: LinhaOperacionalEstoque['status']) {
   if (status === 'ok') return 'OK';
-  if (status === 'baixo') return 'Baixo';
+  if (status === 'baixo') return 'Abaixo do nível mínimo';
+  if (status === 'proximo_vencimento') return 'Proximo do vencimento';
   return 'Critico';
 }
 

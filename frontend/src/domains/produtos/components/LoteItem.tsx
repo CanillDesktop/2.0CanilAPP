@@ -30,7 +30,7 @@ function obterStatusValidade(validadeIso: string): {
   limite.setDate(hoje.getDate() + 30);
 
   if (validade < hoje) return { label: 'Vencido', color: 'error' };
-  if (validade <= limite) return { label: 'Proximo do vencimento', color: 'warning' };
+  if (validade <= limite) return { label: 'A vencer', color: 'error' };
   return { label: 'Valido', color: 'success' };
 }
 

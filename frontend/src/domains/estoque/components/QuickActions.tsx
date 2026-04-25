@@ -1,5 +1,4 @@
 import AddBoxOutlinedIcon from '@mui/icons-material/AddBoxOutlined';
-import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import CallMadeOutlinedIcon from '@mui/icons-material/CallMadeOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import { Card, CardActionArea, Stack, Typography } from '@mui/material';
@@ -12,14 +11,13 @@ export type AcaoRapida = {
   titulo: string;
   descricao: string;
   onClick: () => void;
-  icone: 'produto' | 'entrada' | 'saida' | 'sincronizar';
+  icone: 'produto' | 'entrada' | 'saida';
 };
 
 function renderizarIcone(tipo: AcaoRapida['icone']) {
   if (tipo === 'produto') return <AddBoxOutlinedIcon fontSize="large" />;
   if (tipo === 'entrada') return <Inventory2OutlinedIcon fontSize="large" />;
-  if (tipo === 'saida') return <CallMadeOutlinedIcon fontSize="large" />;
-  return <AutorenewOutlinedIcon fontSize="large" />;
+  return <CallMadeOutlinedIcon fontSize="large" />;
 }
 
 export function QuickActions({ acoes }: { acoes: AcaoRapida[] }) {

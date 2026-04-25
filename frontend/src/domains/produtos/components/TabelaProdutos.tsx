@@ -12,6 +12,7 @@ import {
   Collapse,
   IconButton,
   Button,
+  Grid,
   Stack,
   Table,
   TableBody,
@@ -42,7 +43,7 @@ type LinhaProduto = {
   nome: string;
   categoriaNome: string;
   quantidade: number;
-  status: 'ativo' | 'baixo' | 'sem_estoque';
+  status: 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
   ultimaMovimentacao: string;
 };
 
@@ -58,6 +59,15 @@ function categoriaNome(categoria: number) {
 function mapearLinha(item: ProdutoLeituraDto): LinhaProduto {
   const quantidade = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
   const minimo = item.itemNivelEstoque?.nivelMinimoEstoque ?? 0;
+  const hoje = new Date();
+  const limiteVencimento = new Date();
+  limiteVencimento.setDate(hoje.getDate() + 30);
+  const temLoteAVencer = item.itensEstoque.some((lote) => {
+    if (!lote.dataValidade) return false;
+    const validade = new Date(lote.dataValidade);
+    if (Number.isNaN(validade.getTime())) return false;
+    return validade >= hoje && validade <= limiteVencimento;
+  });
   const ultimaData = item.itensEstoque
     .map((lote) => new Date(lote.dataEntrega))
     .filter((data) => !Number.isNaN(data.getTime()))
@@ -65,6 +75,7 @@ function mapearLinha(item: ProdutoLeituraDto): LinhaProduto {
 
   let status: LinhaProduto['status'] = 'ativo';
   if (quantidade <= 0) status = 'sem_estoque';
+  else if (temLoteAVencer) status = 'a_vencer';
   else if (quantidade < minimo) status = 'baixo';
 
   return {
@@ -80,18 +91,20 @@ function mapearLinha(item: ProdutoLeituraDto): LinhaProduto {
 
 function statusChip(status: LinhaProduto['status']) {
   if (status === 'ativo') return <Chip label="Ativo" color="success" size="small" />;
-  if (status === 'baixo') return <Chip label="Baixo" color="warning" size="small" />;
+  if (status === 'a_vencer') return <Chip label="Proximo do vencimento" color="error" size="small" />;
+  if (status === 'baixo') return <Chip label="Lote abaixo do nivel minimo" color="warning" size="small" />;
   return <Chip label="Sem estoque" color="error" size="small" />;
 }
 
-function statusValidadeChip(dataValidade?: string | null) {
+function statusValidadeChip(dataValidade?: string | null, quantidadeLote = 0, nivelMinimo = 0) {
+  if (quantidadeLote < nivelMinimo) return <Chip label="Nivel baixo" color="warning" size="small" />;
   if (!dataValidade) return <Chip label="Sem validade" size="small" />;
   const validade = new Date(dataValidade);
   const hoje = new Date();
   const limite = new Date();
   limite.setDate(hoje.getDate() + 30);
   if (validade < hoje) return <Chip label="Vencido" color="error" size="small" />;
-  if (validade <= limite) return <Chip label="Proximo" color="warning" size="small" />;
+  if (validade <= limite) return <Chip label="A vencer" color="error" size="small" />;
   return <Chip label="Valido" color="success" size="small" />;
 }
 
@@ -106,32 +119,51 @@ function LoteCard({
 }) {
   const validade = lote.dataValidade ? new Date(lote.dataValidade).toLocaleDateString('pt-BR') : 'Sem validade';
   return (
-    <Card
-      sx={{ mb: 1.5, p: 1.5, borderRadius: 2, backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.08)' }}
+    <Box
+      sx={{
+        p: 2,
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        '&:hover': {
+          backgroundColor: 'rgba(255,255,255,0.02)',
+        },
+      }}
       onClick={(e) => e.stopPropagation()}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
-        <Box>
+      <Grid container spacing={2} sx={{ alignItems: 'center' }}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Typography sx={{ fontWeight: 700, color: '#e2e8f0' }}>Lote {lote.lote ?? '-'}</Typography>
-          <Typography variant="body2" sx={{ color: '#cbd5e1' }}>
-            Qtd: {lote.quantidade} • Validade: {validade}
+        </Grid>
+        <Grid size={{ xs: 6, md: 2 }}>
+          <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+            Quantidade
           </Typography>
+          <Typography sx={{ color: '#e2e8f0' }}>{lote.quantidade}</Typography>
+        </Grid>
+        <Grid size={{ xs: 6, md: 3 }}>
+          <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+            Validade
+          </Typography>
+          <Typography sx={{ color: '#e2e8f0' }}>{validade}</Typography>
+        </Grid>
+        <Grid size={{ xs: 6, md: 2 }}>
+          {statusValidadeChip(lote.dataValidade, lote.quantidade, produto.itemNivelEstoque?.nivelMinimoEstoque ?? 0)}
+        </Grid>
+        <Grid size={{ xs: 6, md: 2 }}>
           <Button
             variant="contained"
             size="small"
-            sx={{ mt: 1 }}
+            fullWidth
             onClick={(e) => {
               e.stopPropagation();
               onRegistrarRetirada(produto, lote);
             }}
             disabled={lote.quantidade <= 0}
           >
-            Registrar retirada
+            Retirar
           </Button>
-        </Box>
-        {statusValidadeChip(lote.dataValidade)}
-      </Box>
-    </Card>
+        </Grid>
+      </Grid>
+    </Box>
   );
 }
 
@@ -150,14 +182,16 @@ function ExpandedRow({
         <Collapse in={expanded} timeout="auto" unmountOnExit>
           <Box sx={{ p: 2, bgcolor: '#020617' }}>
             {produto.itensEstoque.length ? (
-              produto.itensEstoque.map((lote, index) => (
-                <LoteCard
-                  key={`${produto.idItem}-${lote.lote ?? index}`}
-                  produto={produto}
-                  lote={lote}
-                  onRegistrarRetirada={onRegistrarRetirada}
-                />
-              ))
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                {produto.itensEstoque.map((lote, index) => (
+                  <LoteCard
+                    key={`${produto.idItem}-${lote.lote ?? index}`}
+                    produto={produto}
+                    lote={lote}
+                    onRegistrarRetirada={onRegistrarRetirada}
+                  />
+                ))}
+              </Box>
             ) : (
               <Typography variant="body2" sx={{ color: '#94a3b8' }}>
                 Nenhum lote cadastrado para este produto.

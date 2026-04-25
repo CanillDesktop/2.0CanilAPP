@@ -54,10 +54,20 @@ const produtosMock: ProdutoLeituraDto[] = [
   },
 ];
 
-function obterStatus(item: ProdutoLeituraDto): 'ativo' | 'baixo' | 'sem_estoque' {
+function obterStatus(item: ProdutoLeituraDto): 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer' {
   const quantidade = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
   const minimo = item.itemNivelEstoque?.nivelMinimoEstoque ?? 0;
+  const hoje = new Date();
+  const limiteVencimento = new Date();
+  limiteVencimento.setDate(hoje.getDate() + 30);
+  const temLoteAVencer = item.itensEstoque.some((lote) => {
+    if (!lote.dataValidade) return false;
+    const validade = new Date(lote.dataValidade);
+    if (Number.isNaN(validade.getTime())) return false;
+    return validade >= hoje && validade <= limiteVencimento;
+  });
   if (quantidade <= 0) return 'sem_estoque';
+  if (temLoteAVencer) return 'a_vencer';
   if (quantidade < minimo) return 'baixo';
   return 'ativo';
 }
@@ -68,7 +78,7 @@ export function PaginaListagemProdutos() {
   const navigate = useNavigate();
   const [busca, setBusca] = useState('');
   const [categoria, setCategoria] = useState<'todas' | string>('todas');
-  const [status, setStatus] = useState<'todos' | 'ativo' | 'baixo' | 'sem_estoque'>('todos');
+  const [status, setStatus] = useState<'todos' | 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer'>('todos');
   const [idExclusao, setIdExclusao] = useState<number | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; mensagem: string; tipo: 'success' | 'error' }>({
     open: false,

@@ -21,11 +21,11 @@ const MotionButton = motion(Button);
 type FilterBarProdutosProps = {
   busca: string;
   categoria: string;
-  status: 'todos' | 'ativo' | 'baixo' | 'sem_estoque';
+  status: 'todos' | 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
   categorias: string[];
   onBuscaChange: (valor: string) => void;
   onCategoriaChange: (valor: string) => void;
-  onStatusChange: (valor: 'todos' | 'ativo' | 'baixo' | 'sem_estoque') => void;
+  onStatusChange: (valor: 'todos' | 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer') => void;
   onNovoProduto: () => void;
 };
 
@@ -84,7 +84,7 @@ export function FilterBarProdutos({
   };
 
   function handleStatusChange(e: SelectChangeEvent) {
-    onStatusChange(e.target.value as 'todos' | 'ativo' | 'baixo' | 'sem_estoque');
+    onStatusChange(e.target.value as 'todos' | 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer');
   }
 
   return (
@@ -136,6 +136,7 @@ export function FilterBarProdutos({
             <Select label="Status" value={status} onChange={handleStatusChange} sx={inputSx}>
               <MenuItem value="todos">Todos</MenuItem>
               <MenuItem value="ativo">Ativos</MenuItem>
+              <MenuItem value="a_vencer">A vencer</MenuItem>
               <MenuItem value="baixo">Baixo estoque</MenuItem>
               <MenuItem value="sem_estoque">Sem estoque</MenuItem>
             </Select>
