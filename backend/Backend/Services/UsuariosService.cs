@@ -1,4 +1,5 @@
-﻿using Backend.Models.Usuarios;
+﻿using Backend.Models.Enums;
+using Backend.Models.Usuarios;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
 
@@ -47,6 +48,18 @@ public class UsuariosService : IUsuariosService
         return await _repository.DeleteAsync(id);
     }
 
+    public async Task<bool> InativarAsync(int id)
+    {
+        var usuario = await _repository.GetByIdAsync(id);
+        if (usuario == null)
+            return false;
+
+        usuario.IsDeleted = true;
+        usuario.DataHoraAtualizacao = DateTime.UtcNow;
+        await _repository.UpdateAsync(usuario);
+        return true;
+    }
+
     public async Task<IEnumerable<UsuariosModel>> BuscarTodosAsync()
     {
         return await _repository.GetAsync();
@@ -70,5 +83,28 @@ public class UsuariosService : IUsuariosService
         var senhaValida = BCrypt.Net.BCrypt.Verify(senha, usuario.HashSenha);
 
         return senhaValida ? usuario : null;
+    }
+
+    public async Task<bool> ConfirmarSenhaUsuarioAsync(int usuarioId, string senha)
+    {
+        var usuario = await _repository.GetByIdAsync(usuarioId);
+        if (usuario == null || string.IsNullOrWhiteSpace(senha) || string.IsNullOrEmpty(usuario.HashSenha))
+            return false;
+
+        return BCrypt.Net.BCrypt.Verify(senha, usuario.HashSenha);
+    }
+
+    public async Task<UsuariosModel?> AtualizarDadosBasicosAsync(int alvoUsuarioId, string primeiroNome, string? sobrenome, PermissoesEnum? novaPermissao = null)
+    {
+        var usuario = await _repository.GetByIdAsync(alvoUsuarioId);
+        if (usuario == null)
+            return null;
+
+        usuario.PrimeiroNome = primeiroNome.Trim();
+        usuario.Sobrenome = string.IsNullOrWhiteSpace(sobrenome) ? null : sobrenome.Trim();
+        if (novaPermissao.HasValue)
+            usuario.Permissao = novaPermissao.Value;
+        usuario.DataHoraAtualizacao = DateTime.UtcNow;
+        return await _repository.UpdateAsync(usuario);
     }
 }
