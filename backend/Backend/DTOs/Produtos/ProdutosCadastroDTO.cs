@@ -1,27 +1,10 @@
 ﻿using Backend.Models.Enums;
 using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
 
 namespace Backend.DTOs.Produtos
 {
     public class ProdutosCadastroDTO
     {
-        public ProdutosCadastroDTO() { }
-        public ProdutosCadastroDTO(string descricaoSimples, string? descricaoDetalhada, UnidadeEnum unidade, CategoriaEnum categoria, string? lote, DateTime dataEntrega,
-            string? nFe, DateTime? dataValidade, int quantidade = 0, int nivelMinimoEstoque = 0)
-        {
-            DescricaoSimples = descricaoSimples;
-            DescricaoDetalhada = descricaoDetalhada;
-            Unidade = unidade;
-            Categoria = categoria;
-            Lote = lote;
-            DataEntrega = dataEntrega;
-            Quantidade = quantidade;
-            NFe = nFe;
-            DataValidade = dataValidade;
-            NivelMinimoEstoque = nivelMinimoEstoque;
-        }
-
         [Display(Name = "Descrição")]
         [Required(ErrorMessage = "{0} é obrigatória")]
         public string DescricaoSimples { get; set; } = string.Empty;

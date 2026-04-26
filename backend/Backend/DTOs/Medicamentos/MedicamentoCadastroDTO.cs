@@ -3,27 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.DTOs.Medicamentos
 {
-   public class MedicamentoCadastroDTO
+    public class MedicamentoCadastroDTO
     {
-        public MedicamentoCadastroDTO() 
-        {
-        }
-        public MedicamentoCadastroDTO(PrioridadeEnum prioridade, string? descricao, string? lote, DateTime dataEntrega, string formula, string nomeComercial, PublicoAlvoMedicamentoEnum publicoAlvo,
-            string? nFe, DateTime? dataValidade, int quantidade = 0, int nivelMinimoEstoque = 0)
-        {
-            Prioridade = prioridade;
-            Descricao = descricao;
-            Lote = lote;
-            DataEntrega = dataEntrega;
-            Formula = formula;
-            NomeComercial = nomeComercial;
-            PublicoAlvo = publicoAlvo;
-            Quantidade = quantidade;
-            NFe = nFe;
-            DataValidade = dataValidade;
-            NivelMinimoEstoque = nivelMinimoEstoque;
-        }
-
         [Required(ErrorMessage = "{0} é obrigatória")]
         public PrioridadeEnum Prioridade { get; set; }
 

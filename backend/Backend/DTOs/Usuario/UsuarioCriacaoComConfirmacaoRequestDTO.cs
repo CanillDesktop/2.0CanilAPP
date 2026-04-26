@@ -6,6 +6,8 @@ namespace Backend.DTOs.Usuario;
 
 public class UsuarioCriacaoComConfirmacaoRequestDTO
 {
+    private string? _sobrenome;
+
     [DisplayName("Primeiro nome")]
     [Required(ErrorMessage = "{0} é obrigatório")]
     [MinLength(2, ErrorMessage = "{0} deve ter no mínimo {1} caracteres")]
@@ -13,9 +15,14 @@ public class UsuarioCriacaoComConfirmacaoRequestDTO
     public string PrimeiroNome { get; set; } = string.Empty;
 
     [StringLength(80, MinimumLength = 2, ErrorMessage = "{0} deve ter entre {2} e {1} caracteres")]
-    public string? Sobrenome { get; set; }
+    public string? Sobrenome
+    {
+        get => _sobrenome;
+        set => _sobrenome = string.IsNullOrWhiteSpace(value) ? null : value;
+    }
 
     [Required(ErrorMessage = "{0} é obrigatório")]
+    [MaxLength(255, ErrorMessage = "{0} deve ter no máximo {1} caracteres")]
     [EmailAddress(ErrorMessage = "Formato de email inválido")]
     public string Email { get; set; } = string.Empty;
 

@@ -18,9 +18,7 @@ namespace Backend.DTOs.Estoque
 
         [Display(Name = "Código do item")]
         public string Codigo { get; set; } = string.Empty;
-
         public string? Lote { get; set; }
-
         public int Quantidade { get; set; }
 
         [Display(Name = "Data de entrega")]

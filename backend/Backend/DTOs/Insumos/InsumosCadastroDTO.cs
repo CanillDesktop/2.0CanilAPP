@@ -5,23 +5,6 @@ namespace Backend.DTOs.Insumos
 {
     public class InsumosCadastroDTO
     {
-        public InsumosCadastroDTO()
-        {
-        }
-        public InsumosCadastroDTO(string descricaoSimplificada, string? descricaoDetalhada, string? lote, int quantidade, DateTime dataEntrega, string? nFE, UnidadeInsumosEnum unidade,
-            DateTime? dataValidade, int nivelMinimoEstoque)
-        {
-            DescricaoSimplificada = descricaoSimplificada;
-            DescricaoDetalhada = descricaoDetalhada;
-            Lote = lote;
-            Quantidade = quantidade;
-            DataEntrega = dataEntrega;
-            NFe = nFE;
-            Unidade = unidade;
-            DataValidade = dataValidade;
-            NivelMinimoEstoque = nivelMinimoEstoque;
-        }
-
         [Display(Name = "Descrição")]
         [Required(ErrorMessage = "{0} é obrigatória")]
         public string DescricaoSimplificada { get; set; } = string.Empty;
