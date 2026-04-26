@@ -14,11 +14,11 @@ namespace Backend.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<ItemEstoqueModel>> GetAllByIdAsync(int id)
+        public async Task<IEnumerable<ItemEstoqueModel>> GetByCodigoAsync(string codigo)
         {
             var itemEstoque = await _context.ItensEstoque
                 .Where(r => r.IsDeleted == false)
-                .Where(r => r.Id == id)
+                .Where(r => r.Codigo == codigo)
                 .ToListAsync();
 
             return itemEstoque;

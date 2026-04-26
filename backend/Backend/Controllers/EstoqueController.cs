@@ -18,16 +18,16 @@ namespace Backend.Controllers
             _service = service;
         }
 
-        [HttpGet("{id}", Name = "GetItensEstoqueById")]
-        public async Task<ActionResult<ItemEstoqueDTO>> GetById(int id)
+        [HttpGet("{codigo}", Name = "GetItensEstoqueByCodigo")]
+        public async Task<ActionResult<ItemEstoqueDTO>> GetById(string codigo)
         {
-            var itensEstoque = await _service.BuscarTodosPorIdAsync(id);
+            var itensEstoque = await _service.BuscarPorCodigoAsync(codigo);
 
             return Ok(itensEstoque);
         }
 
-        [HttpGet("id/{lote}", Name = "GetItemEstoqueByLote")]
-        public async Task<ActionResult<ItemEstoqueDTO>> GetByLote(string lote)
+        [HttpGet("{codigo}/{lote}", Name = "GetItemEstoqueByLote")]
+        public async Task<ActionResult<ItemEstoqueDTO>> GetByLote(string codigo, string lote)
         {
             var itemEstoque = await _service.BuscarPorLoteAsync(lote);
             if (itemEstoque == null)
@@ -37,6 +37,16 @@ namespace Backend.Controllers
                     Status = StatusCodes.Status404NotFound,
                     Details = "Item de estoque não encontrado"
                 });
+
+            if (codigo != itemEstoque.Codigo)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Title = "Falha no roteamento",
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = "Lote não pertence ao item especificado"
+                });
+            }
 
             return Ok(itemEstoque);
         }

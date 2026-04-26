@@ -4,7 +4,7 @@ namespace Backend.Services.Interfaces
 {
     public interface IEstoqueItemService
     {
-        Task<IEnumerable<ItemEstoqueModel>> BuscarTodosPorIdAsync(int id);
+        Task<IEnumerable<ItemEstoqueModel>> BuscarPorCodigoAsync(string codigo);
         Task<ItemEstoqueModel?> BuscarPorLoteAsync(string lote);
         Task<ItemEstoqueModel?> CriarAsync(ItemEstoqueModel model);
         Task<ItemEstoqueModel?> AtualizarAsync(string lote, ItemEstoqueModel model);

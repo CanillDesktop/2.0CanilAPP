@@ -16,7 +16,7 @@ namespace Backend.Services
             _userSessionService = userSessionService;
         }
 
-        public async Task<IEnumerable<ItemEstoqueModel>> BuscarTodosPorIdAsync(int id) => await _repository.GetAllByIdAsync(id);
+        public async Task<IEnumerable<ItemEstoqueModel>> BuscarPorCodigoAsync(string codigo) => await _repository.GetByCodigoAsync(codigo);
 
         public async Task<ItemEstoqueModel?> BuscarPorLoteAsync(string lote) => await _repository.GetByLoteAsync(lote);
 
