@@ -48,41 +48,41 @@ namespace Backend.Controllers
             var resultados = new List<BuscaItemDTO>();
             resultados.AddRange(produtosTask.Result
                 .Where(item =>
-                    ContemTermo(item.NomeItem, termo)
-                    || ContemTermo(item.CodItem, termo)
+                    ContemTermo(item.DescricaoSimples, termo)
+                    || ContemTermo(item.Codigo, termo)
                     || ContemTermo(item.DescricaoDetalhada, termo))
                 .Select(item => new BuscaItemDTO
                 {
-                    Id = item.IdItem,
-                    Nome = item.NomeItem,
+                    Id = item.Id,
+                    NomeOuDescricaoSimples = item.DescricaoSimples,
                     Tipo = "produto_retirada"
                 }));
             resultados.AddRange(medicamentosTask.Result
                 .Where(item =>
-                    ContemTermo(item.NomeItem, termo)
-                    || ContemTermo(item.CodItem, termo)
-                    || ContemTermo(item.DescricaoMedicamento, termo)
+                    ContemTermo(item.NomeComercial, termo)
+                    || ContemTermo(item.Codigo, termo)
+                    || ContemTermo(item.Descricao, termo)
                     || ContemTermo(item.Formula, termo))
                 .Select(item => new BuscaItemDTO
                 {
-                    Id = item.IdItem,
-                    Nome = item.NomeItem,
+                    Id = item.Id,
+                    NomeOuDescricaoSimples = item.NomeComercial,
                     Tipo = "medicamento"
                 }));
             resultados.AddRange(insumosTask.Result
                 .Where(item =>
-                    ContemTermo(item.NomeItem, termo)
-                    || ContemTermo(item.CodItem, termo)
+                    ContemTermo(item.DescricaoSimplificada, termo)
+                    || ContemTermo(item.Codigo, termo)
                     || ContemTermo(item.DescricaoDetalhada, termo))
                 .Select(item => new BuscaItemDTO
                 {
-                    Id = item.IdItem,
-                    Nome = item.NomeItem,
+                    Id = item.Id,
+                    NomeOuDescricaoSimples = item.DescricaoSimplificada,
                     Tipo = "insumo"
                 }));
 
             return Ok(resultados
-                .OrderBy(item => item.Nome)
+                .OrderBy(item => item.NomeOuDescricaoSimples)
                 .Take(30)
                 .ToArray());
         }

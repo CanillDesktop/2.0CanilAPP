@@ -1,10 +1,7 @@
 using Backend.Models;
-using Backend.DTOs.Usuario;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace Backend.Controllers;
 
@@ -14,14 +11,12 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IRefreshTokenService _refreshTokenService;
-    private readonly IUsuariosService _usuariosService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService, IRefreshTokenService refreshTokenService, IUsuariosService usuariosService, ILogger<AuthController> logger)
+    public AuthController(IAuthService authService, IRefreshTokenService refreshTokenService, ILogger<AuthController> logger)
     {
         _authService = authService;
         _refreshTokenService = refreshTokenService;
-        _usuariosService = usuariosService;
         _logger = logger;
     }
 
@@ -94,31 +89,6 @@ public class AuthController : ControllerBase
                 Details = ex.Message ?? "Sessão inválida. Por favor, faça login novamente"
             });
         }
-    }
-
-    [Authorize]
-    [HttpPost("confirmar-senha")]
-    public async Task<IActionResult> ConfirmarSenha([FromBody] ConfirmacaoSenhaRequestDTO dto)
-    {
-        var claimId = User.FindFirstValue(JwtRegisteredClaimNames.Sub) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!int.TryParse(claimId, out var usuarioId))
-            return Unauthorized(new ErrorResponse
-            {
-                Title = "Acesso não autorizado",
-                Status = StatusCodes.Status401Unauthorized,
-                Details = "Sessão inválida."
-            });
-
-        var senhaValida = await _usuariosService.ConfirmarSenhaUsuarioAsync(usuarioId, dto.SenhaConfirmacao);
-        if (!senhaValida)
-            return Unauthorized(new ErrorResponse
-            {
-                Title = "Senha inválida",
-                Status = StatusCodes.Status401Unauthorized,
-                Details = "Não foi possível confirmar a senha informada."
-            });
-
-        return Ok(new { confirmado = true });
     }
 
     [Authorize]

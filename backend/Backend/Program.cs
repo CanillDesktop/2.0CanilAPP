@@ -26,6 +26,8 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
         var logsPath = Path.Combine(builder.Environment.ContentRootPath, "logs");
         Directory.CreateDirectory(logsPath);
 
@@ -136,10 +138,11 @@ public class Program
             var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "CanilApp";
             var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "CanilApp";
 
-            JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
+                    options.MapInboundClaims = false;
+
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuerSigningKey = true,

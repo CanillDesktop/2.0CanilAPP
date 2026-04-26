@@ -25,6 +25,13 @@ public class UsuariosService : IUsuariosService
         if (await _repository.GetByEmailAsync(usuario.Email) != null)
             throw new InvalidOperationException("Usuário já existe");
 
+        var totalUsuarios = await _repository.CountAsync();
+        var deveSerAdmin = totalUsuarios < 2;
+
+        if (usuario.Permissao != PermissoesEnum.ADMIN && deveSerAdmin)
+        {
+            usuario.Permissao = PermissoesEnum.ADMIN;
+        }
         usuario.HashSenha = BCrypt.Net.BCrypt.HashPassword(usuario.HashSenha);
         usuario.EditadorPor = $"{usuario.PrimeiroNome} {usuario.Sobrenome} ({usuario.Email})";
 
@@ -36,6 +43,13 @@ public class UsuariosService : IUsuariosService
     {
         try
         {
+            _ = int.TryParse(_userSessionService.UserId, out int idLogado);
+
+            if (!IsAdmin() && id != idLogado)
+            {
+                throw new InvalidOperationException("Somente administradores podem alterar os dados de outro usuário");
+            }
+
             var usuarioExistente = await _repository.GetByIdAsync(id);
 
             if (usuarioExistente == null)
@@ -43,16 +57,49 @@ public class UsuariosService : IUsuariosService
                 throw new ArgumentNullException(null, $"Usuário de id {id} não encontrado");
             }
 
-            usuarioExistente.PrimeiroNome = model.PrimeiroNome;
-            usuarioExistente.Sobrenome = model.Sobrenome;
-            usuarioExistente.Permissao = model.Permissao;
-            usuarioExistente.Email = model.Email;
-            usuarioExistente.IsDeleted = model.IsDeleted;
+            var usuarioComEmail = await _repository.GetByEmailAsync(model.Email);
+            var emailJaExiste = usuarioComEmail != null && usuarioComEmail.Id != id;
+            if (emailJaExiste)
+                throw new InvalidOperationException("Este email já está em uso por outro usuário");
 
+            if (!string.IsNullOrWhiteSpace(model.PrimeiroNome))
+            {
+                usuarioExistente.PrimeiroNome = model.PrimeiroNome;
+            }
+            if (!string.IsNullOrWhiteSpace(model.Sobrenome))
+            {
+                usuarioExistente.Sobrenome = model.Sobrenome;
+            }
+            if (!string.IsNullOrWhiteSpace(model.Email))
+            {
+                usuarioExistente.Email = model.Email;
+            }
+            if (IsAdmin() && model.Permissao != usuarioExistente.Permissao)
+            {
+                var adminsAtivos = await _repository.CountAsync(u => u.Permissao == PermissoesEnum.ADMIN && !u.IsDeleted);
+                if (adminsAtivos == 0)
+                    throw new InvalidOperationException("Não há administrador ativo cadastrado. Não é possível alterar permissões");
+
+                if (usuarioExistente.Permissao == PermissoesEnum.ADMIN && model.Permissao == PermissoesEnum.LEITURA)
+                {
+                    var outrosAdmins = await _repository.CountAsync(u => u.Permissao == PermissoesEnum.ADMIN && !u.IsDeleted && u.Id != id);
+                    if (outrosAdmins < 1)
+                        throw new InvalidOperationException("Não é possível rebaixar o último administrador ativo");
+                }
+
+                usuarioExistente.Permissao = model.Permissao;
+            }
             if (!string.IsNullOrEmpty(model.HashSenha))
             {
                 usuarioExistente.HashSenha = BCrypt.Net.BCrypt.HashPassword(model.HashSenha);
             }
+
+            if (usuarioExistente.IsDeleted != model.IsDeleted)
+            {
+                await GarantirNaoEhUltimoAdminAsync(usuarioExistente);
+            }
+
+            usuarioExistente.IsDeleted = model.IsDeleted;
 
             usuarioExistente.DataHoraAtualizacao = DateTime.UtcNow;
             usuarioExistente.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
@@ -63,6 +110,10 @@ public class UsuariosService : IUsuariosService
         catch (ArgumentNullException ex)
         {
             throw new ArgumentNullException(null, ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new InvalidOperationException(ex.Message);
         }
         catch (Exception ex)
         {
@@ -75,6 +126,8 @@ public class UsuariosService : IUsuariosService
         var usuario = await BuscarPorIdAsync(id);
 
         if (usuario == null) return false;
+
+        await GarantirNaoEhUltimoAdminAsync(usuario);
 
         usuario.IsDeleted = true;
         usuario.DataHoraAtualizacao = DateTime.UtcNow;
@@ -102,90 +155,67 @@ public class UsuariosService : IUsuariosService
         return senhaValida ? usuario : null;
     }
 
-    public async Task<bool> ConfirmarSenhaUsuarioAsync(int usuarioId, string senha)
+    public async Task TrocarSenhaAsync(int id, string senhaAtual, string novaSenha)
     {
-        var usuario = await _repository.GetByIdAsync(usuarioId);
+        var usuario = await _repository.GetByIdAsync(id);
+        if (usuario == null)
+            throw new ArgumentNullException(null, "Usuário não encontrado");
+
+        if (!await ConfirmarSenhaUsuario(usuario, senhaAtual))
+            throw new InvalidOperationException("Senha atual incorreta");
+
+        usuario.HashSenha = BCrypt.Net.BCrypt.HashPassword(novaSenha);
+
+        usuario.DataHoraAtualizacao = DateTime.UtcNow;
+        usuario.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
+
+        await _repository.UpdateAsync(usuario);
+    }
+
+    public async Task<bool?> InativarAsync(int id, string senha)
+    {
+        _ = int.TryParse(_userSessionService?.UserId, out int idLogado);
+
+        var usuario = await _repository.GetByIdAsync(idLogado);
+        if (usuario == null)
+            throw new ArgumentNullException(null, "Usuário não encontrado");
+
+        var usuarioInativar = await _repository.GetByIdAsync(id);
+        if (usuarioInativar == null)
+            throw new ArgumentNullException(null, "Usuário a inativar não encontrado");
+
+        if (!await ConfirmarSenhaUsuario(usuario, senha))
+            throw new InvalidOperationException("Senha incorreta");
+
+        await GarantirNaoEhUltimoAdminAsync(usuarioInativar);
+
+        usuarioInativar.IsDeleted = true;
+        usuarioInativar.DataHoraAtualizacao = DateTime.UtcNow;
+        usuarioInativar.EditadorPor = _userSessionService?.EditedBy ?? string.Empty;
+
+        return (await _repository.UpdateAsync(usuarioInativar))?.IsDeleted;
+    }
+
+
+    private async Task GarantirNaoEhUltimoAdminAsync(UsuariosModel usuario)
+    {
+        if (usuario.Permissao != PermissoesEnum.ADMIN)
+            return;
+
+        if (await _repository.CountAsync(u => u.Permissao == PermissoesEnum.ADMIN && !u.IsDeleted) == 1)
+            throw new InvalidOperationException("Não é possível remover ou inativar o último administrador ativo");
+    }
+
+    private bool IsAdmin()
+    {
+        return _userSessionService.Role == "ADMIN";
+    }
+
+    private static async Task<bool> ConfirmarSenhaUsuario(UsuariosModel usuario, string senha)
+    {
         if (usuario == null || string.IsNullOrWhiteSpace(senha) || string.IsNullOrEmpty(usuario.HashSenha))
             return false;
 
         return BCrypt.Net.BCrypt.Verify(senha, usuario.HashSenha);
-    }
-
-    public async Task<UsuariosModel?> AtualizarDadosBasicosAsync(int alvoUsuarioId, string primeiroNome, string? sobrenome, string email, PermissoesEnum? novaPermissao = null)
-    {
-        var usuario = await _repository.GetByIdAsync(alvoUsuarioId);
-        if (usuario == null)
-            return null;
-
-        var emailTrim = email.Trim();
-        if (string.IsNullOrWhiteSpace(emailTrim))
-            throw new InvalidOperationException("Email é obrigatório.");
-
-        if (!string.IsNullOrWhiteSpace(sobrenome) && sobrenome.Trim().Length < 2)
-            throw new InvalidOperationException("Sobrenome, se informado, deve ter pelo menos 2 caracteres.");
-
-        var existente = await _repository.GetByEmailAsync(emailTrim);
-        if (existente != null && existente.Id != alvoUsuarioId)
-            throw new InvalidOperationException("Este email já está em uso por outro usuário.");
-
-        usuario.PrimeiroNome = primeiroNome.Trim();
-        usuario.Sobrenome = string.IsNullOrWhiteSpace(sobrenome) ? null : sobrenome.Trim();
-        usuario.Email = emailTrim;
-
-        if (novaPermissao.HasValue && novaPermissao.Value != usuario.Permissao)
-        {
-            var adminsAtivos = await _repository.CountAdminsAtivosAsync();
-            if (adminsAtivos == 0)
-                throw new InvalidOperationException("Não há administrador ativo cadastrado. Não é possível alterar permissões.");
-
-            if (usuario.Permissao == PermissoesEnum.ADMIN && novaPermissao.Value == PermissoesEnum.LEITURA)
-            {
-                var outrosAdmins = await _repository.CountAdminsAtivosExcetoAsync(alvoUsuarioId);
-                if (outrosAdmins < 1)
-                    throw new InvalidOperationException("Não é possível rebaixar o último administrador ativo.");
-            }
-
-            usuario.Permissao = novaPermissao.Value;
-        }
-
-        usuario.DataHoraAtualizacao = DateTime.UtcNow;
-        return await _repository.UpdateAsync(usuario);
-    }
-
-    public async Task TrocarSenhaAsync(int usuarioId, string senhaAtual, string senhaNova)
-    {
-        if (string.IsNullOrWhiteSpace(senhaNova) || senhaNova.Length < 6)
-            throw new InvalidOperationException("A nova senha deve ter pelo menos 6 caracteres.");
-        if (senhaNova.Length > 100)
-            throw new InvalidOperationException("A nova senha deve ter no máximo 100 caracteres.");
-
-        var usuario = await _repository.GetByIdAsync(usuarioId);
-        if (usuario == null)
-            throw new InvalidOperationException("Usuário não encontrado.");
-
-        if (!await ConfirmarSenhaUsuarioAsync(usuarioId, senhaAtual))
-            throw new InvalidOperationException("Senha atual incorreta.");
-
-        usuario.HashSenha = BCrypt.Net.BCrypt.HashPassword(senhaNova);
-        usuario.DataHoraAtualizacao = DateTime.UtcNow;
-        await _repository.UpdateAsync(usuario);
-    }
-
-    public async Task<int> ContarUsuariosAsync()
-    {
-        return await _repository.CountAsync();
-    }
-
-    private async Task GarantirNaoEhUltimoAdminAsync(int alvoUsuarioId)
-    {
-        var usuario = await _repository.GetByIdAsync(alvoUsuarioId);
-        if (usuario == null)
-            return;
-
-        if (usuario.Permissao != PermissoesEnum.ADMIN || usuario.IsDeleted)
-            return;
-
-        if (await _repository.CountAdminsAtivosExcetoAsync(alvoUsuarioId) < 1)
-            throw new InvalidOperationException("Não é possível remover ou inativar o último administrador ativo.");
     }
 }

@@ -45,7 +45,7 @@ public class UsuariosController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<UsuarioResponseDTO>> Create([FromBody] UsuarioRequestDTO dto)
+    public async Task<ActionResult<UsuarioResponseDTO>> Create([FromBody] UsuarioCriacaoComConfirmacaoRequestDTO dto)
     {
         try
         {
@@ -64,12 +64,13 @@ public class UsuariosController : ControllerBase
                 Title = "Erro ao criar usuário",
                 Status = StatusCodes.Status400BadRequest,
                 Details = ex.Message ?? "Erro ao criar usuário"
-                    }
+            });
+        }
     }
 
     [Authorize]
     [HttpPut("{id}")]
-    public async Task<ActionResult<UsuarioResponseDTO>> Put([FromRoute] int id, [FromBody] UsuarioRequestDTO dto)
+    public async Task<ActionResult<UsuarioResponseDTO>> Put([FromRoute] int id, [FromBody] AtualizarUsuarioRequestDTO dto)
     {
         try
         {
@@ -86,23 +87,114 @@ public class UsuariosController : ControllerBase
                 Details = ex.Message ?? "Usuário não encontrado"
             });
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Falha ao atualizar usuário",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message ?? "Falha ao atualizar usuário"
+            });
+        }
     }
 
     [Authorize(Roles = "ADMIN")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id, [FromQuery] bool hardDelete = false)
     {
-        var sucesso = await _service.DeletarAsync(id, hardDelete);
-        if (!sucesso)
+        try
         {
-            return NotFound(new ErrorResponse
+            var sucesso = await _service.DeletarAsync(id, hardDelete);
+            if (!sucesso)
             {
-                Title = "Recurso não encontrado",
-                Status = StatusCodes.Status404NotFound,
-                Details = $"Usuário de id {id} não encontrado"
-            });
-            });
+                return NotFound(new ErrorResponse
+                {
+                    Title = "Recurso não encontrado",
+                    Status = StatusCodes.Status404NotFound,
+                    Details = $"Usuário de id {id} não encontrado"
+                });
+            }
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Falha ao excluir/inativar usuário",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message ?? "Falha ao excluir/inativar usuário"
+            });
+        }
+    }
+
+    [Authorize]
+    [HttpPatch("{id}/alterar-senha")]
+    public async Task<IActionResult> AlterarSenha(int id, [FromBody] TrocarSenhaRequestDTO dto)
+    {
+        try
+        {
+            await _service.TrocarSenhaAsync(id, dto.SenhaAtual, dto.NovaSenha);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return UnprocessableEntity(new ErrorResponse
+            {
+                Title = "Falha ao alterar senha",
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Details = ex.Message ?? "Falha ao alterar senha"
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Falha ao alterar senha",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message ?? "Falha ao alterar senha"
+            });
+        }
+    }
+
+    [Authorize(Roles = "ADMIN")]
+    [HttpPatch("{id}/inativar")]
+    public async Task<IActionResult> Inativar(int id, [FromBody] ConfirmacaoSenhaRequestDTO dto)
+    {
+        try
+        {
+            var result = (await _service.InativarAsync(id, dto.SenhaConfirmacao));
+            var inativado = result != null && result != false;
+            if (!inativado)
+            {
+                return NotFound(new ErrorResponse
+                {
+                    Title = "Falha ao inativar usuário",
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = "Usuário não encontrado"
+                });
+            }
+               
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Falha ao inativar usuário",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message ?? "Falha ao inativar usuário"
+            });
+        }
+        catch (ArgumentNullException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Falha ao inativar usuário",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message ?? "Falha ao inativar usuário"
+            });
+        }
     }
 }
+

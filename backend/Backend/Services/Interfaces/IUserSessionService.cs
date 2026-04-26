@@ -6,5 +6,6 @@
         string? Email { get; }
         string? Name { get; }
         string? EditedBy { get; }
+        string? Role { get; }
     }
 }
