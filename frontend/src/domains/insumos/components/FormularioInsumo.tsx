@@ -6,15 +6,9 @@ import { PainelErro } from '../../../shared/components/PainelErro';
 import { useMutacaoInsumo } from '../hooks/useInsumos';
 import type { InsumoCadastroDto } from '../types/tiposInsumos';
 
-function gerarCodigoInsumo(): string {
-  const sufixo = crypto.randomUUID().replace(/\D/g, '').slice(0, 10);
-  return `INS${sufixo}`;
-}
-
 export function FormularioInsumo() {
   const navegar = useNavigate();
   const { criar, carregando, erro } = useMutacaoInsumo();
-  const [codInsumo, setCodInsumo] = useState(() => gerarCodigoInsumo());
   const [descricaoSimplificada, setDescricaoSimplificada] = useState('');
   const [descricaoDetalhada, setDescricaoDetalhada] = useState('');
   const [lote, setLote] = useState('');
@@ -28,8 +22,6 @@ export function FormularioInsumo() {
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
     const dto: InsumoCadastroDto = {
-      codigoId: 0,
-      codInsumo,
       descricaoSimplificada,
       descricaoDetalhada,
       lote,
@@ -48,10 +40,6 @@ export function FormularioInsumo() {
     <form className="cartao" onSubmit={aoEnviar}>
       <h1>Novo insumo</h1>
       <PainelErro mensagem={erro} />
-      <label>
-        Código
-        <input value={codInsumo} onChange={(e) => setCodInsumo(e.target.value)} required />
-      </label>
       <label>
         Descrição simplificada
         <input value={descricaoSimplificada} onChange={(e) => setDescricaoSimplificada(e.target.value)} required />

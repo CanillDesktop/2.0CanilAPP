@@ -4,17 +4,10 @@ import type {
   TrocarSenhaDto,
   UsuarioAtualizacaoDto,
   UsuarioCadastroComConfirmacaoDto,
-  UsuarioCadastroDto,
   UsuarioCriadoDto,
 } from '../types/tiposUsuarios';
 
-export async function criarUsuarioApi(dto: UsuarioCadastroDto): Promise<UsuarioCriadoDto> {
-  const cliente = obterClienteHttp();
-  const { data } = await cliente.post<UsuarioCriadoDto>('/api/Usuarios', dto);
-  return data;
-}
-
-export async function criarUsuarioComConfirmacaoApi(dto: UsuarioCadastroComConfirmacaoDto): Promise<UsuarioCriadoDto> {
+export async function criarUsuarioApi(dto: UsuarioCadastroComConfirmacaoDto): Promise<UsuarioCriadoDto> {
   const cliente = obterClienteHttp();
   const { data } = await cliente.post<UsuarioCriadoDto>('/api/Usuarios', dto);
   return data;

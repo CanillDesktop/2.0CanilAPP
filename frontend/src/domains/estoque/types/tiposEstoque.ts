@@ -14,14 +14,13 @@ export type LinhaOperacionalEstoque = {
 };
 
 export type RetiradaEstoqueDto = {
-  idRetirada: number;
-  codItem: string;
-  nomeItem: string;
+  codigo: string;
+  nomeOuDescricaoSimples: string;
   lote: string;
   de: string;
   para: string;
   quantidade: number;
-  dataHoraInsercaoRegistro: string;
+  dataHoraRetirada: string;
 };
 
 export type RetiradaRequest = {

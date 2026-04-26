@@ -93,8 +93,8 @@ export function FormularioNovoLote() {
     setSubmitSucesso(false);
 
     const dto: ItemEstoqueDto = {
-      idItem,
-      codItem,
+      id: idItem,
+      codigo: codItem,
       lote,
       quantidade,
       dataEntrega: new Date(dataEntrega).toISOString(),

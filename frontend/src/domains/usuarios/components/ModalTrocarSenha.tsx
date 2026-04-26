@@ -15,27 +15,27 @@ type Props = {
   carregando: boolean;
   erro: string | null;
   onFechar: () => void;
-  onConfirmar: (senhaAtual: string, senhaNova: string) => void;
+  onConfirmar: (senhaAtual: string, novaSenha: string) => void;
 };
 
 export function ModalTrocarSenha({ aberto, carregando, erro, onFechar, onConfirmar }: Props) {
   const [senhaAtual, setSenhaAtual] = useState('');
-  const [senhaNova, setSenhaNova] = useState('');
-  const [senhaNova2, setSenhaNova2] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmacaoNovaSenha, setConfirmacaoNovaSenha] = useState('');
 
   useEffect(() => {
     if (!aberto) {
       setSenhaAtual('');
-      setSenhaNova('');
-      setSenhaNova2('');
+      setNovaSenha('');
+      setConfirmacaoNovaSenha('');
     }
   }, [aberto]);
 
   const valido = useMemo(() => {
     if (senhaAtual.trim().length < 1) return false;
-    if (senhaNova.length < 6 || senhaNova.length > 100) return false;
-    return senhaNova === senhaNova2;
-  }, [senhaAtual, senhaNova, senhaNova2]);
+    if (novaSenha.length < 6 || novaSenha.length > 100) return false;
+    return novaSenha === confirmacaoNovaSenha;
+  }, [senhaAtual, novaSenha, confirmacaoNovaSenha]);
 
   return (
     <Dialog open={aberto} onClose={carregando ? undefined : onFechar} fullWidth maxWidth="sm">
@@ -55,8 +55,8 @@ export function ModalTrocarSenha({ aberto, carregando, erro, onFechar, onConfirm
           <TextField
             label="Nova senha"
             type="password"
-            value={senhaNova}
-            onChange={(e) => setSenhaNova(e.target.value)}
+            value={novaSenha}
+            onChange={(e) => setNovaSenha(e.target.value)}
             required
             fullWidth
             slotProps={{ htmlInput: { minLength: 6, maxLength: 100 } }}
@@ -66,8 +66,8 @@ export function ModalTrocarSenha({ aberto, carregando, erro, onFechar, onConfirm
           <TextField
             label="Confirmar nova senha"
             type="password"
-            value={senhaNova2}
-            onChange={(e) => setSenhaNova2(e.target.value)}
+            value={confirmacaoNovaSenha}
+            onChange={(e) => setConfirmacaoNovaSenha(e.target.value)}
             required
             fullWidth
             slotProps={{ htmlInput: { minLength: 6, maxLength: 100 } }}
@@ -82,7 +82,7 @@ export function ModalTrocarSenha({ aberto, carregando, erro, onFechar, onConfirm
         <Button
           variant="contained"
           disabled={carregando || !valido}
-          onClick={() => onConfirmar(senhaAtual, senhaNova)}
+          onClick={() => onConfirmar(senhaAtual, novaSenha)}
         >
           Salvar nova senha
         </Button>

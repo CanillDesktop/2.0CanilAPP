@@ -1,13 +1,13 @@
 /** Tipos comuns de itens de estoque retornados pela API (camelCase). */
 
 export type ItemNivelEstoqueDto = {
-  idItem: number;
+  id: number;
   nivelMinimoEstoque: number;
 };
 
 export type ItemEstoqueDto = {
-  idItem: number;
-  codItem: string;
+  id: number;
+  codigo: string;
   lote?: string | null;
   quantidade: number;
   dataEntrega: string;
