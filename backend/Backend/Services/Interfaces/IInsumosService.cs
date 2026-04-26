@@ -1,10 +1,11 @@
 ﻿using Backend.DTOs.Insumos;
+using Backend.Models.Insumos;
 
 namespace Backend.Services.Interfaces
 {
-    public interface IInsumosService : IService<InsumosCadastroDTO, InsumosLeituraDTO>
+    public interface IInsumosService : ICRUDEstoqueService<InsumosModel>
     {
-        Task<IEnumerable<InsumosLeituraDTO>> BuscarTodosAsync(InsumosFiltroDTO filtro);
+        Task<IEnumerable<InsumosModel>> BuscarTodosAsync(InsumosFiltroDTO filtro);
     }
 }
 

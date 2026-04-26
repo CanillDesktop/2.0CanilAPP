@@ -4,34 +4,32 @@ namespace Backend.DTOs.Estoque
 {
     public class ItemEstoqueDTO
     {
-        public ItemEstoqueDTO(int idItem, string codItem, string? lote, int quantidade, DateTime dataEntrega, string? nfe, DateTime? dataValidade)
+        public ItemEstoqueDTO(int id, string codigo, string? lote, int quantidade, DateTime dataEntrega, string? nfe, DateTime? dataValidade)
         {
-            IdItem = idItem;
-            CodItem = codItem;
+            Id = id;
+            Codigo = codigo;
             Lote = lote;
             Quantidade = quantidade;
             DataEntrega = dataEntrega;
             NFe = nfe;
             DataValidade = dataValidade;
         }
-        public int IdItem { get; set; }
+        public int Id { get; set; }
 
-        [Display(Name = "Código do Item")]
-        public string CodItem { get; set; } = string.Empty;
+        [Display(Name = "Código do item")]
+        public string Codigo { get; set; } = string.Empty;
 
-        [Display(Name = "Lote")]
-        public string? Lote { get; set; } = string.Empty;
+        public string? Lote { get; set; }
 
-        [Display(Name = "Quantidade")]
         public int Quantidade { get; set; }
 
-        [Display(Name = "Data de Entrega")]
+        [Display(Name = "Data de entrega")]
         public DateTime DataEntrega { get; set; }
 
         [Display(Name = "NFe/DOC")]
         public string? NFe { get; set; } = string.Empty;
 
-        [Display(Name = "Data de Validade")]
+        [Display(Name = "Data de validade")]
         public DateTime? DataValidade { get; set; }
     }
 }

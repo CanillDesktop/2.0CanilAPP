@@ -1,8 +1,6 @@
 ﻿using Backend.DTOs.Estoque;
-using Backend.Exceptions;
 using Backend.Models;
-using Backend.Models.Estoque;
-using Backend.Services;
+using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,23 +11,34 @@ namespace Backend.Controllers
     [Authorize]
     public class EstoqueController : ControllerBase
     {
-        private readonly EstoqueItemService _service;
+        private readonly IEstoqueItemService _service;
 
-        public EstoqueController(EstoqueItemService service)
+        public EstoqueController(IEstoqueItemService service)
         {
             _service = service;
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id}", Name = "GetItensEstoqueById")]
         public async Task<ActionResult<ItemEstoqueDTO>> GetById(int id)
         {
-            var model = await _service.BuscarPorIdAsync(id);
+            var itensEstoque = await _service.BuscarTodosPorIdAsync(id);
 
-            if (model == null)
-                return NotFound();
+            return Ok(itensEstoque);
+        }
 
+        [HttpGet("id/{lote}", Name = "GetItemEstoqueByLote")]
+        public async Task<ActionResult<ItemEstoqueDTO>> GetByLote(string lote)
+        {
+            var itemEstoque = await _service.BuscarPorLoteAsync(lote);
+            if (itemEstoque == null)
+                return NotFound(new ErrorResponse
+                {
+                    Title = "Item de estoque não encontrado",
+                    Status = StatusCodes.Status404NotFound,
+                    Details = "Item de estoque não encontrado"
+                });
 
-            return Ok(model);
+            return Ok(itemEstoque);
         }
 
         [HttpPost]
@@ -37,52 +46,40 @@ namespace Backend.Controllers
         {
             try
             {
-                ItemEstoqueModel model = dto;
+                var novoItemEstoque = await _service.CriarAsync(dto);
 
-                await _service.CriarAsync(model);
+                if (novoItemEstoque == null)
+                    throw new ArgumentNullException();
 
-                return CreatedAtAction(nameof(GetById), new { id = model.IdItem }, dto);
+                return new CreatedAtRouteResult("GetItemEstoqueByLote",
+                    new { lote = novoItemEstoque.Lote }, novoItemEstoque);
             }
-            catch (ModelIncompletaException ex)
+            catch (InvalidOperationException ex)
             {
-                var erro = new ErrorResponse
+                return BadRequest(new ErrorResponse
                 {
-                    Title = "Erro ao adicionar lote",
+                    Title = "Erro ao adicionar um novo lote ao item",
                     Status = StatusCodes.Status400BadRequest,
-                    Details = ex.Message
-                };
-                return StatusCode(erro.Status, erro);
-            }
-        }
-
-        [HttpPut("{lote}")]
-        public async Task<IActionResult> Put([FromBody] ItemEstoqueDTO dto)
-        {
-            try
-            {
-                await _service.AtualizarAsync(dto);
-
-                return NoContent();
-            }
-            catch (ArgumentNullException)
-            {
-                return NotFound();
+                    Details = ex.Message ?? "Erro ao adicionar um novo lote ao item"
+                });
             }
         }
 
         [HttpDelete("{lote}")]
         public async Task<IActionResult> Delete(string lote)
         {
-            try
+            var sucesso = await _service.DeletarAsync(lote);
+            if (!sucesso)
             {
-                await _service.DeletarAsync(lote);
+                return NotFound(new ErrorResponse
+                {
+                    Title = "Recurso não encontrado",
+                    Status = StatusCodes.Status404NotFound,
+                    Details = $"Item de estoque de lote {lote} não encontrado"
+                });
+            }
 
-                return NoContent();
-            }
-            catch (ArgumentNullException)
-            {
-                return NotFound();
-            }
+            return NoContent();
         }
     }
 }

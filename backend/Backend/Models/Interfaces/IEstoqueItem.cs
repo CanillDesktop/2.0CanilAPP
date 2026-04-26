@@ -4,9 +4,9 @@ namespace Backend.Models.Interfaces
 {
     public interface IEstoqueItem
     {
-        int IdItem { get; init; }
-        string CodItem { get; set; }
-        string NomeItem { get; set; }
+        int Id { get; init; }
+        string Codigo { get; set; }
+        string NomeOuDescricaoSimples { get; set; }
         ItemNivelEstoqueDTO? ItemNivelEstoque { get; set; }
         ItemEstoqueDTO[]? ItensEstoque { get; set; }
     }

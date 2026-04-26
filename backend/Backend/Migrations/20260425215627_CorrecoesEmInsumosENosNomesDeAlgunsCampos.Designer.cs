@@ -3,6 +3,7 @@ using System;
 using Backend.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(CanilAppDbContext))]
-    partial class CanilAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260425215627_CorrecoesEmInsumosENosNomesDeAlgunsCampos")]
+    partial class CorrecoesEmInsumosENosNomesDeAlgunsCampos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
@@ -233,7 +236,6 @@ namespace Backend.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DescricaoSimplificada")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Unidade")
@@ -251,6 +253,7 @@ namespace Backend.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Descricao")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Formula")
@@ -281,11 +284,17 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("DataEntrega")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("DescricaoDetalhada")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DescricaoSimples")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NFe")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Unidade")

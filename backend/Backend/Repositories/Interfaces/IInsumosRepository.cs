@@ -3,7 +3,7 @@ using Backend.Models.Insumos;
 
 namespace Backend.Repositories.Interfaces
 {
-    public interface IInsumosRepository : IRepository<InsumosModel>
+    public interface IInsumosRepository : ICRUDEstoqueRepository<InsumosModel>
     {
         Task<IEnumerable<InsumosModel>> GetAsync(InsumosFiltroDTO filtro);
     }

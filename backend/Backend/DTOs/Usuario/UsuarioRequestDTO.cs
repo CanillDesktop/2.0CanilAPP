@@ -12,11 +12,11 @@ public class UsuarioRequestDTO
 
     public string? Sobrenome { get; set; }
 
-    [Required(ErrorMessage = "Email é obrigatório")]
+    [Required(ErrorMessage = "{0} é obrigatório")]
     [EmailAddress(ErrorMessage = "Formato de email inválido")]
     public string Email { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Senha é obrigatória")]
+    [Required(ErrorMessage = "{0} é obrigatória")]
     [MinLength(6, ErrorMessage = "Senha deve ter no mínimo 6 caracteres")]
     public string Senha { get; set; } = string.Empty;
 

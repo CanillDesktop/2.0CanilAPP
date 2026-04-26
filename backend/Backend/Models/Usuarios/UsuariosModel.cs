@@ -19,10 +19,6 @@ public class UsuariosModel : BaseModel
         Permissao = permissao;
     }
 
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { get; set; }
-
     public string PrimeiroNome { get; set; } = string.Empty;
 
     public string? Sobrenome { get; set; }
@@ -56,12 +52,11 @@ public class UsuariosModel : BaseModel
     {
         return new UsuariosModel
         {
-            PrimeiroNome = dto.PrimeiroNome,
-            Sobrenome = dto.Sobrenome,
-            Email = dto.Email,
+            PrimeiroNome = dto.PrimeiroNome.ToLower(),
+            Sobrenome = dto.Sobrenome?.ToLower(),
+            Email = dto.Email.ToLower(),
             HashSenha = dto.Senha,
             Permissao = dto.Permissao,
-            DataHoraAtualizacao = DateTime.UtcNow,
             IsDeleted = dto.IsDeleted
         };
     }

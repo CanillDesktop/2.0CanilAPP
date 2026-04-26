@@ -1,39 +1,34 @@
 ﻿using Backend.DTOs.Estoque;
-using Backend.Models.Interfaces;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.Models.Estoque;
 
-public class RetiradaEstoqueModel : BaseModel
+public class RetiradaEstoqueModel
 {
     [Key]
-    public int IdRetirada { get; set; }
-
-    public string CodItem { get; set; } = string.Empty;
-
-    public string NomeItem { get; set; } = string.Empty;
-
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public int Id { get; set; }
+    public string Codigo { get; set; } = string.Empty;
+    public string NomeOuDescricaoSimples { get; set; } = string.Empty;
     public int Quantidade { get; set; }
-
     public string Lote { get; set; } = string.Empty;
-
     public string De { get; set; } = string.Empty;
-
     public string Para { get; set; } = string.Empty;
+    public DateTime DataHoraRetirada = DateTime.UtcNow;
 
 
     public static implicit operator RetiradaEstoqueModel(RetiradaEstoqueDTO dto)
     {
         return new RetiradaEstoqueModel()
         {
-            CodItem = dto.CodItem,
-            NomeItem = dto.NomeItem,
+            Codigo = dto.Codigo,
+            NomeOuDescricaoSimples = dto.NomeOuDescricaoSimples,
             Lote = dto.Lote,
             De = dto.De,
             Para = dto.Para,
             Quantidade = dto.Quantidade,
-            DataHoraCriacao = dto.DataHoraInsercaoRegistro,
-            DataHoraAtualizacao = DateTime.UtcNow
+            DataHoraRetirada = dto.DataHoraRetirada
         };
     }
 
@@ -41,13 +36,13 @@ public class RetiradaEstoqueModel : BaseModel
     {
         return new RetiradaEstoqueDTO()
         {
-            CodItem = model.CodItem,
-            NomeItem = model.NomeItem,
+            Codigo = model.Codigo,
+            NomeOuDescricaoSimples = model.NomeOuDescricaoSimples,
             Lote = model.Lote,
             De = model.De,
             Para = model.Para,
             Quantidade = model.Quantidade,
-            DataHoraInsercaoRegistro = model.DataHoraCriacao
+            DataHoraRetirada = model.DataHoraRetirada
         };
     }
 }

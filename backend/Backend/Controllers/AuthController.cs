@@ -51,9 +51,17 @@ public class AuthController : ControllerBase
                 Details = ex.Message
             });
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Acesso não autorizado",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message ?? "Usuário inativo. Favor contatar o suporte/administradores"
+            });
+        }
     }
 
-    [Authorize]
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh(CancellationToken cancellationToken)
     {

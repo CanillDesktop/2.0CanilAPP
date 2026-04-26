@@ -1,6 +1,9 @@
-﻿namespace Backend.Repositories.Interfaces;
+﻿using Backend.Models;
+using Backend.Models.Usuarios;
 
-public interface IUsuariosRepository<T> : IRepository<T> where T : class
+namespace Backend.Repositories.Interfaces;
+
+public interface IUsuariosRepository : ICRUDRepository<UsuariosModel>
 {
-    Task<T?> GetByEmailAsync(string email);
+    Task<UsuariosModel?> GetByEmailAsync(string email);
 }
