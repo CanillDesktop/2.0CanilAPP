@@ -64,8 +64,7 @@ public class UsuariosController : ControllerBase
                 Title = "Erro ao criar usuário",
                 Status = StatusCodes.Status400BadRequest,
                 Details = ex.Message ?? "Erro ao criar usuário"
-            });
-        }
+                    }
     }
 
     [Authorize]
@@ -102,7 +101,7 @@ public class UsuariosController : ControllerBase
                 Status = StatusCodes.Status404NotFound,
                 Details = $"Usuário de id {id} não encontrado"
             });
-        }
+            });
 
         return NoContent();
     }

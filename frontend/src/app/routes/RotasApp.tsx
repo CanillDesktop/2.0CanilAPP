@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { LeiautePrincipal } from '../../shared/components/LeiautePrincipal';
 import { RotaProtegida } from '../../shared/components/RotaProtegida';
+import { RotaProtegidaPorPapel } from '../../shared/components/RotaProtegidaPorPapel';
+import { PaginaAcessoNegado } from '../../shared/pages/PaginaAcessoNegado';
 import { PaginaDetalheSessao } from '../../domains/autenticacao/pages/PaginaDetalheSessao';
 import { PaginaLogin } from '../../domains/autenticacao/pages/PaginaLogin';
 import { PaginaCadastroUsuario } from '../../domains/usuarios/pages/PaginaCadastroUsuario';
@@ -18,23 +20,25 @@ import { PaginaDetalheItemEstoque } from '../../domains/estoque/pages/PaginaDeta
 import { PaginaFormularioLote } from '../../domains/estoque/pages/PaginaFormularioLote';
 import { PaginaFormularioRetirada } from '../../domains/estoque/pages/PaginaFormularioRetirada';
 import { PaginaListagemEstoque } from '../../domains/estoque/pages/PaginaListagemEstoque';
-import { PaginaSincronizacao } from '../../domains/sincronizacao/pages/PaginaSincronizacao';
-import { PaginaInicio } from '../pages/PaginaInicio';
+import { DashboardPage } from '../../domains/estoque/pages/DashboardPage';
 
 export function RotasApp() {
   return (
     <Routes>
       <Route path="/" element={<LeiautePrincipal />}>
-        <Route index element={<PaginaInicio />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="login" element={<PaginaLogin />} />
-        {/* Cadastro público (API não exige JWT em POST /api/Usuarios). */}
         <Route path="cadastro" element={<PaginaCadastroUsuario />} />
+        <Route path="403" element={<PaginaAcessoNegado />} />
 
         <Route element={<RotaProtegida />}>
           <Route path="sessao" element={<PaginaDetalheSessao />} />
-
+          <Route path="perfil" element={<Navigate to="/usuarios" replace />} />
           <Route path="usuarios" element={<PaginaListagemUsuarios />} />
-          <Route path="usuarios/novo" element={<PaginaCadastroUsuario />} />
+
+          <Route element={<RotaProtegidaPorPapel roles={['ADMIN']} />}>
+            <Route path="usuarios/novo" element={<PaginaCadastroUsuario />} />
+          </Route>
 
           <Route path="produtos" element={<PaginaListagemProdutos />} />
           <Route path="produtos/novo" element={<PaginaFormularioProduto />} />
@@ -48,12 +52,12 @@ export function RotasApp() {
           <Route path="insumos/novo" element={<PaginaFormularioInsumo />} />
           <Route path="insumos/:id" element={<PaginaDetalheInsumo />} />
 
+          <Route path="dashboard" element={<DashboardPage />} />
           <Route path="estoque" element={<PaginaListagemEstoque />} />
           <Route path="estoque/item/:id" element={<PaginaDetalheItemEstoque />} />
           <Route path="estoque/lotes/novo" element={<PaginaFormularioLote />} />
           <Route path="estoque/retirada" element={<PaginaFormularioRetirada />} />
-
-          <Route path="sincronizacao" element={<PaginaSincronizacao />} />
+          <Route path="retirada/:id" element={<PaginaDetalheProduto />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
