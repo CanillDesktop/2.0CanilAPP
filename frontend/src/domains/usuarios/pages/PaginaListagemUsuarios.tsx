@@ -105,9 +105,9 @@ export function PaginaListagemUsuarios() {
     }
   }
 
-  async function confirmarTrocarSenha(senhaAtual: string, senhaNova: string) {
+  async function confirmarTrocarSenha(senhaAtual: string, novaSenha: string) {
     if (!usuario?.id) return;
-    const ok = await trocarSenha(usuario.id, { senhaAtual, senhaNova });
+    const ok = await trocarSenha(usuario.id, { senhaAtual, novaSenha });
     if (ok) setDialogTrocarSenhaAberto(false);
   }
 

@@ -4,9 +4,9 @@ namespace Backend.DTOs.Estoque
 {
     public class ItemNivelEstoqueDTO
     {
-        public int IdItem { get; set; }
+        public int Id { get; set; }
 
-        [Display(Name = "Nível mínimo estoque")]
+        [Display(Name = "Nível mínimo de estoque")]
         public int NivelMinimoEstoque { get; set; }
     }
 }

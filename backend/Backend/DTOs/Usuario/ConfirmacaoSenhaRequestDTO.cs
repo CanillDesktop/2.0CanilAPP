@@ -1,11 +1,11 @@
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.DTOs.Usuario;
 
 public class ConfirmacaoSenhaRequestDTO
 {
-    [Required(ErrorMessage = "Senha de confirmação é obrigatória")]
-    [MinLength(6, ErrorMessage = "Senha de confirmação inválida")]
-    [MaxLength(100, ErrorMessage = "Senha de confirmação inválida")]
+    [DisplayName("Confirmar senha")]
+    [Required(ErrorMessage = "É necessário confirmar a senha")]
     public string SenhaConfirmacao { get; set; } = string.Empty;
 }

@@ -3,9 +3,9 @@ import type { ItemEstoqueDto, ItemNivelEstoqueDto } from '../../../shared/types/
 export type { ItemEstoqueDto, ItemNivelEstoqueDto };
 
 export type ProdutoLeituraDto = {
-  idItem: number;
-  codItem: string;
-  nomeItem: string;
+  id: number;
+  codigo: string;
+  nomeOuDescricaoSimples: string;
   descricaoDetalhada?: string | null;
   unidade: number;
   categoria: number;
@@ -14,8 +14,6 @@ export type ProdutoLeituraDto = {
 };
 
 export type ProdutoCadastroDto = {
-  idProduto: number;
-  codProduto: string;
   descricaoSimples?: string | null;
   descricaoDetalhada?: string | null;
   unidade: number;

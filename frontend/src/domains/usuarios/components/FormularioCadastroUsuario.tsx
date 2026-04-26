@@ -4,18 +4,19 @@ import { Link } from 'react-router-dom';
 import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarregamento';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { useCadastroUsuario } from '../hooks/useCadastroUsuario';
-import type { UsuarioCadastroDto } from '../types/tiposUsuarios';
+import type { UsuarioCadastroComConfirmacaoDto } from '../types/tiposUsuarios';
 
 export function FormularioCadastroUsuario() {
   const { cadastrar, carregando, erro, criado } = useCadastroUsuario();
-  const [nome, setNome] = useState('');
+  const [primeiroNome, setPrimeiroNome] = useState('');
   const [sobrenome, setSobrenome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [confirmacaoSenha, setConfirmacaoSenha] = useState('');
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
-    const dto: UsuarioCadastroDto = { primeiroNome: nome, sobrenome, email, senha };
+    const dto: UsuarioCadastroComConfirmacaoDto = { primeiroNome, sobrenome, email, senha, senhaConfirmacao: confirmacaoSenha, permissao: 2 };
     await cadastrar(dto);
   }
 
@@ -30,7 +31,7 @@ export function FormularioCadastroUsuario() {
       )}
       <label>
         Nome
-        <input value={nome} onChange={(e) => setNome(e.target.value)} required />
+        <input value={primeiroNome} onChange={(e) => setPrimeiroNome(e.target.value)} required />
       </label>
       <label>
         Sobrenome
@@ -43,6 +44,10 @@ export function FormularioCadastroUsuario() {
       <label>
         Senha
         <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} minLength={6} required />
+      </label>
+      <label>
+        Confirmar senha
+        <input type="password" value={confirmacaoSenha} onChange={(e) => setConfirmacaoSenha(e.target.value)} minLength={6} required />
       </label>
       <p className="formulario-rodape" style={{ marginTop: '0.5rem' }}>
         Enquanto o sistema tiver menos de <strong>dois</strong> usuários cadastrados no total, novas contas recebem

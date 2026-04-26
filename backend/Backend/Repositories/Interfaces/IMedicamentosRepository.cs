@@ -3,7 +3,7 @@ using Backend.Models.Medicamentos;
 
 namespace Backend.Repositories.Interfaces
 {
-    public interface IMedicamentosRepository : IRepository<MedicamentosModel>
+    public interface IMedicamentosRepository : ICRUDEstoqueRepository<MedicamentosModel>
     {
         Task<IEnumerable<MedicamentosModel>> GetAsync(MedicamentosFiltroDTO filtro);
     }

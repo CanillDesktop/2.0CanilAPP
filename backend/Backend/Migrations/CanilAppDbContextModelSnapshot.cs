@@ -19,7 +19,7 @@ namespace Backend.Migrations
 
             modelBuilder.Entity("Backend.Models.Estoque.ItemComEstoqueBaseModel", b =>
                 {
-                    b.Property<int>("IdItem")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
@@ -29,10 +29,14 @@ namespace Backend.Migrations
                     b.Property<DateTime>("DataHoraCriacao")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("EditadorPor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("IdItem");
+                    b.HasKey("Id");
 
                     b.ToTable("ItensBase", (string)null);
 
@@ -41,13 +45,14 @@ namespace Backend.Migrations
 
             modelBuilder.Entity("Backend.Models.Estoque.ItemEstoqueModel", b =>
                 {
-                    b.Property<int>("IdItem")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Lote")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("CodItem")
+                    b.Property<string>("Codigo")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -63,6 +68,10 @@ namespace Backend.Migrations
                     b.Property<DateTime?>("DataValidade")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("EditadorPor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
@@ -72,20 +81,25 @@ namespace Backend.Migrations
                     b.Property<int>("Quantidade")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("IdItem", "Lote");
+                    b.HasKey("Id", "Lote");
 
                     b.ToTable("ItensEstoque");
                 });
 
             modelBuilder.Entity("Backend.Models.Estoque.ItemNivelEstoqueModel", b =>
                 {
-                    b.Property<int>("IdItem")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DataHoraAtualizacao")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DataHoraCriacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EditadorPor")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
@@ -94,45 +108,30 @@ namespace Backend.Migrations
                     b.Property<int>("NivelMinimoEstoque")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("IdItem");
+                    b.HasKey("Id");
 
                     b.ToTable("ItensNivelEstoque");
                 });
 
             modelBuilder.Entity("Backend.Models.Estoque.RetiradaEstoqueModel", b =>
                 {
-                    b.Property<int>("IdRetirada")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("CodItem")
+                    b.Property<string>("Codigo")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("DataHoraAtualizacao")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue(new DateTime(2026, 4, 23, 3, 59, 25, 53, DateTimeKind.Utc).AddTicks(4206));
-
-                    b.Property<DateTime>("DataHoraCriacao")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue(new DateTime(2026, 4, 23, 3, 59, 25, 53, DateTimeKind.Utc).AddTicks(3913));
 
                     b.Property<string>("De")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(false);
-
                     b.Property<string>("Lote")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("NomeItem")
+                    b.Property<string>("NomeOuDescricaoSimples")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -143,7 +142,7 @@ namespace Backend.Migrations
                     b.Property<int>("Quantidade")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("IdRetirada");
+                    b.HasKey("Id");
 
                     b.ToTable("RetiradaEstoque");
                 });
@@ -192,6 +191,10 @@ namespace Backend.Migrations
                     b.Property<DateTime>("DataHoraCriacao")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("EditadorPor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -222,12 +225,11 @@ namespace Backend.Migrations
                 {
                     b.HasBaseType("Backend.Models.Estoque.ItemComEstoqueBaseModel");
 
-                    b.Property<string>("CodInsumo")
+                    b.Property<string>("Codigo")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DescricaoDetalhada")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DescricaoSimplificada")
@@ -244,12 +246,11 @@ namespace Backend.Migrations
                 {
                     b.HasBaseType("Backend.Models.Estoque.ItemComEstoqueBaseModel");
 
-                    b.Property<string>("CodMedicamento")
+                    b.Property<string>("Codigo")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("DescricaoMedicamento")
-                        .IsRequired()
+                    b.Property<string>("Descricao")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Formula")
@@ -276,20 +277,15 @@ namespace Backend.Migrations
                     b.Property<int>("Categoria")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("CodProduto")
+                    b.Property<string>("Codigo")
                         .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("DataEntrega")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DescricaoDetalhada")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DescricaoSimples")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("NFe")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Unidade")
@@ -302,7 +298,7 @@ namespace Backend.Migrations
                 {
                     b.HasOne("Backend.Models.Estoque.ItemComEstoqueBaseModel", "ItemBase")
                         .WithMany("ItensEstoque")
-                        .HasForeignKey("IdItem")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -313,7 +309,7 @@ namespace Backend.Migrations
                 {
                     b.HasOne("Backend.Models.Estoque.ItemComEstoqueBaseModel", "ItemBase")
                         .WithOne("ItemNivelEstoque")
-                        .HasForeignKey("Backend.Models.Estoque.ItemNivelEstoqueModel", "IdItem")
+                        .HasForeignKey("Backend.Models.Estoque.ItemNivelEstoqueModel", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -335,7 +331,7 @@ namespace Backend.Migrations
                 {
                     b.HasOne("Backend.Models.Estoque.ItemComEstoqueBaseModel", null)
                         .WithOne()
-                        .HasForeignKey("Backend.Models.Insumos.InsumosModel", "IdItem")
+                        .HasForeignKey("Backend.Models.Insumos.InsumosModel", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -344,7 +340,7 @@ namespace Backend.Migrations
                 {
                     b.HasOne("Backend.Models.Estoque.ItemComEstoqueBaseModel", null)
                         .WithOne()
-                        .HasForeignKey("Backend.Models.Medicamentos.MedicamentosModel", "IdItem")
+                        .HasForeignKey("Backend.Models.Medicamentos.MedicamentosModel", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -353,7 +349,7 @@ namespace Backend.Migrations
                 {
                     b.HasOne("Backend.Models.Estoque.ItemComEstoqueBaseModel", null)
                         .WithOne()
-                        .HasForeignKey("Backend.Models.Produtos.ProdutosModel", "IdItem")
+                        .HasForeignKey("Backend.Models.Produtos.ProdutosModel", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

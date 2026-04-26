@@ -1,73 +1,36 @@
 ﻿using Backend.Models.Enums;
 using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
 
 namespace Backend.DTOs.Insumos
 {
     public class InsumosCadastroDTO
     {
-        public InsumosCadastroDTO() 
-        {
-        }
-        public InsumosCadastroDTO(string descricaoSimplificada, string? descricaoDetalhada, string? lote, int quantidade, DateTime dataEntrega, string? nFE, UnidadeInsumosEnum unidade, 
-            DateTime? dataValidade, int nivelMinimoEstoque)
-        {
-
-            CodInsumo = GeraIdentificador();
-            DescricaoSimplificada = descricaoSimplificada;
-            DescricaoDetalhada = descricaoDetalhada;
-            Lote = lote;
-            Quantidade = quantidade;
-            DataEntrega = dataEntrega;
-            NFe = nFE;
-            Unidade = unidade;
-            DataValidade = dataValidade;
-            NivelMinimoEstoque = nivelMinimoEstoque;
-        }
-
-        public int CodigoId { get; set; }
-
-        [Display(Name = "Código")]
-        public string CodInsumo { get; set; } = string.Empty;
-
-        [Display(Name = "Descrição Simplificada")]
+        [Display(Name = "Descrição")]
+        [Required(ErrorMessage = "{0} é obrigatória")]
         public string DescricaoSimplificada { get; set; } = string.Empty;
 
-        [Display(Name = "Descrição Detalhada")]
-        public string DescricaoDetalhada { get; set; } = string.Empty;
+        [Display(Name = "Descrição detalhada")]
+        public string? DescricaoDetalhada { get; set; }
 
-        [Display(Name = "Lote")]
-        public string? Lote { get; set; } = string.Empty;
+        [Required(ErrorMessage = "{0} é obrigatório")]
+        public string? Lote { get; set; }
 
-        [Display(Name = "Quantidade")]
         public int Quantidade { get; set; }
 
-        [Display(Name = "Data de Entrega")]
+        [Display(Name = "Data de entrega")]
         public DateTime DataEntrega { get; set; }
 
         [Display(Name = "NFe/DOC")]
         public string? NFe { get; set; } = string.Empty;
 
-        [Display(Name = "Unidade")]
+        [Required(ErrorMessage = "{0} é obrigatória")]
         public UnidadeInsumosEnum Unidade { get; set; }
 
-        [Display(Name = "Data de Validade")]
+        [Display(Name = "Data de validade")]
         public DateTime? DataValidade { get; set; }
 
-        [Display(Name = "Nível mínimo estoque")]
+        [Display(Name = "Nível mínimo de estoque")]
         public int NivelMinimoEstoque { get; set; }
-
-        private static string GeraIdentificador()
-        {
-            var id = "INS";
-
-            var guid = Guid.NewGuid().ToString().Replace("-", "");
-            guid = Regex.Replace(guid, @"\D", "");
-
-            id += guid;
-
-            return id;
-        }
     }
 }
 

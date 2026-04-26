@@ -104,8 +104,8 @@ export function PaginaListagemEstoque() {
           else if (quantidadeAtual < minimo) status = 'baixo';
 
           return {
-            id: item.idItem,
-            nome: item.nomeItem,
+            id: item.id,
+            nome: item.nomeOuDescricaoSimples,
             quantidade: quantidadeAtual,
             minimo,
             validade: menorValidade ? menorValidade.toLocaleDateString('pt-BR') : 'Sem validade',

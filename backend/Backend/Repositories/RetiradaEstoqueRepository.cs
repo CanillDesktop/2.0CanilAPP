@@ -1,11 +1,11 @@
 ﻿using Backend.Context;
-using Backend.DTOs.Estoque;
 using Backend.Models.Estoque;
+using Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Repositories
 {
-    public class RetiradaEstoqueRepository
+    public class RetiradaEstoqueRepository : IRetiradaEstoqueRepository
     {
         private readonly CanilAppDbContext _context;
 
@@ -14,66 +14,15 @@ namespace Backend.Repositories
             _context = context;
         }
 
-        public async Task<RetiradaEstoqueDTO?> CreateAsync(RetiradaEstoqueDTO dto)
+        public async Task<IEnumerable<RetiradaEstoqueModel>> GetAsync()
         {
-            RetiradaEstoqueModel model = dto;
-            model.DataHoraAtualizacao = DateTime.UtcNow; // ✅ Atualizar timestamp
+            return await _context.RetiradaEstoque.ToListAsync();
+        }
 
+        public async Task<RetiradaEstoqueModel?> CreateAsync(RetiradaEstoqueModel model)
+        {
             await _context.RetiradaEstoque.AddAsync(model);
             await _context.SaveChangesAsync();
-
-            return model;
-        }
-
-        // ✅ ADICIONAR método de atualização
-        public async Task<RetiradaEstoqueDTO?> UpdateAsync(RetiradaEstoqueDTO dto)
-        {
-            var existing = await _context.RetiradaEstoque
-                .FirstOrDefaultAsync(r => r.IdRetirada == dto.IdRetirada);
-
-            if (existing == null) return null;
-
-            existing.CodItem = dto.CodItem;
-            existing.NomeItem = dto.NomeItem;
-            existing.Quantidade = dto.Quantidade;
-            existing.Lote = dto.Lote;
-            existing.De = dto.De;
-            existing.Para = dto.Para;
-            existing.DataHoraAtualizacao = DateTime.UtcNow; // ✅ Atualizar timestamp
-
-            await _context.SaveChangesAsync();
-            return existing;
-        }
-
-        // ✅ ADICIONAR soft delete
-        public async Task<bool> DeleteAsync(int id)
-        {
-            var existing = await _context.RetiradaEstoque
-                .FirstOrDefaultAsync(r => r.IdRetirada == id);
-
-            if (existing == null) return false;
-
-            existing.IsDeleted = true;
-            existing.DataHoraAtualizacao = DateTime.UtcNow; // ✅ Atualizar timestamp
-
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        // ✅ ADICIONAR método de listagem (filtrar IsDeleted)
-        public async Task<IEnumerable<RetiradaEstoqueDTO>> GetAsync()
-        {
-            var models = await _context.RetiradaEstoque
-                .Where(r => !r.IsDeleted) // ✅ Excluir soft-deleted
-                .ToListAsync();
-
-            return models.Select(m => (RetiradaEstoqueDTO)m);
-        }
-
-        public async Task<RetiradaEstoqueDTO?> GetByIdAsync(int id)
-        {
-            var model = await _context.RetiradaEstoque
-                .FirstOrDefaultAsync(r => r.IdRetirada == id && !r.IsDeleted);
 
             return model;
         }

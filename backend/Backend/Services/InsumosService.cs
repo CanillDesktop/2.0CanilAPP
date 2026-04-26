@@ -2,6 +2,7 @@
 using Backend.Exceptions;
 using Backend.Models.Enums;
 using Backend.Models.Estoque;
+using Backend.Models.Insumos;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
 using System.Diagnostics;
@@ -11,137 +12,107 @@ namespace Backend.Services
     public class InsumosService : IInsumosService
     {
         public readonly IInsumosRepository _repository;
+        public readonly IUserSessionService _userSessionService;
 
-        public InsumosService(IInsumosRepository repository)
+        public InsumosService(IInsumosRepository repository, IUserSessionService userSessionService)
         {
             _repository = repository;
+            _userSessionService = userSessionService;
         }
 
-        public async Task<IEnumerable<InsumosLeituraDTO>> BuscarTodosAsync()
+        public async Task<IEnumerable<InsumosModel>> BuscarTodosAsync()
         {
-            // 1. Busca do Repositório (Dados crus do banco)
-            var dadosDoBanco = await _repository.GetAsync();
+            var insumos = await _repository.GetAsync();
 
-            // DEBUG: Veja no Output quantos itens vieram
-            var quantidade = dadosDoBanco.Count();
-            System.Diagnostics.Debug.WriteLine($"[Service] Itens vindos do Repo: {quantidade}");
+            var quantidade = insumos.Count();
+            System.Diagnostics.Debug.WriteLine($"[Service] Itens vindos do banco: {quantidade}");
 
-            foreach (var item in dadosDoBanco)
+            foreach (var insumo in insumos)
             {
-                System.Diagnostics.Debug.WriteLine($"[Service] Item ID: {item.IdItem} - Nome: {item.DescricaoSimplificada}");
+                System.Diagnostics.Debug.WriteLine($"[Service] Item ID: {insumo.Id} - Nome: {insumo.DescricaoSimplificada}");
             }
 
-            // 2. Converte para DTO (Aqui pode estar o erro do "Implicit Operator")
-            var listaRetorno = dadosDoBanco.Select(p =>
-            {
-                var dto = (InsumosLeituraDTO)p;
-                // DEBUG: Verifique se a conversão manteve o ID correto
-                System.Diagnostics.Debug.WriteLine($"[Service] DTO Convertido ID: {dto.IdItem}");
-                return dto;
-            });
-
-            return listaRetorno;
+            return insumos;
         }
 
-        public async Task<InsumosLeituraDTO?> BuscarPorIdAsync(int id) => (await _repository.GetByIdAsync(id))!;
+        public async Task<InsumosModel?> BuscarPorIdAsync(int id) => (await _repository.GetByIdAsync(id))!;
 
-        public async Task<InsumosLeituraDTO?> CriarAsync(InsumosCadastroDTO dto)
+        public async Task<InsumosModel?> CriarAsync(InsumosModel model)
         {
-            if (string.IsNullOrWhiteSpace(dto.CodInsumo)
-                || string.IsNullOrWhiteSpace(dto.DescricaoSimplificada)
-                || !Enum.IsDefined(typeof(UnidadeInsumosEnum), (int)dto.Unidade)
-                || string.IsNullOrWhiteSpace(dto.Lote))
-        {
+            if (string.IsNullOrWhiteSpace(model.Codigo)
+                || string.IsNullOrWhiteSpace(model.DescricaoSimplificada)
+                || !Enum.IsDefined(typeof(UnidadeInsumosEnum), (int)model.Unidade)
+                || string.IsNullOrWhiteSpace(model.ItensEstoque?.FirstOrDefault()?.Lote))
+            {
                 throw new ModelIncompletaException("Um ou mais campos obrigatórios não foram preenchidos");
             }
 
-            return await _repository.CreateAsync(dto);
+            model.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
+
+            return await _repository.CreateAsync(model);
         }
 
-        public async Task<InsumosLeituraDTO?> AtualizarAsync(InsumosCadastroDTO dto)
+        public async Task<InsumosModel?> AtualizarAsync(int id, InsumosModel model)
         {
             try
             {
                 Debug.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-                Debug.WriteLine($"[InsumosService] 🔄 Atualizando insumo: {dto.CodInsumo}");
+                Debug.WriteLine($"[InsumosService] 🔄 Atualizando insumo: {id} - {model.DescricaoSimplificada} ");
 
-                // ════════════════════════════════════════════════════════════
-                // 1. BUSCAR INSUMO EXISTENTE (com lotes e nível de estoque)
-                // ════════════════════════════════════════════════════════════
-                // ⚠️ IMPORTANTE: Precisa ter um método no repository que aceite int
-                // Se não tiver, você precisa usar o DTO para identificar qual atualizar
-
-                // OPÇÃO A: Se você tem IdItem no DTO
-                var insumoExistente = await _repository.GetByIdAsync(dto.CodigoId);
-
-                // OPÇÃO B: Se não tem IdItem, buscar por CodInsumo
-                // var todosInsumos = await _repository.GetAsync();
-                // var insumoExistente = todosInsumos.FirstOrDefault(i => i.CodInsumo == dto.CodInsumo);
+                var insumoExistente = await _repository.GetByIdAsync(id);
 
                 if (insumoExistente == null)
                 {
                     Debug.WriteLine($"[InsumosService] ❌ Insumo não encontrado");
-                    throw new InvalidOperationException($"Insumo com código {dto.CodInsumo} não foi encontrado");
+                    throw new ArgumentNullException(null, $"Insumo de id {id} não encontrado");
                 }
 
-                Debug.WriteLine($"[InsumosService] ✅ Insumo encontrado: ID={insumoExistente.IdItem}");
+                Debug.WriteLine($"[InsumosService] ✅ Insumo encontrado: ID={insumoExistente.Id}");
 
-                // ════════════════════════════════════════════════════════════
-                // 2. ATUALIZAR CAMPOS ESCALARES
-                // ════════════════════════════════════════════════════════════
-                insumoExistente.CodInsumo = dto.CodInsumo;
-                insumoExistente.DescricaoSimplificada = dto.DescricaoSimplificada;
-                insumoExistente.DescricaoDetalhada = dto.DescricaoDetalhada;
-                insumoExistente.Unidade = dto.Unidade;
+                insumoExistente.DescricaoSimplificada = model.DescricaoSimplificada;
+                insumoExistente.DescricaoDetalhada = model.DescricaoDetalhada;
+                insumoExistente.Unidade = model.Unidade;
 
                 Debug.WriteLine($"[InsumosService] ✅ Campos escalares atualizados");
 
-                // ════════════════════════════════════════════════════════════
-                // 3. ATUALIZAR OU ADICIONAR LOTE
-                // ════════════════════════════════════════════════════════════
-                if (!string.IsNullOrWhiteSpace(dto.Lote))
+                var itemEstoque = model.ItensEstoque?.FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(itemEstoque?.Lote))
                 {
                     var loteExistente = insumoExistente.ItensEstoque
-                        ?.FirstOrDefault(e => e.Lote == dto.Lote);
+                        ?.FirstOrDefault(e => e.Lote == itemEstoque.Lote);
 
                     if (loteExistente != null)
                     {
-                        // ✅ ATUALIZAR LOTE EXISTENTE
-                        Debug.WriteLine($"[InsumosService] ♻️  Atualizando lote existente: {dto.Lote}");
-                        Debug.WriteLine($"   Quantidade: {loteExistente.Quantidade} → {dto.Quantidade}");
 
-                        loteExistente.Quantidade = dto.Quantidade;
-                        loteExistente.DataEntrega = dto.DataEntrega;
-                        loteExistente.DataValidade = dto.DataValidade;
-                        loteExistente.NFe = dto.NFe;
+                        Debug.WriteLine($"[InsumosService] ♻️  Atualizando lote existente: {itemEstoque.Lote}");
+                        Debug.WriteLine($"   Quantidade: {loteExistente.Quantidade} → {itemEstoque.Quantidade}");
 
-                        // 🔥 ATUALIZAR TIMESTAMP DO LOTE
-                        loteExistente.DataHoraCriacao = DateTime.UtcNow;
+                        loteExistente.Quantidade = itemEstoque.Quantidade;
+                        loteExistente.DataEntrega = itemEstoque.DataEntrega;
+                        loteExistente.DataValidade = itemEstoque.DataValidade;
+                        loteExistente.NFe = itemEstoque.NFe;
 
-                        Debug.WriteLine($"   DataHoraCriacao: {loteExistente.DataHoraCriacao}");
+                        loteExistente.DataHoraAtualizacao = DateTime.UtcNow;
+                        Debug.WriteLine($"   DataHoraAtualizacao: {loteExistente.DataHoraAtualizacao}");
                     }
                     else
                     {
-                        // ✅ ADICIONAR NOVO LOTE
-                        Debug.WriteLine($"[InsumosService] ➕ Adicionando novo lote: {dto.Lote}");
-                        Debug.WriteLine($"   Quantidade: {dto.Quantidade}");
+                        Debug.WriteLine($"[InsumosService] ➕ Adicionando novo lote: {itemEstoque.Lote}");
+                        Debug.WriteLine($"   Quantidade: {itemEstoque.Quantidade}");
 
                         var novoLote = new ItemEstoqueModel
                         {
-                            IdItem = insumoExistente.IdItem,
-                            CodItem = insumoExistente.CodInsumo,
-                            Lote = dto.Lote,
-                            Quantidade = dto.Quantidade,
-                            DataEntrega = dto.DataEntrega,
-                            DataValidade = dto.DataValidade,
-                            NFe = dto.NFe,
+                            Id = insumoExistente.Id,
+                            Codigo = insumoExistente.Codigo,
+                            Lote = itemEstoque.Lote,
+                            Quantidade = itemEstoque.Quantidade,
+                            DataEntrega = itemEstoque.DataEntrega,
+                            DataValidade = itemEstoque.DataValidade,
+                            NFe = itemEstoque.NFe,
                             DataHoraCriacao = DateTime.UtcNow
                         };
 
-                        if (insumoExistente.ItensEstoque == null)
-                        {
-                            insumoExistente.ItensEstoque = new List<ItemEstoqueModel>();
-                        }
+                        insumoExistente.ItensEstoque ??= new List<ItemEstoqueModel>();
 
                         insumoExistente.ItensEstoque.Add(novoLote);
 
@@ -152,42 +123,30 @@ namespace Backend.Services
 
                     if (quantidadeTotal <= 0)
                     {
-                        // Marca como deletado
                         insumoExistente.IsDeleted = true;
-                        Debug.WriteLine($"[Service] 🗑️ Estoque zerado (Total: {quantidadeTotal}). Marcando {insumoExistente.CodInsumo} como deletado.");
+                        Debug.WriteLine($"[Service] 🗑️ Estoque zerado (Total: {quantidadeTotal}). Marcando {insumoExistente.Codigo} como deletado.");
                     }
-                    else
-                    {
-                        // Garante que, se aumentou o estoque, ele deixa de ser deletado (Opcional, mas seguro)
-                        insumoExistente.IsDeleted = false;
-                    }
+                    insumoExistente.IsDeleted = false;
                 }
 
-                // ════════════════════════════════════════════════════════════
-                // 4. ATUALIZAR NÍVEL DE ESTOQUE
-                // ════════════════════════════════════════════════════════════
                 if (insumoExistente.ItemNivelEstoque != null)
                 {
-                    insumoExistente.ItemNivelEstoque.NivelMinimoEstoque = dto.NivelMinimoEstoque;
-                    Debug.WriteLine($"[InsumosService] ✅ Nível mínimo atualizado: {dto.NivelMinimoEstoque}");
+                    insumoExistente.ItemNivelEstoque.NivelMinimoEstoque = model.ItemNivelEstoque.NivelMinimoEstoque;
+                    Debug.WriteLine($"[InsumosService] ✅ Nível mínimo atualizado: {model.ItemNivelEstoque.NivelMinimoEstoque}");
                 }
 
-                // ════════════════════════════════════════════════════════════
-                // 5. 🔥 CRÍTICO: ATUALIZAR TIMESTAMP DA ENTIDADE PAI
-                // ════════════════════════════════════════════════════════════
                 insumoExistente.DataHoraAtualizacao = DateTime.UtcNow;
-             
                 Debug.WriteLine($"[InsumosService] 🔥 DataHoraAtualizacao atualizado: {insumoExistente.DataHoraAtualizacao}");
+                insumoExistente.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
 
-                // ════════════════════════════════════════════════════════════
-                // 6. SALVAR VIA REPOSITORY
-                // ════════════════════════════════════════════════════════════
                 var resultado = await _repository.UpdateAsync(insumoExistente);
-
                 Debug.WriteLine($"[InsumosService] ✅ Insumo salvo com sucesso!");
                 Debug.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-                return (InsumosLeituraDTO)resultado;
+                return resultado;
+            }
+            catch (ArgumentNullException ex)
+            {
+                throw new ArgumentNullException(null, ex.Message);
             }
             catch (Exception ex)
             {
@@ -197,8 +156,18 @@ namespace Backend.Services
             }
         }
 
-        public async Task<bool> DeletarAsync(int id) => await _repository.DeleteAsync(id);
+        public async Task<bool> DeletarAsync(int id)
+        {
+            var insumo = await BuscarPorIdAsync(id);
 
-        public async Task<IEnumerable<InsumosLeituraDTO>> BuscarTodosAsync(InsumosFiltroDTO filtro) => (await _repository.GetAsync(filtro)).Select(p => (InsumosLeituraDTO)p);
+            if (insumo == null) return false;
+
+            insumo.IsDeleted = true;
+            insumo.DataHoraAtualizacao = DateTime.UtcNow;
+
+            return await _repository.DeleteAsync(insumo);
+        }
+
+        public async Task<IEnumerable<InsumosModel>> BuscarTodosAsync(InsumosFiltroDTO filtro) => await _repository.GetAsync(filtro);
     }
 }

@@ -1,55 +1,14 @@
 ﻿using Backend.Context;
-using Backend.Models.Enums;
 using Backend.Models.Usuarios;
 using Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Backend.Repositories;
 
-public class UsuariosRepository : IUsuariosRepository<UsuariosModel>
+public class UsuariosRepository : BaseCRUDRepository<UsuariosModel>, IUsuariosRepository
 {
-    private readonly CanilAppDbContext _context;
-
-    public UsuariosRepository(CanilAppDbContext context)
-    {
-        _context = context;
-    }
-
-    public async Task<UsuariosModel> CreateAsync(UsuariosModel obj)
-    {
-        _context.Usuarios.Add(obj);
-        await _context.SaveChangesAsync();
-        return obj;
-    }
-
-    public async Task<UsuariosModel?> UpdateAsync(UsuariosModel obj)
-    {
-        _context.Usuarios.Update(obj);
-        await _context.SaveChangesAsync();
-        return obj;
-    }
-
-    public async Task<bool> DeleteAsync(int id)
-    {
-        var usuario = await _context.Usuarios.FindAsync(id);
-        if (usuario != null)
-        {
-            _context.Usuarios.Remove(usuario);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-        return false;
-    }
-
-    public async Task<IEnumerable<UsuariosModel>> GetAsync()
-    {
-        return await _context.Usuarios.ToListAsync();
-    }
-
-    public async Task<UsuariosModel?> GetByIdAsync(int id)
-    {
-        return await _context.Usuarios.FindAsync(id);
-    }
+    public UsuariosRepository(CanilAppDbContext context) : base(context) { }
 
     public async Task<UsuariosModel?> GetByEmailAsync(string email)
     {
@@ -57,19 +16,15 @@ public class UsuariosRepository : IUsuariosRepository<UsuariosModel>
             .FirstOrDefaultAsync(u => u.Email == email);
     }
 
-    public async Task<int> CountAsync()
+    public async Task<int> CountAsync(Expression<Func<UsuariosModel, bool>>? predicate = null)
     {
-        return await _context.Usuarios.CountAsync();
-    }
-
-    public async Task<int> CountAdminsAtivosAsync()
-    {
-        return await _context.Usuarios.CountAsync(u => u.Permissao == PermissoesEnum.ADMIN && !u.IsDeleted);
-    }
-
-    public async Task<int> CountAdminsAtivosExcetoAsync(int usuarioId)
-    {
-        return await _context.Usuarios.CountAsync(u =>
-            u.Permissao == PermissoesEnum.ADMIN && !u.IsDeleted && u.Id != usuarioId);
+        if (predicate != null)
+        {
+            return await _context.Usuarios.CountAsync(predicate);
+        }
+        else
+        {
+            return await _context.Usuarios.CountAsync();
+        }
     }
 }

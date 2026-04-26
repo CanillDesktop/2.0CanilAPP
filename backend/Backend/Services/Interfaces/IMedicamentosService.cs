@@ -1,9 +1,10 @@
 ﻿using Backend.DTOs.Medicamentos;
+using Backend.Models.Medicamentos;
 
 namespace Backend.Services.Interfaces
 {
-    public interface IMedicamentosService : IService<MedicamentoCadastroDTO, MedicamentoLeituraDTO>
+    public interface IMedicamentosService : ICRUDEstoqueService<MedicamentosModel>
     {
-        Task<IEnumerable<MedicamentoLeituraDTO>> BuscarTodosAsync(MedicamentosFiltroDTO filtro);
+        Task<IEnumerable<MedicamentosModel>> BuscarTodosAsync(MedicamentosFiltroDTO filtro);
     }
 }

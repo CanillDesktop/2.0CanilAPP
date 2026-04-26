@@ -6,80 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Repositories
 {
-    public class InsumosRepository : IInsumosRepository
+    public class InsumosRepository : BaseCRUDEstoqueRepository<InsumosModel>, IInsumosRepository
     {
-        private readonly CanilAppDbContext _context;
-        private readonly DbSet<InsumosModel> _dbSet;
-
-        public InsumosRepository(CanilAppDbContext context)
-        {
-            _context = context;
-            _dbSet = context.Set<InsumosModel>();
-        }
-
-        public async Task<IEnumerable<InsumosModel>> GetAsync()
-        {
-            var insumosRepository = await _context.Insumos
-                .Include(i => i.ItensEstoque)
-                .Include(i => i.ItemNivelEstoque)
-                .Where(i => i.IsDeleted == false)
-                .ToListAsync();
-
-            return insumosRepository is null ? throw new InvalidOperationException("Insumos é null") : insumosRepository;
-        }
-
-        public async Task<InsumosModel?> GetByIdAsync(int id)
-        {
-
-            var insumosRepository = await _context.Insumos
-                .Include(i => i.ItensEstoque)
-                .Include(i => i.ItemNivelEstoque).Where(i=>i.IsDeleted == false)
-                .FirstOrDefaultAsync(i => i.IdItem == id);
-
-            return insumosRepository is null ? throw new InvalidOperationException("Insumos é null") : insumosRepository;
-        }
-
-        public async Task<InsumosModel> CreateAsync(InsumosModel insumo)
-        {
-            if (insumo is null)
-            {
-                throw new ArgumentNullException(nameof(insumo));
-            }
-
-            await _context.Insumos.AddAsync(insumo);
-            await _context.SaveChangesAsync();
-            return insumo;
-
-        }
-
-
-        public async Task<InsumosModel> UpdateAsync(InsumosModel Insumo)
-        {
-            if (Insumo is null)
-            {
-                throw new ArgumentException(null, nameof(Insumo));
-            }
-            _context.Entry(Insumo).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return Insumo;
-        }
-
-        public async Task<bool> DeleteAsync(int id)
-        {
-            var Insumosrepository = await _context.Insumos.FindAsync(id);
-
-            if (Insumosrepository is null)
-            {
-                throw new ArgumentException(nameof(Insumosrepository));
-            }
-
-            Insumosrepository.IsDeleted = true;
-            Insumosrepository.DataHoraAtualizacao = DateTime.UtcNow;
-
-            _context.Insumos.Update(Insumosrepository);
-            await _context.SaveChangesAsync();
-            return true;
-        }
+        public InsumosRepository(CanilAppDbContext context) : base(context) { }
 
         public async Task<IEnumerable<InsumosModel>> GetAsync(InsumosFiltroDTO filtro)
         {
@@ -88,25 +17,24 @@ namespace Backend.Repositories
             var query = _context.Insumos
                 .Include(i => i.ItensEstoque)
                 .Include(i => i.ItemNivelEstoque)
+                .Include(i => i.IsDeleted == false)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(filtro.CodInsumo))
-                query = query.Where(p => p.CodInsumo!.Contains(filtro.CodInsumo));
+                query = query.Where(i => i.Codigo!.Contains(filtro.CodInsumo));
 
             if (!string.IsNullOrWhiteSpace(filtro.DescricaoSimplificada))
-                query = query.Where(p => p.DescricaoSimplificada!.Contains(filtro.DescricaoSimplificada));
+                query = query.Where(i => i.DescricaoSimplificada!.Contains(filtro.DescricaoSimplificada));
 
             if (!string.IsNullOrWhiteSpace(filtro.NFe))
-                query = query.Where(p => p.ItensEstoque!.Any(p => p.NFe.Contains(filtro.NFe)));
-
-        
+                query = query.Where(i => i.ItensEstoque!.Any(e => !string.IsNullOrWhiteSpace(e.NFe) && e.NFe.Contains(filtro.NFe)));
 
             if (filtro.DataEntrega != null)
-                query = query.Where(p => p.ItensEstoque!.Any(e => e.DataEntrega == filtro.DataEntrega));
+                query = query.Where(i => i.ItensEstoque!.Any(i => i.DataEntrega == filtro.DataEntrega));
 
 
             if (filtro.DataValidade != null)
-                query = query.Where(p => p.ItensEstoque!.Any(e => e.DataValidade == filtro.DataValidade));
+                query = query.Where(i => i.ItensEstoque!.Any(e => e.DataValidade == filtro.DataValidade));
 
             var insumos = await query.ToListAsync();
             return insumos;

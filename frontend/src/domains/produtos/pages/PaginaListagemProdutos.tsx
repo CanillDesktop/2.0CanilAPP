@@ -31,26 +31,26 @@ const MotionBox = motion(Box);
 
 const produtosMock: ProdutoLeituraDto[] = [
   {
-    idItem: 9901,
-    codItem: 'PRD-001',
-    nomeItem: 'Racao Premium Adulto',
+    id: 9901,
+    codigo: 'PRD-001',
+    nomeOuDescricaoSimples: 'Racao Premium Adulto',
     descricaoDetalhada: 'Racao seca premium',
     unidade: 1,
     categoria: 1,
-    itemNivelEstoque: { idItem: 9901, nivelMinimoEstoque: 30 },
+    itemNivelEstoque: { id: 9901, nivelMinimoEstoque: 30 },
     itensEstoque: [
-      { idItem: 9901, codItem: 'PRD-001', quantidade: 120, dataEntrega: '2026-04-20', dataValidade: '2026-07-10' },
+      { id: 9901, codigo: 'PRD-001', quantidade: 120, dataEntrega: '2026-04-20', dataValidade: '2026-07-10' },
     ],
   },
   {
-    idItem: 9902,
-    codItem: 'PRD-002',
-    nomeItem: 'Areia Higienica',
+    id: 9902,
+    codigo: 'PRD-002',
+    nomeOuDescricaoSimples: 'Areia Higienica',
     descricaoDetalhada: 'Areia com controle de odor',
     unidade: 1,
     categoria: 2,
-    itemNivelEstoque: { idItem: 9902, nivelMinimoEstoque: 25 },
-    itensEstoque: [{ idItem: 9902, codItem: 'PRD-002', quantidade: 10, dataEntrega: '2026-04-19', dataValidade: null }],
+    itemNivelEstoque: { id: 9902, nivelMinimoEstoque: 25 },
+    itensEstoque: [{ id: 9902, codigo: 'PRD-002', quantidade: 10, dataEntrega: '2026-04-19', dataValidade: null }],
   },
 ];
 
@@ -95,7 +95,7 @@ export function PaginaListagemProdutos() {
 
   const itensFiltrados = useMemo(() => {
     return itensBase.filter((item) => {
-      const texto = `${item.codItem} ${item.nomeItem}`.toLowerCase();
+      const texto = `${item.codigo} ${item.nomeOuDescricaoSimples}`.toLowerCase();
       const bateBusca = texto.includes(busca.toLowerCase());
       const bateCategoria = categoria === 'todas' ? true : String(item.categoria) === categoria;
       const statusItem = obterStatus(item);
@@ -193,10 +193,10 @@ export function PaginaListagemProdutos() {
                   onRegistrarRetirada={(produto: ProdutoLeituraDto, lote: ItemEstoqueDto) =>
                     navigate('/estoque/retirada', {
                       state: {
-                        produtoId: produto.idItem,
-                        produtoNome: produto.nomeItem,
-                        codItem: produto.codItem,
-                        loteId: `${produto.idItem}-${lote.lote ?? ''}`,
+                        produtoId: produto.id,
+                        produtoNome: produto.nomeOuDescricaoSimples,
+                        codItem: produto.codigo,
+                        loteId: `${produto.id}-${lote.lote ?? ''}`,
                         loteCodigo: lote.lote ?? 'Sem codigo',
                         quantidadeDisponivel: lote.quantidade,
                         retornoRota: '/produtos',

@@ -1,8 +1,7 @@
 ﻿using Backend.DTOs.Estoque;
 using Backend.Exceptions;
 using Backend.Models;
-using Backend.Models.Estoque;
-using Backend.Services;
+using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,33 +12,59 @@ namespace Backend.Controllers
     [Authorize]
     public class RetiradaEstoqueController : ControllerBase
     {
-        private RetiradaEstoqueService _service;
+        private IRetiradaEstoqueService _service;
 
-        public RetiradaEstoqueController(RetiradaEstoqueService service)
+        public RetiradaEstoqueController(IRetiradaEstoqueService service)
         {
             _service = service;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] RetiradaEstoqueDTO dto)
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<RetiradaEstoqueDTO>>> Get()
+        {
+            var logRetiradas = await _service.BuscarTodosAsync();
+
+            return Ok(logRetiradas);
+        }
+
+        [HttpPost("{lote}")]
+        public async Task<IActionResult> Create(string lote, [FromBody] RetiradaEstoqueDTO dto)
         {
             try
             {
-                RetiradaEstoqueModel model = dto;
+                var logRetirada = await _service.CriarAsync(lote, dto);
 
-                await _service.CriarAsync(model);
+                if (logRetirada == null)
+                    throw new ArgumentNullException();
 
-                return CreatedAtAction(dto.CodItem, dto);
+                return Created();
             }
             catch (ModelIncompletaException ex)
             {
-                var erro = new ErrorResponse
+                return BadRequest(new ErrorResponse
                 {
-                    Title = "Erro ao salvar log de retirada de estoque",
+                    Title = "Falha ao salvar log de retirada de estoque",
                     Status = StatusCodes.Status400BadRequest,
-                    Details = ex.Message
-                };
-                return StatusCode(erro.Status, erro);
+                    Details = ex.Message ?? "Falha ao salvar log de retirada de estoque"
+                });
+            }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Title = "Falha ao salvar log de retirada de estoque",
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message ?? "Item de estoque não encontrado"
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Title = "Falha ao salvar log de retirada de estoque",
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message ?? "Quantidade de retirada maior que quantidade no estoque"
+                });
             }
         }
     }

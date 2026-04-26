@@ -1,16 +1,11 @@
-/** Corpo de criação de usuário (UsuarioRequestDTO). */
-export type UsuarioCadastroDto = {
-  id?: number | null;
+export type UsuarioCadastroComConfirmacaoDto = {
   primeiroNome: string;
   sobrenome?: string | null;
   email: string;
   senha: string;
+  senhaConfirmacao: string;
   /** Ignorado no cadastro público: o servidor sempre cria como Leitura. */
   permissao?: number;
-};
-
-export type UsuarioCadastroComConfirmacaoDto = UsuarioCadastroDto & {
-  senhaConfirmacao: string;
 };
 
 export type UsuarioCriadoDto = {
@@ -34,7 +29,7 @@ export type UsuarioAtualizacaoDto = {
 
 export type TrocarSenhaDto = {
   senhaAtual: string;
-  senhaNova: string;
+  novaSenha: string;
 };
 
 export type ConfirmacaoSenhaDto = {

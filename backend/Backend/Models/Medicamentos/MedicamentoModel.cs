@@ -2,29 +2,38 @@
 using Backend.DTOs.Medicamentos;
 using Backend.Models.Enums;
 using Backend.Models.Estoque;
+using System.Text.RegularExpressions;
 
 namespace Backend.Models.Medicamentos;
 
 public class MedicamentosModel : ItemComEstoqueBaseModel
 {
-    public string CodMedicamento { get; set; } = string.Empty;
-
+    public string Codigo { get; set; } = string.Empty;
     public PrioridadeEnum Prioridade { get; set; }
-
-    public required string DescricaoMedicamento { get; set; }
-
-    public required string Formula { get; set; }
-
-    public required string NomeComercial { get; set; }
-
+    public string? Descricao { get; set; } = string.Empty;
+    public string Formula { get; set; } = string.Empty;
+    public string NomeComercial { get; set; } = string.Empty;
     public PublicoAlvoMedicamentoEnum PublicoAlvo { get; set; }
 
+    private static string GeraIdentificador()
+    {
+        var id = "MED";
+
+        var guid = Guid.NewGuid().ToString().Replace("-", "");
+        guid = Regex.Replace(guid, @"\D", "");
+
+        id += guid;
+
+        return id;
+    }
 
     public static implicit operator MedicamentosModel(MedicamentoCadastroDTO dto)
     {
+        var codigoMedicamento = GeraIdentificador();
+
         var itemEstoque = new ItemEstoqueModel()
         {
-            CodItem = dto.CodMedicamento,
+            Codigo = codigoMedicamento,
             DataEntrega = dto.DataEntrega,
             DataValidade = dto.DataValidade,
             Lote = dto.Lote,
@@ -39,36 +48,14 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
 
         return new MedicamentosModel()
         {
-            CodMedicamento = dto.CodMedicamento,
+            Codigo = codigoMedicamento,
             Prioridade = dto.Prioridade,
-            DescricaoMedicamento = dto.DescricaoMedicamento,
+            Descricao = dto.Descricao?.ToLower(),
             Formula = dto.Formula,
-            NomeComercial = dto.NomeComercial,
+            NomeComercial = dto.NomeComercial.ToUpper(),
             PublicoAlvo = dto.PublicoAlvo,
             ItemNivelEstoque = nivelEstoque,
             ItensEstoque = [itemEstoque]
-        };
-    }
-
-    public static implicit operator MedicamentoCadastroDTO(MedicamentosModel model)
-    {
-        var itemEstoque = model.ItensEstoque?.FirstOrDefault();
-        var nivelEstoque = model.ItemNivelEstoque;
-
-        return new MedicamentoCadastroDTO()
-        {
-            CodMedicamento = model.CodMedicamento,
-            Prioridade = model.Prioridade,
-            DescricaoMedicamento = model.DescricaoMedicamento,
-            Lote = itemEstoque?.Lote,
-            Quantidade = itemEstoque?.Quantidade ?? 0,
-            DataEntrega = itemEstoque?.DataEntrega ?? DateTime.UtcNow,
-            NFe = itemEstoque?.NFe,
-            Formula = model.Formula,
-            NomeComercial = model.NomeComercial,
-            PublicoAlvo = model.PublicoAlvo,
-            NivelMinimoEstoque = nivelEstoque?.NivelMinimoEstoque ?? 0,
-            DataValidade = itemEstoque?.DataValidade
         };
     }
 
@@ -79,10 +66,10 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
 
         return new MedicamentoLeituraDTO()
         {
-            IdItem = model.IdItem,
-            CodItem = model.CodMedicamento,
-            NomeItem = model.NomeComercial,
-            DescricaoMedicamento = model.DescricaoMedicamento,
+            Id = model.Id,
+            Codigo = model.Codigo,
+            NomeOuDescricaoSimples = model.NomeComercial,
+            Descricao = model.Descricao,
             Formula = model.Formula,
             PublicoAlvo = model.PublicoAlvo,
             ItemNivelEstoque = nivelEstoque,
