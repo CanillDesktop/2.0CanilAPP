@@ -1,7 +1,6 @@
 using Backend.DTOs.Usuario;
 using Backend.Models;
 using Backend.Services.Interfaces;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

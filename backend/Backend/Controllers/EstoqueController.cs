@@ -1,4 +1,5 @@
 ﻿using Backend.DTOs.Estoque;
+using Backend.Exceptions;
 using Backend.Models;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -64,7 +65,7 @@ namespace Backend.Controllers
                 return new CreatedAtRouteResult("GetItemEstoqueByLote",
                     new { lote = novoItemEstoque.Lote }, novoItemEstoque);
             }
-            catch (InvalidOperationException ex)
+            catch (ModelIncompletaException ex)
             {
                 return BadRequest(new ErrorResponse
                 {

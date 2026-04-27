@@ -1,4 +1,5 @@
 ﻿using Backend.DTOs.Usuario;
+using Backend.Exceptions;
 using Backend.Models;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -57,12 +58,12 @@ public class UsuariosController : ControllerBase
             return new CreatedAtRouteResult("GetUsuario",
                 new { id = novoUsuario.Id }, novoUsuario);
         }
-        catch (InvalidOperationException ex)
+        catch (RegraDeNegocioInfringidaException ex)
         {
-            return BadRequest(new ErrorResponse
+            return UnprocessableEntity(new ErrorResponse
             {
                 Title = "Erro ao criar usuário",
-                Status = StatusCodes.Status400BadRequest,
+                Status = StatusCodes.Status422UnprocessableEntity,
                 Details = ex.Message ?? "Erro ao criar usuário"
             });
         }
@@ -87,12 +88,12 @@ public class UsuariosController : ControllerBase
                 Details = ex.Message ?? "Usuário não encontrado"
             });
         }
-        catch (InvalidOperationException ex)
+        catch (RegraDeNegocioInfringidaException ex)
         {
-            return BadRequest(new ErrorResponse
+            return UnprocessableEntity(new ErrorResponse
             {
                 Title = "Falha ao atualizar usuário",
-                Status = StatusCodes.Status400BadRequest,
+                Status = StatusCodes.Status422UnprocessableEntity,
                 Details = ex.Message ?? "Falha ao atualizar usuário"
             });
         }
@@ -102,30 +103,18 @@ public class UsuariosController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id, [FromQuery] bool hardDelete = false)
     {
-        try
+        var sucesso = await _service.DeletarAsync(id, hardDelete);
+        if (!sucesso)
         {
-            var sucesso = await _service.DeletarAsync(id, hardDelete);
-            if (!sucesso)
+            return NotFound(new ErrorResponse
             {
-                return NotFound(new ErrorResponse
-                {
-                    Title = "Recurso não encontrado",
-                    Status = StatusCodes.Status404NotFound,
-                    Details = $"Usuário de id {id} não encontrado"
-                });
-            }
-
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new ErrorResponse
-            {
-                Title = "Falha ao excluir/inativar usuário",
-                Status = StatusCodes.Status400BadRequest,
-                Details = ex.Message ?? "Falha ao excluir/inativar usuário"
+                Title = "Recurso não encontrado",
+                Status = StatusCodes.Status404NotFound,
+                Details = $"Usuário de id {id} não encontrado"
             });
         }
+
+        return NoContent();
     }
 
     [Authorize]
@@ -136,15 +125,6 @@ public class UsuariosController : ControllerBase
         {
             await _service.TrocarSenhaAsync(id, dto.SenhaAtual, dto.NovaSenha);
             return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return UnprocessableEntity(new ErrorResponse
-            {
-                Title = "Falha ao alterar senha",
-                Status = StatusCodes.Status422UnprocessableEntity,
-                Details = ex.Message ?? "Falha ao alterar senha"
-            });
         }
         catch (ArgumentException ex)
         {
@@ -174,19 +154,10 @@ public class UsuariosController : ControllerBase
                     Details = "Usuário não encontrado"
                 });
             }
-               
+
             return NoContent();
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new ErrorResponse
-            {
-                Title = "Falha ao inativar usuário",
-                Status = StatusCodes.Status400BadRequest,
-                Details = ex.Message ?? "Falha ao inativar usuário"
-            });
-        }
-        catch (ArgumentNullException ex)
+        catch (ArgumentException ex)
         {
             return BadRequest(new ErrorResponse
             {

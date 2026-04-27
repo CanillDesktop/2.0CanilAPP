@@ -34,7 +34,7 @@ namespace Backend.Services
 
             if (itemEstoque.Quantidade - dto.Quantidade < 0)
             {
-                throw new InvalidOperationException($"Retirar a quantidade especificada deixaria o estoque com saldo negativo. Retirada não será contabilizada");
+                throw new RegraDeNegocioInfringidaException("Retirar a quantidade especificada deixaria o estoque com saldo negativo. Retirada não será contabilizada");
             }
 
             if (string.IsNullOrWhiteSpace(dto.Codigo)

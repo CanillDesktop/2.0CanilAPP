@@ -1,5 +1,4 @@
 using Backend.DTOs.Medicamentos;
-using Backend.DTOs.Produtos;
 using Backend.Exceptions;
 using Backend.Models;
 using Backend.Models.Medicamentos;
