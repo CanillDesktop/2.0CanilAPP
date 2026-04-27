@@ -48,9 +48,9 @@ public class UsuariosModel : BaseModel
     {
         return new UsuariosModel
         {
-            PrimeiroNome = dto.PrimeiroNome?.ToLower() ?? string.Empty,
-            Sobrenome = dto.Sobrenome?.ToLower(),
-            Email = dto.Email?.ToLower() ?? string.Empty,
+            PrimeiroNome = dto.PrimeiroNome?.ToLower().Trim() ?? string.Empty,
+            Sobrenome = dto.Sobrenome?.ToLower().Trim(),
+            Email = dto.Email?.ToLower().Trim() ?? string.Empty,
             Permissao = dto.Permissao ?? PermissoesEnum.ADMIN
         };
     }
@@ -59,10 +59,10 @@ public class UsuariosModel : BaseModel
     {
         return new UsuariosModel
         {
-            PrimeiroNome = dto.PrimeiroNome.ToLower(),
-            Sobrenome = dto.Sobrenome?.ToLower(),
-            Email = dto.Email.ToLower(),
-            HashSenha = dto.Senha,
+            PrimeiroNome = dto.PrimeiroNome?.ToLower().Trim() ?? string.Empty,
+            Sobrenome = dto.Sobrenome?.ToLower().Trim(),
+            Email = dto.Email?.ToLower().Trim() ?? string.Empty,
+            HashSenha = dto.Senha ?? string.Empty,
             Permissao = dto.Permissao
         };
     }
