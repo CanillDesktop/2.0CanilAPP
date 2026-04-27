@@ -1,4 +1,4 @@
-﻿using Backend.DTOs.Usuario;
+using Backend.DTOs.Usuario;
 using Backend.Models.Enums;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;

@@ -1,4 +1,4 @@
-﻿using Backend.Models.Enums;
+using Backend.Models.Enums;
 using Backend.Models.Usuarios;
 
 namespace Backend.Services.Interfaces;

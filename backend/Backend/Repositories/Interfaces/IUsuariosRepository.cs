@@ -1,4 +1,4 @@
-﻿namespace Backend.Repositories.Interfaces;
+namespace Backend.Repositories.Interfaces;
 
 public interface IUsuariosRepository<T> : IRepository<T> where T : class
 {

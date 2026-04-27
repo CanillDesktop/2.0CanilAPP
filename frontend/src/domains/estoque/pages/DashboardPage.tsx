@@ -6,10 +6,12 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   CssBaseline,
   Grid,
   IconButton,
   Stack,
+  TextField,
   ThemeProvider,
   Typography,
   createTheme,
@@ -57,6 +59,13 @@ const SPACING = {
   lg: 4,
 } as const;
 
+const CHIPS_CATEGORIA_ALERTAS: { valor: '' | LinhaOperacionalEstoque['origem']; rotulo: string }[] = [
+  { valor: '', rotulo: 'Todos' },
+  { valor: 'produto', rotulo: 'Produtos' },
+  { valor: 'medicamento', rotulo: 'Medicamentos' },
+  { valor: 'insumo', rotulo: 'Insumos' },
+];
+
 const sxBotaoCadastro = {
   textTransform: 'none' as const,
   fontWeight: 700,
@@ -84,9 +93,27 @@ export function DashboardPage() {
   const [linhasOperacionais, setLinhasOperacionais] = useState<LinhaOperacionalEstoque[]>([]);
   const [drawerAbertoMobile, setDrawerAbertoMobile] = useState(false);
   const [emTransicao, setEmTransicao] = useState(false);
+  const [categoria, setCategoria] = useState<'' | LinhaOperacionalEstoque['origem']>('');
+  const [busca, setBusca] = useState('');
+  const [debouncedBusca, setDebouncedBusca] = useState('');
+  const [pageMinimo, setPageMinimo] = useState(1);
+  const [pageVencimento, setPageVencimento] = useState(1);
   const theme = useTheme();
   const ehMobileLayoutConteudo = useMediaQuery(theme.breakpoints.down('sm'));
   const ehMobileMenu = useMediaQuery(theme.breakpoints.down('md'));
+  const itensPorPaginaAlertas = ehMobileLayoutConteudo ? 3 : 5;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedBusca(busca);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [busca]);
+
+  useEffect(() => {
+    setPageMinimo(1);
+    setPageVencimento(1);
+  }, [categoria, debouncedBusca]);
 
   useEffect(() => {
     let ativo = true;
@@ -152,6 +179,8 @@ export function DashboardPage() {
             ultimaMovimentacao: maiorDataMovimentacao
               ? maiorDataMovimentacao.toLocaleDateString('pt-BR')
               : 'Sem movimentacao',
+            validadeMs: menorValidade ? menorValidade.getTime() : null,
+            movimentacaoMs: maiorDataMovimentacao ? maiorDataMovimentacao.getTime() : null,
           } satisfies LinhaOperacionalEstoque;
         });
 
@@ -196,6 +225,81 @@ export function DashboardPage() {
     () => linhasOperacionais.filter((item) => item.status === 'proximo_vencimento'),
     [linhasOperacionais],
   );
+
+  const aplicarFiltrosAlertas = useMemo(() => {
+    const trecho = debouncedBusca.trim().toLowerCase();
+    return (lista: LinhaOperacionalEstoque[]) =>
+      lista.filter((item) => {
+        const matchCategoria = !categoria || item.origem === categoria;
+        const matchBusca = !trecho || item.nome.toLowerCase().includes(trecho);
+        return matchCategoria && matchBusca;
+      });
+  }, [categoria, debouncedBusca]);
+
+  const listaFiltradaMinimo = useMemo(
+    () => aplicarFiltrosAlertas(itensAbaixoMinimo),
+    [aplicarFiltrosAlertas, itensAbaixoMinimo],
+  );
+
+  const listaFiltradaVencimento = useMemo(
+    () => aplicarFiltrosAlertas(itensProximoVencimento),
+    [aplicarFiltrosAlertas, itensProximoVencimento],
+  );
+
+  const rotuloVazioMinimo = useMemo(() => {
+    if (itensAbaixoMinimo.length === 0) return 'Nenhum item abaixo do nível mínimo no momento.';
+    if (debouncedBusca.trim()) return 'Nenhum item corresponde à busca.';
+    if (categoria) return 'Nenhum item desta categoria abaixo do mínimo.';
+    return 'Nenhum item abaixo do nível mínimo no momento.';
+  }, [itensAbaixoMinimo.length, debouncedBusca, categoria]);
+
+  const rotuloVazioVencimento = useMemo(() => {
+    if (itensProximoVencimento.length === 0) return 'Nenhum item próximo do vencimento no momento.';
+    if (debouncedBusca.trim()) return 'Nenhum item corresponde à busca.';
+    if (categoria) return 'Nenhum item desta categoria próximo do vencimento.';
+    return 'Nenhum item próximo do vencimento no momento.';
+  }, [itensProximoVencimento.length, debouncedBusca, categoria]);
+
+  const totalPagesMinimo = useMemo(
+    () =>
+      listaFiltradaMinimo.length === 0
+        ? 1
+        : Math.ceil(listaFiltradaMinimo.length / itensPorPaginaAlertas),
+    [listaFiltradaMinimo.length, itensPorPaginaAlertas],
+  );
+
+  const totalPagesVencimento = useMemo(
+    () =>
+      listaFiltradaVencimento.length === 0
+        ? 1
+        : Math.ceil(listaFiltradaVencimento.length / itensPorPaginaAlertas),
+    [listaFiltradaVencimento.length, itensPorPaginaAlertas],
+  );
+
+  const paginaSeguraMinimo = Math.min(Math.max(1, pageMinimo), totalPagesMinimo);
+  const paginaSeguraVencimento = Math.min(Math.max(1, pageVencimento), totalPagesVencimento);
+
+  const listaPaginadaMinimo = useMemo(() => {
+    const start = (paginaSeguraMinimo - 1) * itensPorPaginaAlertas;
+    return listaFiltradaMinimo.slice(start, start + itensPorPaginaAlertas);
+  }, [listaFiltradaMinimo, paginaSeguraMinimo, itensPorPaginaAlertas]);
+
+  const listaPaginadaVencimento = useMemo(() => {
+    const start = (paginaSeguraVencimento - 1) * itensPorPaginaAlertas;
+    return listaFiltradaVencimento.slice(start, start + itensPorPaginaAlertas);
+  }, [listaFiltradaVencimento, paginaSeguraVencimento, itensPorPaginaAlertas]);
+
+  useEffect(() => {
+    if (paginaSeguraMinimo !== pageMinimo) {
+      setPageMinimo(paginaSeguraMinimo);
+    }
+  }, [paginaSeguraMinimo, pageMinimo]);
+
+  useEffect(() => {
+    if (paginaSeguraVencimento !== pageVencimento) {
+      setPageVencimento(paginaSeguraVencimento);
+    }
+  }, [paginaSeguraVencimento, pageVencimento]);
 
   return (
     <ThemeProvider theme={temaDashboard}>
@@ -302,30 +406,112 @@ export function DashboardPage() {
               </Box>
 
               {!erroCarregamento && (
-                <Grid container spacing={SPACING.md}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <AlertaCard
-                      variante="abaixo_minimo"
-                      titulo="Itens abaixo do mínimo"
-                      descricao="Itens com quantidade abaixo do mínimo cadastrado."
-                      itens={itensAbaixoMinimo}
-                      carregando={carregando}
-                      vazioLabel="Nenhum item abaixo do nível mínimo no momento."
-                      onItemClick={navegarParaDetalhe}
-                    />
+                <Stack spacing={SPACING.md}>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#e2e8f0', mb: 1 }}>
+                      Alertas do estoque
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        flexWrap: 'wrap',
+                        gap: 2,
+                        alignItems: { xs: 'stretch', sm: 'center' },
+                        mb: 2,
+                      }}
+                    >
+                      <TextField
+                        size="small"
+                        placeholder="Buscar item..."
+                        value={busca}
+                        onChange={(e) => setBusca(e.target.value)}
+                        fullWidth
+                        slotProps={{ htmlInput: { 'aria-label': 'Buscar nos alertas do estoque' } }}
+                        sx={{
+                          flex: { sm: '1 1 200px' },
+                          maxWidth: { sm: 360 },
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            color: '#e2e8f0',
+                            backgroundColor: 'rgba(2, 6, 23, 0.45)',
+                            '& fieldset': { borderColor: 'rgba(148, 163, 184, 0.35)' },
+                            '&:hover fieldset': { borderColor: 'rgba(148, 163, 184, 0.55)' },
+                            '&.Mui-focused fieldset': { borderColor: 'rgba(96, 165, 250, 0.8)' },
+                          },
+                          '& .MuiInputBase-input::placeholder': { color: 'rgba(148, 163, 184, 0.85)', opacity: 1 },
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 1,
+                          justifyContent: { xs: 'flex-start', sm: 'flex-end' },
+                          flex: { sm: '1 1 auto' },
+                        }}
+                      >
+                        {CHIPS_CATEGORIA_ALERTAS.map(({ valor, rotulo }) => (
+                          <Chip
+                            key={valor || 'todos'}
+                            label={rotulo}
+                            size="small"
+                            clickable
+                            color={categoria === valor ? 'primary' : 'default'}
+                            variant={categoria === valor ? 'filled' : 'outlined'}
+                            onClick={() => setCategoria(valor)}
+                            sx={{
+                              fontWeight: 600,
+                              ...(categoria !== valor && {
+                                color: '#e2e8f0',
+                                borderColor: 'rgba(148, 163, 184, 0.4)',
+                                bgcolor: 'rgba(15, 23, 42, 0.5)',
+                              }),
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                    <Typography variant="caption" sx={{ color: 'rgba(148, 163, 184, 0.9)', display: 'block' }}>
+                      {listaFiltradaMinimo.length} abaixo do mínimo · {listaFiltradaVencimento.length} próx. do
+                      vencimento
+                    </Typography>
+                  </Box>
+                  <Grid container spacing={SPACING.md}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <AlertaCard
+                        variante="abaixo_minimo"
+                        titulo="Itens abaixo do mínimo"
+                        descricao="Itens com quantidade abaixo do mínimo cadastrado."
+                        itens={listaPaginadaMinimo}
+                        totalFiltrado={listaFiltradaMinimo.length}
+                        page={paginaSeguraMinimo}
+                        totalPages={totalPagesMinimo}
+                        onPageChange={setPageMinimo}
+                        isMobile={ehMobileLayoutConteudo}
+                        carregando={carregando}
+                        vazioLabel={rotuloVazioMinimo}
+                        onItemClick={navegarParaDetalhe}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <AlertaCard
+                        variante="proximo_vencimento"
+                        titulo="Próximo do vencimento"
+                        descricao="Itens com validade em até 30 dias."
+                        itens={listaPaginadaVencimento}
+                        totalFiltrado={listaFiltradaVencimento.length}
+                        page={paginaSeguraVencimento}
+                        totalPages={totalPagesVencimento}
+                        onPageChange={setPageVencimento}
+                        isMobile={ehMobileLayoutConteudo}
+                        carregando={carregando}
+                        vazioLabel={rotuloVazioVencimento}
+                        onItemClick={navegarParaDetalhe}
+                      />
+                    </Grid>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <AlertaCard
-                      variante="proximo_vencimento"
-                      titulo="Próximo do vencimento"
-                      descricao="Itens com validade em até 30 dias."
-                      itens={itensProximoVencimento}
-                      carregando={carregando}
-                      vazioLabel="Nenhum item próximo do vencimento no momento."
-                      onItemClick={navegarParaDetalhe}
-                    />
-                  </Grid>
-                </Grid>
+                </Stack>
               )}
             </Stack>
           </MotionBox>
