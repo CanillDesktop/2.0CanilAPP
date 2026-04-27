@@ -57,12 +57,12 @@ namespace Backend.Controllers
                     Details = ex.Message ?? "Item de estoque não encontrado"
                 });
             }
-            catch (InvalidOperationException ex)
+            catch (RegraDeNegocioInfringidaException ex)
             {
-                return BadRequest(new ErrorResponse
+                return UnprocessableEntity(new ErrorResponse
                 {
                     Title = "Falha ao salvar log de retirada de estoque",
-                    Status = StatusCodes.Status400BadRequest,
+                    Status = StatusCodes.Status422UnprocessableEntity,
                     Details = ex.Message ?? "Quantidade de retirada maior que quantidade no estoque"
                 });
             }

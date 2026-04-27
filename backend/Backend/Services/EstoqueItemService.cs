@@ -54,10 +54,6 @@ namespace Backend.Services
             {
                 throw new ArgumentNullException(null, ex.Message);
             }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException("Erro ao atualizar o item de estoque", ex);
-            }
         }
 
         public async Task<bool> DeletarAsync(string lote)
