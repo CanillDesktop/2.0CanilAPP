@@ -79,9 +79,9 @@ function mapearLinha(item: ProdutoLeituraDto): LinhaProduto {
   else if (quantidade < minimo) status = 'baixo';
 
   return {
-    id: item.idItem,
-    codigo: item.codItem,
-    nome: item.nomeItem,
+    id: item.id,
+    codigo: item.codigo,
+    nome: item.nomeOuDescricaoSimples,
     categoriaNome: categoriaNome(item.categoria),
     quantidade,
     status,
@@ -185,7 +185,7 @@ function ExpandedRow({
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 {produto.itensEstoque.map((lote, index) => (
                   <LoteCard
-                    key={`${produto.idItem}-${lote.lote ?? index}`}
+                    key={`${produto.id}-${lote.lote ?? index}`}
                     produto={produto}
                     lote={lote}
                     onRegistrarRetirada={onRegistrarRetirada}
@@ -342,13 +342,13 @@ export function TabelaProdutos({ itens, onVisualizar, onEditar, onExcluir, onMov
         <TableBody>
           {itens.map((produto) => {
             const linha = mapearLinha(produto);
-            const expanded = expandedRow === produto.idItem;
+            const expanded = expandedRow === produto.id;
             return (
-              <Fragment key={produto.idItem}>
+              <Fragment key={produto.id}>
                 <TableRow
                   key={linha.id}
                   hover
-                  onClick={() => handleToggleRow(produto.idItem)}
+                  onClick={() => handleToggleRow(produto.id)}
                   sx={{
                     cursor: 'pointer',
                     borderBottom: '1px solid rgba(255,255,255,0.05)',

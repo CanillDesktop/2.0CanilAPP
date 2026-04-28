@@ -1,4 +1,6 @@
 using Backend.DTOs.Medicamentos;
+using Backend.Exceptions;
+using Backend.Models;
 using Backend.Models.Medicamentos;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -22,93 +24,110 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MedicamentoCadastroDTO>>> Get([FromQuery] MedicamentosFiltroDTO filtro)
+        public async Task<ActionResult<IEnumerable<MedicamentoLeituraDTO>>> Get([FromQuery] MedicamentosFiltroDTO filtro)
         {
             var filteredRequest = HttpContext.Request.GetDisplayUrl().Contains('?');
 
-            if (filteredRequest)
-                return Ok(await _service.BuscarTodosAsync(filtro));
+            IEnumerable<MedicamentoLeituraDTO> result;
+
+            if (!filteredRequest || filtro == null)
+            {
+                result = (await _service.BuscarTodosAsync()).Select(p => (MedicamentoLeituraDTO)p);
+            }
             else
-                return Ok(await _service.BuscarTodosAsync());
+            {
+                result = (await _service.BuscarTodosAsync(filtro)).Select(p => (MedicamentoLeituraDTO)p);
+            }
+
+            return Ok(result);
         }
 
 
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:int}", Name = "GetMedicamento")]
 
-        public async Task<ActionResult<MedicamentoCadastroDTO>> GetById(int id)
+        public async Task<ActionResult<MedicamentoLeituraDTO>> GetById(int id)
         {
             var medicamento = await _service.BuscarPorIdAsync(id);
             if (medicamento == null)
             {
-                return NotFound($"Medicamento com o ID {id} não foi encontrado.");
+                return NotFound(new ErrorResponse
+                {
+                    Title = "Recurso não encontrado",
+                    Status = StatusCodes.Status404NotFound,
+                    Details = "Medicamento não encontrado"
+                });
             }
+
             return Ok(medicamento);
         }
 
 
         [HttpPost]
-        public async Task<ActionResult<MedicamentoCadastroDTO>> Post(MedicamentoCadastroDTO medicamentoDto)
+        public async Task<ActionResult<MedicamentoLeituraDTO>> Post(MedicamentoCadastroDTO dto)
         {
             try
             {
-                MedicamentosModel model = medicamentoDto;
+                MedicamentosModel model = dto;
                 var novoMedicamento = await _service.CriarAsync(model);
 
-                return CreatedAtAction(nameof(GetById), new { id = novoMedicamento.IdItem }, novoMedicamento);
+                if (novoMedicamento == null)
+                {
+                    throw new ArgumentNullException(nameof(novoMedicamento));
+                }
 
+                return new CreatedAtRouteResult("GetMedicamento",
+                    new { id = novoMedicamento.Id }, novoMedicamento);
             }
-            catch (Exception ex)
+            catch (ModelIncompletaException ex)
             {
-                _logger.LogError(ex, "Falha ao criar medicamento.");
-                return StatusCode(500);
+                return BadRequest(new ErrorResponse
+                {
+                    Title = "Falha ao criar medicamento",
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message ?? "Um ou mais campos obrigatórios não foram preenchidos"
+                });
             }
         }
 
 
-        [HttpPut]
+        [HttpPut("{id}")]
 
-        public async Task<ActionResult<MedicamentoCadastroDTO>> Put(MedicamentoCadastroDTO medicamentoDto)
+        public async Task<ActionResult<MedicamentoLeituraDTO>> Put(int id, MedicamentoCadastroDTO dto)
         {
             try
             {
-                var medicamentoAtualizado = await _service.AtualizarAsync(medicamentoDto);
-                if (medicamentoAtualizado == null)
-                {
-                    return NotFound($"Medicamento com o ID não foi encontrado.");
-                }
+                var medicamentoAtualizado = await _service.AtualizarAsync(id, dto);
 
                 return Ok(medicamentoAtualizado);
             }
-            catch (Exception ex)
+            catch (ArgumentNullException ex)
             {
-                _logger.LogError(ex, "Falha ao atualizar medicamento.");
-                return StatusCode(500);
+                return NotFound(new ErrorResponse
+                {
+                    Title = "Recurso não encontrado",
+                    Status = StatusCodes.Status404NotFound,
+                    Details = ex.Message ?? "Medicamento não encontrado"
+                });
             }
-
         }
 
 
         [HttpDelete("{id:int}")]
 
-        public async Task<ActionResult<MedicamentoCadastroDTO>> Delete(int id)
+        public async Task<ActionResult<MedicamentoLeituraDTO>> Delete(int id)
         {
-
-            try
+            var sucesso = await _service.DeletarAsync(id);
+            if (!sucesso)
             {
-                var sucesso = await _service.DeletarAsync(id);
-                if (!sucesso)
+                return NotFound(new ErrorResponse
                 {
-                    return NotFound($"Medicamento com o ID {id} não foi encontrado.");
-                }
-
-                return NoContent();
-
+                    Title = "Recurso não encontrado",
+                    Status = StatusCodes.Status404NotFound,
+                    Details = $"Medicamento de id {id} não encontrado"
+                });
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Falha ao excluir medicamento {MedicamentoId}.", id);
-                return StatusCode(500);
-            }
+
+            return NoContent();
         }
     }
 }

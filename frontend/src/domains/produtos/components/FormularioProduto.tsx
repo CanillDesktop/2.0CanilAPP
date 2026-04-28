@@ -35,13 +35,8 @@ import { PainelErro } from '../../../shared/components/PainelErro';
 import { mapearPapelUsuario } from '../../../shared/types/papelUsuario';
 import { SidebarEstoque } from '../../estoque/components/SidebarEstoque';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
-import { servicoProdutos } from '../services/servicoProdutos';
+// import { servicoProdutos } from '../services/servicoProdutos';
 import type { ProdutoCadastroDto } from '../types/tiposProdutos';
-
-function gerarCodigoProduto(): string {
-  const sufixo = crypto.randomUUID().replace(/\D/g, '').slice(0, 10);
-  return `WEB${sufixo}`;
-}
 
 const temaFormularioProduto = createTheme({
   palette: {
@@ -82,7 +77,6 @@ export function FormularioProduto() {
   const isMobile = useMediaQuery(themeExterno.breakpoints.down('sm'));
   const ehMobileMenu = useMediaQuery(themeExterno.breakpoints.down('md'));
   const [drawerAbertoMobile, setDrawerAbertoMobile] = useState(false);
-  const [codProduto] = useState(() => gerarCodigoProduto());
   const [descricaoSimples, setDescricaoSimples] = useState('');
   const [descricaoDetalhada, setDescricaoDetalhada] = useState('');
   const [unidade, setUnidade] = useState(1);
@@ -134,8 +128,6 @@ export function FormularioProduto() {
     setSubmitSucesso(false);
 
     const dto: ProdutoCadastroDto = {
-      idProduto: 0,
-      codProduto,
       descricaoSimples,
       descricaoDetalhada,
       unidade,
@@ -166,16 +158,16 @@ export function FormularioProduto() {
       severity: 'success',
     });
     window.setTimeout(async () => {
-      try {
-        const encontrados = await servicoProdutos.listar({ codProduto });
-        const criado = encontrados.find((item) => item.codItem === codProduto) ?? encontrados[0];
-        if (criado) {
-          navegar(`/produtos/${criado.idItem}`);
-          return;
-        }
-      } catch {
-        /* ignore: fallback de rota */
-      }
+      // try {
+      //   const encontrados = await servicoProdutos.listar({ codProduto });
+      //   const criado = encontrados.find((item) => item.codItem === codProduto) ?? encontrados[0];
+      //   if (criado) {
+      //     navegar(`/produtos/${criado.id}`);
+      //     return;
+      //   }
+      // } catch {
+      //   /* ignore: fallback de rota */
+      // }
       navegar('/produtos');
     }, 550);
   }
@@ -228,15 +220,6 @@ export function FormularioProduto() {
                 Dados do Produto
               </Typography>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    fullWidth
-                    label="Código"
-                    value={codProduto}
-                    slotProps={{ input: { readOnly: true } }}
-                    helperText="Gerado automaticamente"
-                  />
-                </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     fullWidth

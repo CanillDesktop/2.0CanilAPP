@@ -1,14 +1,17 @@
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.DTOs.Usuario;
 
 public class TrocarSenhaRequestDTO
 {
-    [Required(ErrorMessage = "Senha atual é obrigatória")]
+    [DisplayName("Senha atual")]
+    [Required(ErrorMessage = "O campo '{0}' não pode ser vazio")]
     public string SenhaAtual { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Nova senha é obrigatória")]
-    [MinLength(6, ErrorMessage = "Nova senha deve ter no mínimo 6 caracteres")]
-    [MaxLength(100, ErrorMessage = "Nova senha deve ter no máximo 100 caracteres")]
-    public string SenhaNova { get; set; } = string.Empty;
+    [DisplayName("Nova senha")]
+    [Required(ErrorMessage = "O campo '{0}' não pode ser vazio")]
+    [MinLength(6, ErrorMessage = "{0} deve ter no mínimo {1} caracteres")]
+    [MaxLength(100, ErrorMessage = "{0} deve ter no máximo {1} caracteres")]
+    public string NovaSenha { get; set; } = string.Empty;
 }

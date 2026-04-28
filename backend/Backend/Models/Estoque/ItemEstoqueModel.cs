@@ -7,10 +7,7 @@ public class ItemEstoqueModel : BaseModel
 {
     private string? _lote = string.Empty;
 
-    public int IdItem { get; set; }
-
-    public string CodItem { get; set; } = string.Empty;
-
+    public string Codigo { get; set; } = string.Empty;
     public string? Lote
     {
         get => _lote;
@@ -22,13 +19,9 @@ public class ItemEstoqueModel : BaseModel
                 _lote = value;
         }
     }
-
     public int Quantidade { get; set; }
-
     public DateTime DataEntrega { get; set; }
-
     public string? NFe { get; set; } = string.Empty;
-
     public DateTime? DataValidade { get; set; }
 
     [JsonIgnore]
@@ -39,8 +32,8 @@ public class ItemEstoqueModel : BaseModel
     {
         return new ItemEstoqueDTO
         (
-            model.IdItem,
-            model.CodItem,
+            model.Id,
+            model.Codigo,
             model.Lote,
             model.Quantidade,
             model.DataEntrega,
@@ -53,8 +46,8 @@ public class ItemEstoqueModel : BaseModel
     {
         return new ItemEstoqueModel()
         {
-            IdItem = dto.IdItem,
-            CodItem = dto.CodItem,
+            Id = dto.Id,
+            Codigo = dto.Codigo,
             Lote = dto.Lote,
             Quantidade = dto.Quantidade,
             DataEntrega = dto.DataEntrega,

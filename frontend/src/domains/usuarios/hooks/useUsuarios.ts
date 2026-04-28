@@ -110,7 +110,7 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
     setErro(null);
     setSucesso(null);
     try {
-        const novo = await usuariosService.criarComConfirmacao(dto);
+        const novo = await usuariosService.criar(dto);
       setUsuarios((atual) => [novo, ...atual]);
       setSucesso('Usuário cadastrado com sucesso.');
       return novo;

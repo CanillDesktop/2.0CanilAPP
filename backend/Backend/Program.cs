@@ -1,7 +1,6 @@
 using Backend.Context;
 using Backend.Data;
 using Backend.Models;
-using Backend.Models.Usuarios;
 using Backend.Repositories;
 using Backend.Repositories.Interfaces;
 using Backend.Services;
@@ -13,8 +12,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Events;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
 namespace Backend;
@@ -24,6 +25,8 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
         var logsPath = Path.Combine(builder.Environment.ContentRootPath, "logs");
         Directory.CreateDirectory(logsPath);
@@ -48,7 +51,12 @@ public class Program
 
             builder.Host.UseSerilog();
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+                });
+
             builder.Services.AddEndpointsApiExplorer();
 
             // Nginx (ou outro proxy) no Droplet: preserva esquema HTTPS e IP real do cliente.
@@ -133,6 +141,8 @@ public class Program
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
+                    options.MapInboundClaims = false;
+
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuerSigningKey = true,
@@ -172,17 +182,20 @@ public class Program
             builder.Services.AddScoped<IMedicamentosService, MedicamentosService>();
             builder.Services.AddScoped<IProdutosRepository, ProdutosRepository>();
             builder.Services.AddScoped<IProdutosService, ProdutosService>();
-            builder.Services.AddScoped<IUsuariosRepository<UsuariosModel>, UsuariosRepository>();
+            builder.Services.AddScoped<IUsuariosRepository, UsuariosRepository>();
             builder.Services.AddScoped<IUsuariosService, UsuariosService>();
             builder.Services.AddScoped<IInsumosRepository, InsumosRepository>();
             builder.Services.AddScoped<IInsumosService, InsumosService>();
-            builder.Services.AddScoped<EstoqueItemService>();
-            builder.Services.AddScoped<EstoqueItemRepository>();
-            builder.Services.AddScoped<RetiradaEstoqueService>();
-            builder.Services.AddScoped<RetiradaEstoqueRepository>();
+            builder.Services.AddScoped<IEstoqueItemService, EstoqueItemService>();
+            builder.Services.AddScoped<IEstoqueItemRepository, EstoqueItemRepository>();
+            builder.Services.AddScoped<IRetiradaEstoqueService, RetiradaEstoqueService>();
+            builder.Services.AddScoped<IRetiradaEstoqueRepository, RetiradaEstoqueRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+            builder.Services.AddScoped<IUserSessionService, UserSessionService>();
+
+            builder.Services.AddHttpContextAccessor();
 
             var app = builder.Build();
 
@@ -218,12 +231,12 @@ public class Program
                     var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
 
                     var message = app.Environment.IsDevelopment() ?
-                        (feature?.Error?.Message ?? "Erro interno do servidor.")
-                        : "Erro interno do servidor.";
+                        (feature?.Error?.Message ?? "Erro interno do servidor")
+                        : "Erro interno do servidor";
 
                     var response = new ErrorResponse
                     {
-                        Title = "Erro",
+                        Title = "Erro interno do servidor",
                         Status = context.Response.StatusCode,
                         Details = message
                     };

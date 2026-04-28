@@ -1,14 +1,14 @@
 import { useCallback, useState } from 'react';
 import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
 import { servicoUsuarios } from '../services/servicoUsuarios';
-import type { UsuarioCadastroDto, UsuarioCriadoDto } from '../types/tiposUsuarios';
+import type { UsuarioCadastroComConfirmacaoDto, UsuarioCriadoDto } from '../types/tiposUsuarios';
 
 export function useCadastroUsuario() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [criado, setCriado] = useState<UsuarioCriadoDto | null>(null);
 
-  const cadastrar = useCallback(async (dto: UsuarioCadastroDto) => {
+  const cadastrar = useCallback(async (dto: UsuarioCadastroComConfirmacaoDto) => {
     setCarregando(true);
     setErro(null);
     setCriado(null);

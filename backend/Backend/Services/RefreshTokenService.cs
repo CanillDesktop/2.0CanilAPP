@@ -35,7 +35,7 @@ namespace Backend.Services
 
             if (refreshToken == null || !refreshToken.IsActive)
             {
-                throw new UnauthorizedAccessException("Sua sessão expirou. Por favor, faça login novamente");
+                throw new UnauthorizedAccessException("Sessão inválida");
             }
 
             RevokeRefreshToken(refreshToken!);

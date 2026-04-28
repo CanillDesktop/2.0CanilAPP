@@ -80,14 +80,13 @@ export function FormularioRetirada() {
     };
 
     const dto: RetiradaEstoqueDto = {
-      idRetirada: 0,
-      codItem: data!.codItem,
-      nomeItem: data!.produtoNome,
+      codigo: data!.codItem,
+      nomeOuDescricaoSimples: data!.produtoNome,
       lote: data!.loteCodigo,
       de: payloadRetirada.origem,
       para: payloadRetirada.destino,
       quantidade: payloadRetirada.quantidade,
-      dataHoraInsercaoRegistro: new Date().toISOString(),
+      dataHoraRetirada: new Date().toISOString(),
     };
 
     const ok = await registrarRetirada(dto);

@@ -1,39 +1,123 @@
-# CanilApp
+# Onboarding — CanipApp (projeto completo)
 
-Monorepo com **API ASP.NET Core 8** (`backend/Backend`), biblioteca partilhada **`backend/Shared`** e **frontend web** React + Vite (`frontend/`). Autenticação JWT, gestão de produtos, medicamentos, insumos, estoque e utilizadores.
-
-## Novo na equipa? (onboarding)
-
-1. Instala **.NET SDK 8** e **Node.js 20+**.  
-2. Clona o repositório e copia `backend/Backend/appsettings.example.json` → **`appsettings.json`** (JWT com `SecretKey` de pelo menos 32 caracteres).  
-3. Copia `frontend/.env.example` → **`frontend/.env`**.  
-4. Corre a API (`cd backend/Backend` → `dotnet run`) e o frontend (`cd frontend` → `npm install` → `npm run dev`).
-
-Guia completo para programadores: **[ONBOARDING.md](ONBOARDING.md)**. Detalhe da UI e da API no front: **[docs/frontend-onboarding.md](docs/frontend-onboarding.md)**.
+Este documento resume **para que existe o projeto**, **com que tecnologias é construído**, **o que o sistema permite fazer** no dia a dia e **como arrancar** API e frontend no teu ambiente. Para detalhe só de UI e chamadas HTTP, vê também [docs/frontend-onboarding.md](docs/frontend-onboarding.md).
 
 ---
 
-## Requisitos
+## 1. Propósito
 
-| Ferramenta | Versão indicada |
-|------------|-----------------|
-| [.NET SDK](https://dotnet.microsoft.com/download) | 8.x |
-| [Node.js](https://nodejs.org/) | 20 LTS ou superior |
-| npm | Incluído com Node |
+**CanipApp** é um sistema web para **gestão integrada de estoque e cadastros** no contexto da **Secretaria do Bem-Estar Animal / canil**: medicamentos, produtos gerais, insumos, movimentações (lotes, retiradas) e **utilizadores** com papéis e permissões.
 
-Opcional: [Git](https://git-scm.com/) para clonar e versionar.
+Objetivos centrais:
 
-## Configuração sensível (local)
+- Substituir processos dispersos (planilhas ou aplicação antiga tipo executável) por uma **SPA** moderna ligada a uma **API REST** centralizada, versionada em Git e preparada para deploy (por exemplo na DigitalOcean).
+- Garantir **persistência relacional** (SQLite na fase atual), **autenticação JWT** e contratos API documentados (Swagger/OpenAPI).
+- Oferecer interface **responsiva** para cadastro, consulta e operações de estoque no terreno institucional.
 
-1. Na pasta `backend/Backend/`, copia `appsettings.example.json` para **`appsettings.json`** (e, se precisares, `appsettings.Development.json`).
-2. Ajusta **JWT** (`SecretKey` com pelo menos 32 caracteres em desenvolvimento) e **ConnectionStrings** se o ficheiro SQLite estiver noutro caminho.
-3. No frontend, copia `frontend/.env.example` para **`frontend/.env`** e define `VITE_DEV_API_PROXY_TARGET` se a API não estiver em `http://localhost:5000`.
+Projeto académico (**PIEX** — Análise e Desenvolvimento de Sistemas), em monorepo com backend .NET e frontend React.
 
-Estes ficheiros **não** devem ser commitados (estão no `.gitignore`). Nunca coloques segredos de produção no Git.
+---
 
-## Como executar
+## 2. Stacks e arquitetura
 
-### Backend (API)
+### Backend (`backend/Backend`)
+
+| Área | Tecnologia |
+|------|------------|
+| Runtime | **.NET 8** |
+| API | **ASP.NET Core** Web API |
+| Dados | **Entity Framework Core 8** + **SQLite** |
+| Auth | **JWT** (`JwtBearer`), passwords com **BCrypt** |
+| Documentação API | **Swashbuckle** / OpenAPI (Swagger UI) |
+| Logs | **Serilog** (consola + ficheiro) |
+
+Biblioteca partilhada: **`backend/Shared`** — DTOs, enums e modelos alinhados entre API e conceitos do frontend.
+
+### Frontend (`frontend/`)
+
+| Área | Tecnologia |
+|------|------------|
+| UI | **React 19**, **TypeScript** |
+| Build | **Vite 8** |
+| Componentes | **MUI 9** (@mui/material), **Emotion** |
+| HTTP | **Axios** |
+| Rotas | **React Router DOM 7** |
+
+Em desenvolvimento, o Vite faz **proxy** de `/api` para o backend (`VITE_DEV_API_PROXY_TARGET`, por omissão `http://localhost:5000`), evitando problemas de CORS.
+
+### Infraestrutura e deploy
+
+- Variáveis sensíveis **fora do Git** (`appsettings.json`, `frontend/.env`).
+- Guias em `docs/` para **DigitalOcean**, **nginx**, **systemd**, SQLite em caminho persistente em produção.
+
+---
+
+## 3. Principais ações do sistema
+
+Funcionalidades organizadas por **domínio** (pastas em `frontend/src/domains/` e endpoints correspondentes na API).
+
+| Domínio | O que o utilizador faz |
+|---------|-------------------------|
+| **Autenticação** | Login, sessão JWT, refresh onde aplicável, logout; página de detalhe da sessão. |
+| **Utilizadores** | Listagem; cadastro de novos utilizadores (fluxos administrativos conforme papéis); gestão alinhada à API de perfis/permissões. |
+| **Produtos** | Listagem com filtros (evolução do projeto), criar/editar produto, detalhe com informação de lotes associados. |
+| **Medicamentos** | CRUD e listagem específica do domínio medicamentos (contrato próprio na API). |
+| **Insumos** | CRUD de insumos (listagem, formulários, detalhe). |
+| **Estoque** | Painel **dashboard** (KPIs, alertas, visão geral); listagem de estoque; detalhe de item; **novo lote**; **retirada de estoque**; navegação por categorias onde existir na UI. |
+| **Sincronização** *(se ativo no cliente)* | Serviços/API de sincronização conforme evolução do backend — validar no Swagger e em `domains/sincronizacao/`. |
+
+Rotas principais da SPA (referência em `frontend/src/app/routes/RotasApp.tsx`):
+
+- Públicas / entrada: `/login`, `/cadastro`
+- Autenticadas: `/dashboard`, `/produtos`, `/medicamentos`, `/insumos`, `/estoque`, `/usuarios`, `/sessao`
+- Operações de estoque: `/estoque/lotes/novo`, `/estoque/retirada`, `/estoque/item/:id`
+- Áreas só para perfil adequado (ex.: rotas admin para novos utilizadores)
+
+A API expõe endpoints sob **`/api/...`**; documentação interativa típica em Swagger quando corres a API localmente.
+
+---
+
+## 4. Estrutura do repositório
+
+```text
+README.md              Visão geral e comandos rápidos
+ONBOARDING.md          Este ficheiro (onboarding completo + primeiro dia)
+backend/
+  Backend/             API, Controllers, DbContext, Migrations EF Core
+  Shared/              DTOs e modelos partilhados
+frontend/
+  src/
+    app/               Rotas e entrada da aplicação
+    domains/           Por domínio (autenticacao, produtos, medicamentos, …)
+    infrastructure/    Cliente HTTP, env, erros API
+    shared/            Layout, tema, componentes transversais
+docs/                  Deploy, onboarding frontend, planejamento PIEX
+CanilApp.sln           Solução Visual Studio (nome histórico da solução)
+```
+
+---
+
+## 5. Primeiro dia — correr API + frontend
+
+### Pré-requisitos
+
+- [.NET SDK 8](https://dotnet.microsoft.com/download)
+- [Node.js 20+](https://nodejs.org/)
+- Git e acesso ao repositório
+
+### Configuração obrigatória
+
+| Passo | Ação |
+|-------|------|
+| 1 | Copiar `backend/Backend/appsettings.example.json` → **`appsettings.json`**. |
+| 2 | Em `appsettings.json`, definir **Jwt:SecretKey** com ≥ 32 caracteres em desenvolvimento. |
+| 3 | Copiar `frontend/.env.example` → **`frontend/.env`**; ajustar **`VITE_DEV_API_PROXY_TARGET`** se a API não estiver em `http://localhost:5000`. |
+
+**Nunca** faças commit de `appsettings.json`, `appsettings.Development.json`, `frontend/.env` nem ficheiros `.db` com dados reais.
+
+### Comandos
+
+**Terminal 1 — API**
 
 ```powershell
 cd backend\Backend
@@ -41,11 +125,9 @@ dotnet restore
 dotnet run
 ```
 
-Por omissão a API escuta em **`http://localhost:5000`** (ver `Urls` em `appsettings.example.json`). Endpoints sob `/api/...`. Existe rota de saúde em `GET /api/health` quando configurada no projeto.
+Por omissão a API usa **`http://localhost:5000`**. Saúde: `GET /api/health` (quando configurado).
 
-### Frontend (Vite)
-
-Noutro terminal:
+**Terminal 2 — Web**
 
 ```powershell
 cd frontend
@@ -53,41 +135,34 @@ npm install
 npm run dev
 ```
 
-O Vite usa proxy para `/api` → backend em `VITE_DEV_API_PROXY_TARGET` (por omissão `http://localhost:5000`), evitando problemas de CORS no desenvolvimento.
+Abre o URL indicado pelo Vite (normalmente `http://localhost:5173`). O proxy encaminha `/api` para o backend.
 
-### Abrir a solução no Visual Studio
+### Abrir no IDE
 
-Abre `CanilApp.sln` na raiz do repositório.
+Abre **`CanilApp.sln`** na raiz no Visual Studio, ou a pasta do monorepo no VS Code / Cursor.
 
-## Estrutura do repositório
+---
 
-```text
-README.md           # Este ficheiro (visível na página inicial do GitHub)
-ONBOARDING.md       # Checklist e primeiro dia para novos devs
-backend/
-  Backend/          # API ASP.NET Core, Migrations EF Core
-  Shared/           # DTOs, enums e modelos partilhados
-frontend/           # React + TypeScript + Vite
-docs/               # Deploy DigitalOcean, onboarding frontend, guias
-```
-
-## SQLite, GitHub e DigitalOcean
-
-- A API usa **SQLite via EF Core** (`Microsoft.EntityFrameworkCore.Sqlite`). **Não** é obrigatório instalar a ferramenta de linha de comando **`sqlite3`** no servidor só para a aplicação correr; ela cria e usa o ficheiro `.db` através do runtime .NET.
-- **No GitHub:** versiona o **código** e as **Migrations** (`backend/Backend/Migrations/`). O ficheiro **`*.db`** fica ignorado para não subir dados reais nem caminhos locais. O esquema da base é recriado/atualizado com `dotnet ef database update` (ou com o fluxo de arranque/migrações que o projeto use).
-- **Na DigitalOcean:** coloca o ficheiro da base num **disco persistente** (ex.: `/opt/canilapp/data/canilapp.db`) e define `ConnectionStrings__DefaultConnection` (ou equivalente em `appsettings` / variáveis de ambiente) com `Data Source=/caminho/absoluto/...`. Faz **backup** desse ficheiro em produção. Detalhes de Droplet, Nginx e systemd: `docs/Deploy_DigitalOcean.md`.
-
-Se precisares da CLI **`sqlite3`** no servidor, é só para **inspeção ou backup manual** (`sudo apt install sqlite3` no Ubuntu); não substitui o motor que a API já embute.
-
-## Documentação
+## 6. Documentação relacionada
 
 | Documento | Conteúdo |
-|-----------|-----------|
-| [ONBOARDING.md](ONBOARDING.md) | Primeiros passos para novos programadores |
-| [docs/frontend-onboarding.md](docs/frontend-onboarding.md) | Arquitetura e domínios do frontend |
-| [docs/Deploy_DigitalOcean.md](docs/Deploy_DigitalOcean.md) | Publicar a API num Droplet |
-| [docs/Guia_Push_DO_CanilApp.md](docs/Guia_Push_DO_CanilApp.md) | Enviar só backend para outro remoto (opcional) |
+|-----------|----------|
+| [README.md](README.md) | Requisitos, SQLite, estrutura, links |
+| [docs/frontend-onboarding.md](docs/frontend-onboarding.md) | Endpoints, auth no front, domínios em detalhe |
+| [docs/Deploy_DigitalOcean.md](docs/Deploy_DigitalOcean.md) | Publicar API (Droplet, nginx, systemd) |
+| [docs/PIEX_Planejamento_Completo.md](docs/PIEX_Planejamento_Completo.md) | Planejamento da equipa, cronograma, responsabilidades |
 
-## Licença e equipa
+---
 
-Projeto académico / equipa CanilApp — ajusta esta secção conforme a política da tua instituição.
+## 7. Git e segurança
+
+- Executa `git status` antes de commitar; não adiciones passwords nem bases de dados de produção.
+- Para partilhar **estrutura** de configuração, altera apenas `appsettings.example.json` ou `.env.example`, sem segredos reais.
+- Alinha alterações de contrato API (DTOs, nomes de campos) com **Swagger** e com quem mantém o `backend/`.
+
+---
+
+## 8. Dúvidas rápidas
+
+- **URL da API** em ambientes partilhados e **utilizador de teste**: pergunta à equipa.
+- **Evolção da API**: preferir revisão por PR e documentação Swagger atualizada.

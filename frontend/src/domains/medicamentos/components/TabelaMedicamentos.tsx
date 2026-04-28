@@ -17,12 +17,12 @@ export function TabelaMedicamentos({ itens }: Props) {
       </thead>
       <tbody>
         {itens.map((m) => (
-          <tr key={m.idItem}>
-            <td>{m.codItem}</td>
-            <td>{m.nomeItem}</td>
+          <tr key={m.id}>
+            <td>{m.codigo}</td>
+            <td>{m.nomeOuDescricaoSimples}</td>
             <td>{m.prioridade}</td>
             <td>
-              <Link to={`/medicamentos/${m.idItem}`}>Detalhes</Link>
+              <Link to={`/medicamentos/${m.nomeOuDescricaoSimples}`}>Detalhes</Link>
             </td>
           </tr>
         ))}

@@ -62,7 +62,7 @@ export function PaginaDetalheProduto() {
   const p = estado.dados;
 
   const lotes = useMemo(
-    () => (p ? mapearItensEstoqueParaLotes(p.idItem, p.itensEstoque) : []),
+    () => (p ? mapearItensEstoqueParaLotes(p.id, p.itensEstoque) : []),
     [p],
   );
 
@@ -81,13 +81,13 @@ export function PaginaDetalheProduto() {
     if (!p) return;
     navigate('/estoque/retirada', {
       state: {
-        produtoId: p.idItem,
-        produtoNome: p.nomeItem,
-        codItem: p.codItem,
+        produtoId: p.id,
+        produtoNome: p.nomeOuDescricaoSimples,
+        codItem: p.codigo,
         loteId: lote.id,
         loteCodigo: lote.codigo,
         quantidadeDisponivel: lote.quantidade,
-        retornoRota: `/produtos/${p.idItem}`,
+        retornoRota: `/produtos/${p.id}`,
       },
     });
   }
@@ -133,7 +133,7 @@ export function PaginaDetalheProduto() {
           {p && (
             <>
               <ProductHeader
-                titulo={p.nomeItem}
+                titulo={p.nomeOuDescricaoSimples}
                 onVoltar={() => navigate('/dashboard')}
                 onVoltarInicio={() => navigate('/dashboard')}
               />
@@ -146,15 +146,15 @@ export function PaginaDetalheProduto() {
               />
 
               <ProductInfoCard
-                codigo={p.codItem}
+                codigo={p.codigo}
                 categoria={p.categoria}
                 unidade={p.unidade}
                 nivelMinimo={p.itemNivelEstoque.nivelMinimoEstoque}
               />
 
               <LoteList
-                idItem={p.idItem}
-                codItem={p.codItem}
+                idItem={p.id}
+                codItem={p.codigo}
                 lotes={lotes}
                 isMobile={isMobile}
                 onRetirar={handleRetirada}

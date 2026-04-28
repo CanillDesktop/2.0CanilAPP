@@ -1,8 +1,6 @@
-import { obterClienteHttp } from '../../../infrastructure/http/clienteHttpSingleton';
 import {
   atualizarUsuarioApi,
   criarUsuarioApi,
-  criarUsuarioComConfirmacaoApi,
   inativarUsuarioApi,
   listarUsuariosApi,
   removerUsuarioApi,
@@ -13,16 +11,12 @@ import type {
   TrocarSenhaDto,
   UsuarioAtualizacaoDto,
   UsuarioCadastroComConfirmacaoDto,
-  UsuarioCadastroDto,
   UsuarioCriadoDto,
 } from '../types/tiposUsuarios';
 
 export const servicoUsuarios = {
-  async criar(dto: UsuarioCadastroDto): Promise<UsuarioCriadoDto> {
+  async criar(dto: UsuarioCadastroComConfirmacaoDto): Promise<UsuarioCriadoDto> {
     return criarUsuarioApi(dto);
-  },
-  async criarComConfirmacao(dto: UsuarioCadastroComConfirmacaoDto): Promise<UsuarioCriadoDto> {
-    return criarUsuarioComConfirmacaoApi(dto);
   },
   async listar(): Promise<UsuarioCriadoDto[]> {
     return listarUsuariosApi();
@@ -38,10 +32,5 @@ export const servicoUsuarios = {
   },
   async remover(id: number, dto: ConfirmacaoSenhaDto): Promise<void> {
     await removerUsuarioApi(id, dto);
-  },
-  async confirmarSenha(senhaConfirmacao: string): Promise<boolean> {
-    const cliente = obterClienteHttp();
-    await cliente.post('/api/Auth/confirmar-senha', { senhaConfirmacao });
-    return true;
-  },
+  }
 };

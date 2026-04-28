@@ -19,24 +19,16 @@ public class UsuariosModel : BaseModel
         Permissao = permissao;
     }
 
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public int Id { get; set; }
-
     public string PrimeiroNome { get; set; } = string.Empty;
-
     public string? Sobrenome { get; set; }
-
     public string Email { get; set; } = string.Empty;
-
     public string HashSenha { get; set; } = string.Empty;
 
     [EnumDataType(typeof(PermissoesEnum))]
     public PermissoesEnum Permissao { get; set; }
-
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
 
-    
+
     public static implicit operator UsuarioResponseDTO(UsuariosModel model)
     {
         return new UsuarioResponseDTO
@@ -52,17 +44,26 @@ public class UsuariosModel : BaseModel
         };
     }
 
-    public static implicit operator UsuariosModel(UsuarioRequestDTO dto)
+    public static implicit operator UsuariosModel(AtualizarUsuarioRequestDTO dto)
     {
         return new UsuariosModel
         {
-            PrimeiroNome = dto.PrimeiroNome,
-            Sobrenome = dto.Sobrenome,
-            Email = dto.Email,
+            PrimeiroNome = dto.PrimeiroNome?.ToLower() ?? string.Empty,
+            Sobrenome = dto.Sobrenome?.ToLower(),
+            Email = dto.Email?.ToLower() ?? string.Empty,
+            Permissao = dto.Permissao ?? PermissoesEnum.ADMIN
+        };
+    }
+
+    public static implicit operator UsuariosModel(UsuarioCriacaoComConfirmacaoRequestDTO dto)
+    {
+        return new UsuariosModel
+        {
+            PrimeiroNome = dto.PrimeiroNome.ToLower(),
+            Sobrenome = dto.Sobrenome?.ToLower(),
+            Email = dto.Email.ToLower(),
             HashSenha = dto.Senha,
-            Permissao = dto.Permissao,
-            DataHoraAtualizacao = DateTime.UtcNow,
-            IsDeleted = dto.IsDeleted
+            Permissao = dto.Permissao
         };
     }
 }

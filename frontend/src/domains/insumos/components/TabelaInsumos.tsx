@@ -17,12 +17,12 @@ export function TabelaInsumos({ itens }: Props) {
       </thead>
       <tbody>
         {itens.map((i) => (
-          <tr key={i.idItem}>
-            <td>{i.codItem}</td>
-            <td>{i.nomeItem}</td>
+          <tr key={i.id}>
+            <td>{i.codigo}</td>
+            <td>{i.nomeOuDescricaoSimples}</td>
             <td>{i.unidade}</td>
             <td>
-              <Link to={`/insumos/${i.idItem}`}>Detalhes</Link>
+              <Link to={`/insumos/${i.id}`}>Detalhes</Link>
             </td>
           </tr>
         ))}

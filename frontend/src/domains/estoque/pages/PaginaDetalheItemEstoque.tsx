@@ -28,9 +28,9 @@ export function PaginaDetalheItemEstoque() {
       {item && (
         <dl className="lista-detalhe">
           <dt>ID item</dt>
-          <dd>{item.idItem}</dd>
+          <dd>{item.id}</dd>
           <dt>Código</dt>
-          <dd>{item.codItem}</dd>
+          <dd>{item.codigo}</dd>
           <dt>Lote</dt>
           <dd>{item.lote}</dd>
           <dt>Quantidade</dt>

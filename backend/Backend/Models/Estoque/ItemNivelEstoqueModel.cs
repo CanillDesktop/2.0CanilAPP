@@ -5,8 +5,6 @@ namespace Backend.Models.Estoque;
 
 public class ItemNivelEstoqueModel : BaseModel
 {
-    public int IdItem { get; set; }
-
     public int NivelMinimoEstoque { get; set; }
 
     [JsonIgnore]
@@ -16,7 +14,7 @@ public class ItemNivelEstoqueModel : BaseModel
     {
         return new ItemNivelEstoqueDTO()
         {
-            IdItem = model.IdItem,
+            Id = model.Id,
             NivelMinimoEstoque = model.NivelMinimoEstoque
         };
     }
@@ -25,7 +23,7 @@ public class ItemNivelEstoqueModel : BaseModel
     {
         return new ItemNivelEstoqueModel()
         {
-            IdItem = dto.IdItem,
+            Id = dto.Id,
             NivelMinimoEstoque = dto.NivelMinimoEstoque
         };
     }
