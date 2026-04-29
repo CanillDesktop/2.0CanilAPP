@@ -23,7 +23,6 @@ namespace Backend.DTOs.Estoque
 
         [Required(ErrorMessage = "{0} é obrigatória")]
         public int Quantidade { get; set; }
-
-        public DateTime DataHoraRetirada{ get; set; } = DateTime.UtcNow;
+        public DateTime DataHoraRetirada { get; set; } = DateTime.UtcNow;
     }
 }

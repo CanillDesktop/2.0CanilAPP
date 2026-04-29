@@ -9,7 +9,7 @@ export function PaginaDetalheInsumo() {
   const id = Number(params.id);
   const navegar = useNavigate();
   const { estado, carregar } = useInsumoDetalhe(Number.isFinite(id) ? id : undefined);
-  const { excluir, carregando, erro } = useMutacaoInsumo();
+  const { excluir, carregando, erro, errosValidacao } = useMutacaoInsumo();
 
   useEffect(() => {
     void carregar();
@@ -32,7 +32,7 @@ export function PaginaDetalheInsumo() {
           Voltar
         </Link>
       </header>
-      <PainelErro mensagem={estado.erro ?? erro} />
+      <PainelErro mensagem={estado.erro ?? erro} errosValidacao={errosValidacao} />
       <IndicadorCarregamento visivel={estado.carregando || carregando} />
       {i && (
         <>

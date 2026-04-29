@@ -1,18 +1,26 @@
 import type { AxiosError } from 'axios';
-import type { RespostaErroApi } from '../../shared/types/respostaErroApi';
+import type { RespostaErroApi, RespostaErroValidacaoApi } from '../../shared/types/respostaErroApi';
 
 /**
  * Erro de domínio da camada HTTP, normalizado para a UI.
  */
 export class ErroApi extends Error {
   readonly statusCode: number;
-  readonly corpo?: RespostaErroApi | unknown;
+  readonly corpo?: RespostaErroApi | RespostaErroValidacaoApi | unknown;
+  readonly errors?: Record<string, string[]>;
 
-  constructor(mensagem: string, statusCode: number, corpo?: RespostaErroApi | unknown) {
+  constructor(mensagem: string, statusCode: number, corpo?: RespostaErroApi | RespostaErroValidacaoApi | unknown, errors?: Record<string, string[]>) {
     super(mensagem);
     this.name = 'ErroApi';
     this.statusCode = statusCode;
     this.corpo = corpo;
+    this.errors = errors;
+  }
+
+  extrairMensagemErros = () : string[] | null => {
+    return this.errors ?
+      Object.values(this.errors).flatMap(error => error)
+      : null;
   }
 }
 

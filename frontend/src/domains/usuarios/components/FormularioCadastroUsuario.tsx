@@ -7,23 +7,23 @@ import { useCadastroUsuario } from '../hooks/useCadastroUsuario';
 import type { UsuarioCadastroComConfirmacaoDto } from '../types/tiposUsuarios';
 
 export function FormularioCadastroUsuario() {
-  const { cadastrar, carregando, erro, criado } = useCadastroUsuario();
+  const { cadastrar, carregando, erro, errosValidacao, criado } = useCadastroUsuario();
   const [primeiroNome, setPrimeiroNome] = useState('');
   const [sobrenome, setSobrenome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [confirmacaoSenha, setConfirmacaoSenha] = useState('');
+  const [senhaConfirmacao, setSenhaConfirmacao] = useState('');
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
-    const dto: UsuarioCadastroComConfirmacaoDto = { primeiroNome, sobrenome, email, senha, senhaConfirmacao: confirmacaoSenha, permissao: 2 };
+    const dto: UsuarioCadastroComConfirmacaoDto = { primeiroNome, sobrenome, email, senha, senhaConfirmacao, permissao: 2 };
     await cadastrar(dto);
   }
 
   return (
     <form className="cartao" onSubmit={aoEnviar}>
       <h1>Cadastro de usuário</h1>
-      <PainelErro mensagem={erro} />
+      <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
       {criado && (
         <p className="painel-sucesso" role="status">
           Usuário criado: {criado.email}
@@ -47,7 +47,7 @@ export function FormularioCadastroUsuario() {
       </label>
       <label>
         Confirmar senha
-        <input type="password" value={confirmacaoSenha} onChange={(e) => setConfirmacaoSenha(e.target.value)} minLength={6} required />
+        <input type="password" value={senhaConfirmacao} onChange={(e) => setSenhaConfirmacao(e.target.value)} minLength={6} required />
       </label>
       <p className="formulario-rodape" style={{ marginTop: '0.5rem' }}>
         Enquanto o sistema tiver menos de <strong>dois</strong> usuários cadastrados no total, novas contas recebem
