@@ -9,7 +9,7 @@ public class UsuarioResponseDTO
     public string PrimeiroNome { get; set; } = string.Empty;
     public string? Sobrenome { get; set; }
     public PermissoesEnum Permissao { get; set; }
-    public DateTime DataHoraCriacao { get; set; }
-    public DateTime DataHoraAtualizacao { get; set; }
-    public bool IsDeleted { get; set; }
+    public DateTime DataHoraCriacao { get; set; } = DateTime.UtcNow;
+    public DateTime DataHoraAtualizacao { get; set; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; } = false;
 }

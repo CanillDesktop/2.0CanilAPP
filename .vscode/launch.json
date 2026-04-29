@@ -1,0 +1,39 @@
+{
+  // App (Vite): http://127.0.0.1:5173/ — use 127.0.0.1 (evita localhost → ::1 sem servidor no Windows).
+  // Abra a pasta raiz CanipApp no VS Code. "só Firefox" exige npm run dev antes.
+  // API: proxy → 127.0.0.1:5000 (task preLaunch / env só-Vite).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Frontend: Vite + Firefox (API 127.0.0.1:5000)",
+      "type": "firefox",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173/",
+      "webRoot": "${workspaceFolder}/frontend",
+      "firefoxExecutable": "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+      "reAttach": true,
+      "preLaunchTask": "frontend: vite dev (proxy API)"
+    },
+    {
+      "name": "Frontend: só Firefox (Vite já rodando)",
+      "type": "firefox",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173/",
+      "webRoot": "${workspaceFolder}/frontend",
+      "firefoxExecutable": "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+      "reAttach": true
+    },
+    {
+      "name": "Frontend: só Vite no terminal (sem browser)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal",
+      "env": {
+        "VITE_DEV_API_PROXY_TARGET": "http://127.0.0.1:5000"
+      }
+    }
+  ]
+}

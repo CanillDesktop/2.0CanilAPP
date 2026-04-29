@@ -38,9 +38,9 @@ export function PaginaDetalheInsumo() {
         <>
           <dl className="lista-detalhe">
             <dt>Código</dt>
-            <dd>{i.codItem}</dd>
+            <dd>{i.codigo}</dd>
             <dt>Descrição</dt>
-            <dd>{i.nomeItem}</dd>
+            <dd>{i.nomeOuDescricaoSimples}</dd>
             <dt>Detalhada</dt>
             <dd>{i.descricaoDetalhada}</dd>
             <dt>Unidade</dt>
@@ -49,7 +49,7 @@ export function PaginaDetalheInsumo() {
           <h2>Lotes</h2>
           <ul>
             {i.itensEstoque.map((l) => (
-              <li key={`${l.lote}-${l.codItem}`}>
+              <li key={`${l.lote}-${l.codigo}`}>
                 Lote {l.lote}: {l.quantidade} un.
               </li>
             ))}
@@ -60,7 +60,7 @@ export function PaginaDetalheInsumo() {
             </button>
             <Link
               className="botao-secundario"
-              to={`/estoque/lotes/novo?idItem=${i.idItem}&codItem=${encodeURIComponent(i.codItem)}`}
+              to={`/estoque/lotes/novo?idItem=${i.id}&codItem=${encodeURIComponent(i.codigo)}`}
             >
               Adicionar lote
             </Link>

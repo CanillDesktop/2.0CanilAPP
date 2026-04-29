@@ -33,47 +33,35 @@ public class CanilAppDbContext : DbContext
         modelBuilder.Entity<MedicamentosModel>().ToTable("Medicamentos");
 
         modelBuilder.Entity<ItemEstoqueModel>()
-            .HasKey(i => new { i.IdItem, i.Lote });
+            .HasKey(i => new { i.Id, i.Lote });
 
         modelBuilder.Entity<ItemEstoqueModel>()
             .HasOne(i => i.ItemBase)
             .WithMany(p => p.ItensEstoque)
-            .HasForeignKey(i => i.IdItem)
+            .HasForeignKey(i => i.Id)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<ItemNivelEstoqueModel>()
-            .HasKey(i => i.IdItem);
+            .HasKey(i => i.Id);
 
         modelBuilder.Entity<ItemNivelEstoqueModel>()
             .HasOne(i => i.ItemBase)
             .WithOne(p => p.ItemNivelEstoque)
-            .HasForeignKey<ItemNivelEstoqueModel>(i => i.IdItem)
+            .HasForeignKey<ItemNivelEstoqueModel>(i => i.Id)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<ItemComEstoqueBaseModel>()
-            .Property(i => i.IdItem)
+            .Property(i => i.Id)
             .ValueGeneratedOnAdd();
 
         modelBuilder.Entity<ProdutosModel>()
             .HasBaseType<ItemComEstoqueBaseModel>();
 
         modelBuilder.Entity<RetiradaEstoqueModel>()
-            .HasKey(r => r.IdRetirada);
+            .HasKey(r => r.Id);
 
         modelBuilder.Entity<RetiradaEstoqueModel>()
-            .Property(r => r.IdRetirada)
+            .Property(r => r.Id)
             .ValueGeneratedOnAdd();
-
-        modelBuilder.Entity<RetiradaEstoqueModel>()
-            .Property(r => r.DataHoraCriacao)
-            .HasDefaultValue(DateTime.UtcNow);
-
-        modelBuilder.Entity<RetiradaEstoqueModel>()
-            .Property(r => r.DataHoraAtualizacao)
-            .HasDefaultValue(DateTime.UtcNow);
-
-        modelBuilder.Entity<RetiradaEstoqueModel>()
-            .Property(r => r.IsDeleted)
-            .HasDefaultValue(false);
     }
 }

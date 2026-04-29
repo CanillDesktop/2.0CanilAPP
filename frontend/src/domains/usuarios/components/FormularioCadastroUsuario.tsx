@@ -4,19 +4,19 @@ import { Link } from 'react-router-dom';
 import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarregamento';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { useCadastroUsuario } from '../hooks/useCadastroUsuario';
-import type { UsuarioCadastroDto } from '../types/tiposUsuarios';
+import type { UsuarioCadastroComConfirmacaoDto } from '../types/tiposUsuarios';
 
 export function FormularioCadastroUsuario() {
   const { cadastrar, carregando, erro, criado } = useCadastroUsuario();
-  const [nome, setNome] = useState('');
+  const [primeiroNome, setPrimeiroNome] = useState('');
   const [sobrenome, setSobrenome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [permissao, setPermissao] = useState(2);
+  const [confirmacaoSenha, setConfirmacaoSenha] = useState('');
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
-    const dto: UsuarioCadastroDto = { nome, sobrenome, email, senha, permissao };
+    const dto: UsuarioCadastroComConfirmacaoDto = { primeiroNome, sobrenome, email, senha, senhaConfirmacao: confirmacaoSenha, permissao: 2 };
     await cadastrar(dto);
   }
 
@@ -31,7 +31,7 @@ export function FormularioCadastroUsuario() {
       )}
       <label>
         Nome
-        <input value={nome} onChange={(e) => setNome(e.target.value)} required />
+        <input value={primeiroNome} onChange={(e) => setPrimeiroNome(e.target.value)} required />
       </label>
       <label>
         Sobrenome
@@ -46,12 +46,14 @@ export function FormularioCadastroUsuario() {
         <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} minLength={6} required />
       </label>
       <label>
-        Permissão
-        <select value={permissao} onChange={(e) => setPermissao(Number(e.target.value))}>
-          <option value={1}>Administrador</option>
-          <option value={2}>Leitura</option>
-        </select>
+        Confirmar senha
+        <input type="password" value={confirmacaoSenha} onChange={(e) => setConfirmacaoSenha(e.target.value)} minLength={6} required />
       </label>
+      <p className="formulario-rodape" style={{ marginTop: '0.5rem' }}>
+        Enquanto o sistema tiver menos de <strong>dois</strong> usuários cadastrados no total, novas contas recebem
+        permissão de <strong>Administrador</strong> automaticamente. Depois disso, a permissão padrão é{' '}
+        <strong>Leitura</strong>; um administrador pode alterar isso em Usuários.
+      </p>
       <button type="submit" disabled={carregando}>
         Salvar
       </button>

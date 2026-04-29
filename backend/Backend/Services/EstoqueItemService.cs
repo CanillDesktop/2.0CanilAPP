@@ -1,32 +1,71 @@
-﻿using Backend.DTOs.Estoque;
-using Backend.Exceptions;
-using Backend.Repositories;
+﻿using Backend.Exceptions;
+using Backend.Models.Estoque;
+using Backend.Repositories.Interfaces;
+using Backend.Services.Interfaces;
 
 namespace Backend.Services
 {
-    public class EstoqueItemService
+    public class EstoqueItemService : IEstoqueItemService
     {
-        private readonly EstoqueItemRepository _repository;
+        private readonly IEstoqueItemRepository _repository;
+        private readonly IUserSessionService _userSessionService;
 
-        public EstoqueItemService(EstoqueItemRepository repository)
+        public EstoqueItemService(IEstoqueItemRepository repository, IUserSessionService userSessionService)
         {
             _repository = repository;
+            _userSessionService = userSessionService;
         }
 
-        public async Task<ItemEstoqueDTO?> BuscarPorIdAsync(int id) => (await _repository.GetByIdAsync(id))!;
+        public async Task<IEnumerable<ItemEstoqueModel>> BuscarPorCodigoAsync(string codigo) => await _repository.GetByCodigoAsync(codigo);
 
-        public async Task<ItemEstoqueDTO?> CriarAsync(ItemEstoqueDTO dto)
+        public async Task<ItemEstoqueModel?> BuscarPorLoteAsync(string lote) => await _repository.GetByLoteAsync(lote);
+
+        public async Task<ItemEstoqueModel?> CriarAsync(ItemEstoqueModel model)
         {
-            if (string.IsNullOrWhiteSpace(dto.CodItem))
+            if (string.IsNullOrWhiteSpace(model.Codigo))
             {
                 throw new ModelIncompletaException("Um ou mais campos obrigatórios não foram preenchidos");
             }
 
-            return await _repository.CreateAsync(dto);
+            return await _repository.CreateAsync(model);
         }
 
-        public async Task<ItemEstoqueDTO?> AtualizarAsync(ItemEstoqueDTO dto) => (await _repository.UpdateAsync(dto))!;
+        public async Task<ItemEstoqueModel?> AtualizarAsync(string lote, ItemEstoqueModel model)
+        {
+            try
+            {
+                var itemExistente = await _repository.GetByLoteAsync(lote);
 
-        public async Task<bool> DeletarAsync(string lote) => await _repository.DeleteAsync(lote);
+                if (itemExistente == null)
+                {
+                    throw new ArgumentNullException(null, $"Item de estoque de lote {lote} não encontrado");
+                }
+
+                itemExistente.Quantidade = model.Quantidade;
+
+                itemExistente.IsDeleted = model.IsDeleted;
+                itemExistente.DataHoraAtualizacao = DateTime.UtcNow;
+                itemExistente.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
+
+                var result = await _repository.UpdateAsync(itemExistente);
+                return result;
+            }
+            catch (ArgumentNullException ex)
+            {
+                throw new ArgumentNullException(null, ex.Message);
+            }
+        }
+
+        public async Task<bool> DeletarAsync(string lote)
+        {
+            var itemEstoque = await _repository.GetByLoteAsync(lote);
+
+            if (itemEstoque == null) return false;
+
+            itemEstoque.IsDeleted = true;
+            itemEstoque.DataHoraAtualizacao = DateTime.UtcNow;
+
+            return await _repository.DeleteAsync(itemEstoque);
+        }
     }
 }

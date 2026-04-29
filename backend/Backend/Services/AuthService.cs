@@ -34,7 +34,7 @@ public class AuthService : IAuthService
         if (usuario == null)
         {
             _logger.LogWarning("Falha de autenticação para {Login}.", login);
-            throw new UnauthorizedAccessException("Usuário ou senha inválidos");
+            throw new ArgumentNullException(null, "Usuário ou senha inválidos");
         }
 
         var refreshTokenHash = GenerateOpaqueRefreshToken();
@@ -62,14 +62,14 @@ public class AuthService : IAuthService
 
         if (refreshToken == null || !refreshToken.IsActive)
         {
-            throw new UnauthorizedAccessException();
+            throw new UnauthorizedAccessException("Sua sessão expirou. Por favor, faça login novamente");
         }
 
         var usuario = await _usuariosService.BuscarPorIdAsync(refreshToken.UserId);
 
         if (usuario == null)
         {
-            throw new UnauthorizedAccessException();
+            throw new ArgumentNullException(nameof(usuario), "RefreshToken não tem usuário atrelado");
         }
 
         var newRefreshTokenHash = GenerateOpaqueRefreshToken();
@@ -107,7 +107,9 @@ public class AuthService : IAuthService
             new(JwtRegisteredClaimNames.Sub, usuario.Id.ToString() ?? ""),
             new(JwtRegisteredClaimNames.Email, usuario.Email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new("permissao", usuario.Permissao.ToString())
+            new(ClaimTypes.Role, usuario.Permissao.ToString()),
+            new(ClaimTypes.Name, $"{usuario.PrimeiroNome} {usuario.Sobrenome}"),
+            new("EditedBy", $"{usuario.PrimeiroNome} {usuario.Sobrenome} ({usuario.Email})")
         };
 
         var token = new JwtSecurityToken(

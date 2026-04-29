@@ -38,13 +38,13 @@ export function PaginaDetalheMedicamento() {
         <>
           <dl className="lista-detalhe">
             <dt>Código</dt>
-            <dd>{m.codItem}</dd>
+            <dd>{m.id}</dd>
             <dt>Nome comercial</dt>
-            <dd>{m.nomeItem}</dd>
+            <dd>{m.nomeOuDescricaoSimples}</dd>
             <dt>Fórmula</dt>
             <dd>{m.formula}</dd>
             <dt>Descrição</dt>
-            <dd>{m.descricaoMedicamento}</dd>
+            <dd>{m.descricao}</dd>
             <dt>Prioridade / Público-alvo</dt>
             <dd>
               {m.prioridade} / {m.publicoAlvo}
@@ -53,7 +53,7 @@ export function PaginaDetalheMedicamento() {
           <h2>Lotes</h2>
           <ul>
             {m.itensEstoque.map((l) => (
-              <li key={`${l.lote}-${l.codItem}`}>
+              <li key={`${l.lote}-${l.codigo}`}>
                 Lote {l.lote}: {l.quantidade} un.
               </li>
             ))}
@@ -64,7 +64,7 @@ export function PaginaDetalheMedicamento() {
             </button>
             <Link
               className="botao-secundario"
-              to={`/estoque/lotes/novo?idItem=${m.idItem}&codItem=${encodeURIComponent(m.codItem)}`}
+              to={`/estoque/lotes/novo?idItem=${m.id}&codItem=${encodeURIComponent(m.codigo)}`}
             >
               Adicionar lote
             </Link>

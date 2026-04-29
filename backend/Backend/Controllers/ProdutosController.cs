@@ -27,29 +27,36 @@ namespace Backend.Controllers
         public async Task<ActionResult<IEnumerable<ProdutosLeituraDTO>>> Get([FromQuery] ProdutosFiltroDTO filtro)
         {
             var filteredRequest = HttpContext.Request.GetDisplayUrl().Contains('?');
-            var produtoDto = await _service.BuscarTodosAsync(filtro);
 
-            if (produtoDto == null)
-            { Console.WriteLine("Sem produtos"); }
+            IEnumerable<ProdutosLeituraDTO> result;
 
-            if (filteredRequest)
-                return Ok(produtoDto);
+            if (!filteredRequest || filtro == null)
+            {
+                result = (await _service.BuscarTodosAsync()).Select(p => (ProdutosLeituraDTO)p);
+            }
             else
-                if (filtro != null)
-                    return Ok(produtoDto);
-                return Ok(produtoDto);
+            {
+                result = (await _service.BuscarTodosAsync(filtro)).Select(p => (ProdutosLeituraDTO)p);
+            }
+
+            return Ok(result);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id}", Name = "GetProduto")]
         public async Task<ActionResult<ProdutosLeituraDTO>> GetById(int id)
         {
-            var model = await _service.BuscarPorIdAsync(id);
+            var produto = await _service.BuscarPorIdAsync(id);
+            if (produto == null)
+            {
+                return NotFound(new ErrorResponse
+                {
+                    Title = "Recurso não encontrado",
+                    Status = StatusCodes.Status404NotFound,
+                    Details = "Produto não encontrado"
+                });
+            }
 
-            if (model == null)
-                return NotFound();
-
-
-            return Ok(model);
+            return Ok(produto);
         }
 
         [HttpPost]
@@ -58,70 +65,62 @@ namespace Backend.Controllers
             try
             {
                 ProdutosModel model = dto;
-                await _service.CriarAsync(model);
+                var novoProduto = await _service.CriarAsync(model);
 
-                return CreatedAtAction(nameof(GetById), new { id = model.IdItem }, dto);
+                if (novoProduto == null)
+                {
+                    throw new ArgumentNullException(nameof(novoProduto));
+                }
+
+                return new CreatedAtRouteResult("GetProduto",
+                    new { id = novoProduto.Id }, novoProduto);
             }
             catch (ModelIncompletaException ex)
             {
-                var erro = new ErrorResponse
+                return BadRequest(new ErrorResponse
                 {
-                    Title = "Erro ao criar produto",
+                    Title = "Falha ao criar produto",
                     Status = StatusCodes.Status400BadRequest,
-                    Details = ex.Message
-                };
-                return StatusCode(erro.Status, erro);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Falha ao criar produto.");
-                return StatusCode(500);
+                    Details = ex.Message ?? "Um ou mais campos obrigatórios não foram preenchidos"
+                });
             }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put([FromRoute] int id, [FromBody] ProdutosCadastroDTO dto)
+        public async Task<ActionResult<ProdutosLeituraDTO>> Put([FromRoute] int id, [FromBody] ProdutosCadastroDTO dto)
         {
             try
             {
-                dto.IdProduto = id;
-                await _service.AtualizarAsync(dto);
+                var produtoAtualizado = await _service.AtualizarAsync(id, dto);
 
-                return NoContent();
+                return Ok(produtoAtualizado);
             }
-            catch (ArgumentNullException)
+            catch (ArgumentNullException ex)
             {
-                return NotFound();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Falha ao atualizar produto {ProdutoId}.", id);
-                return StatusCode(500);
+                return NotFound(new ErrorResponse
+                {
+                    Title = "Recurso não encontrado",
+                    Status = StatusCodes.Status404NotFound,
+                    Details = ex.Message ?? "Produto não encontrado"
+                });
             }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            try
+            var sucesso = await _service.DeletarAsync(id);
+            if (!sucesso)
             {
-                var sucesso = await _service.DeletarAsync(id);
-                if (!sucesso)
+                return NotFound(new ErrorResponse
                 {
-                    return NotFound($"Produto com o ID {id} não foi encontrado.");
-                }
+                    Title = "Recurso não encontrado",
+                    Status = StatusCodes.Status404NotFound,
+                    Details = $"Produto de id {id} não encontrado"
+                });
+            }
 
-                return NoContent();
-            }
-            catch (ArgumentNullException)
-            {
-                return NotFound();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Falha ao excluir produto {ProdutoId}.", id);
-                return StatusCode(500);
-            }
+            return NoContent();
         }
     }
 }

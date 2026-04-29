@@ -6,15 +6,9 @@ import { PainelErro } from '../../../shared/components/PainelErro';
 import { useMutacaoMedicamento } from '../hooks/useMedicamentos';
 import type { MedicamentoCadastroDto } from '../types/tiposMedicamentos';
 
-function gerarCodigoMedicamento(): string {
-  const sufixo = crypto.randomUUID().replace(/\D/g, '').slice(0, 10);
-  return `MED${sufixo}`;
-}
-
 export function FormularioMedicamento() {
   const navegar = useNavigate();
   const { criar, carregando, erro } = useMutacaoMedicamento();
-  const [codMedicamento, setCodMedicamento] = useState(() => gerarCodigoMedicamento());
   const [prioridade, setPrioridade] = useState(0);
   const [descricaoMedicamento, setDescricaoMedicamento] = useState('');
   const [lote, setLote] = useState('');
@@ -30,10 +24,8 @@ export function FormularioMedicamento() {
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
     const dto: MedicamentoCadastroDto = {
-      codigoId: 0,
-      codMedicamento,
       prioridade,
-      descricaoMedicamento,
+      descricao: descricaoMedicamento,
       lote,
       quantidade,
       dataEntrega: new Date(dataEntrega).toISOString(),
@@ -52,10 +44,6 @@ export function FormularioMedicamento() {
     <form className="cartao" onSubmit={aoEnviar}>
       <h1>Novo medicamento</h1>
       <PainelErro mensagem={erro} />
-      <label>
-        Código
-        <input value={codMedicamento} onChange={(e) => setCodMedicamento(e.target.value)} required />
-      </label>
       <label>
         Nome comercial
         <input value={nomeComercial} onChange={(e) => setNomeComercial(e.target.value)} required />

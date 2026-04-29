@@ -8,15 +8,6 @@ export type CredenciaisLogin = {
 };
 
 export type RespostaLogin = {
-  token?: {
-    accessToken: string;
-    refreshToken: string;
-    idToken: string;
-    expiresIn: number;
-  };
+  accessToken: string,
   usuario?: UsuarioSessao;
-};
-
-export type CorpoRefresh = {
-  refreshToken: string;
 };

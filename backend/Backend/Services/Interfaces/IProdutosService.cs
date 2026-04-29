@@ -1,9 +1,10 @@
 ﻿using Backend.DTOs.Produtos;
+using Backend.Models.Produtos;
 
 namespace Backend.Services.Interfaces
 {
-    public interface IProdutosService : IService<ProdutosCadastroDTO, ProdutosLeituraDTO>
+    public interface IProdutosService : ICRUDEstoqueService<ProdutosModel>
     {
-        Task<IEnumerable<ProdutosLeituraDTO>> BuscarTodosAsync(ProdutosFiltroDTO filtro);
+        Task<IEnumerable<ProdutosModel>> BuscarTodosAsync(ProdutosFiltroDTO filtro);
     }
 }
