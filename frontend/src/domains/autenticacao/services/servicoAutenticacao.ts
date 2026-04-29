@@ -16,7 +16,7 @@ export const servicoAutenticacao = {
     const access = resposta.accessToken;
     const usuario = resposta.usuario;
     if (!access || !usuario) {
-      throw new Error('Resposta de login incompleta.');
+      throw new Error('Resposta de login incompleta');
     }
     salvarSessao(access, usuario);
     return resposta;
