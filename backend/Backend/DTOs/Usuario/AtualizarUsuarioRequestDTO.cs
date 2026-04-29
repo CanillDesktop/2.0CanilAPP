@@ -13,6 +13,7 @@ public class AtualizarUsuarioRequestDTO
     [DisplayName("Primeiro nome")]
     [MinLength(2, ErrorMessage = "{0} deve ter no mínimo {1} caracteres")]
     [MaxLength(60, ErrorMessage = "{0} deve ter no máximo {1} caracteres")]
+    [RegularExpression(@"^[\p{L}'\- ]+$", ErrorMessage = "{0} inválido")]
     public string? PrimeiroNome
     {
         get => _primeiroNome;
@@ -21,6 +22,7 @@ public class AtualizarUsuarioRequestDTO
 
     [MinLength(2, ErrorMessage = "{0} deve ter no mínimo {1} caracteres")]
     [MaxLength(100, ErrorMessage = "{0} deve ter no máximo {1} caracteres")]
+    [RegularExpression(@"^[\p{L}'\- ]+$", ErrorMessage = "{0} inválido")]
     public string? Sobrenome
     {
         get => _sobrenome;

@@ -10,7 +10,7 @@ type Props = {
 };
 
 export function FormularioLogin({ aoAutenticar }: Props) {
-  const { entrar, carregando, erro } = useAcaoLogin();
+  const { entrar, carregando, erro, errosValidacao } = useAcaoLogin();
   const [login, setLogin] = useState('');
   const [senha, setSenha] = useState('');
 
@@ -23,7 +23,7 @@ export function FormularioLogin({ aoAutenticar }: Props) {
   return (
     <form className="cartao" onSubmit={aoEnviar}>
       <h1>Entrar</h1>
-      <PainelErro mensagem={erro} />
+      <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
       <label>
         E-mail (login)
         <input
