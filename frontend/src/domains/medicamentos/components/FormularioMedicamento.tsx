@@ -8,7 +8,7 @@ import type { MedicamentoCadastroDto } from '../types/tiposMedicamentos';
 
 export function FormularioMedicamento() {
   const navegar = useNavigate();
-  const { criar, carregando, erro } = useMutacaoMedicamento();
+  const { criar, carregando, erro, errosValidacao } = useMutacaoMedicamento();
   const [prioridade, setPrioridade] = useState(0);
   const [descricaoMedicamento, setDescricaoMedicamento] = useState('');
   const [lote, setLote] = useState('');
@@ -43,7 +43,7 @@ export function FormularioMedicamento() {
   return (
     <form className="cartao" onSubmit={aoEnviar}>
       <h1>Novo medicamento</h1>
-      <PainelErro mensagem={erro} />
+      <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
       <label>
         Nome comercial
         <input value={nomeComercial} onChange={(e) => setNomeComercial(e.target.value)} required />

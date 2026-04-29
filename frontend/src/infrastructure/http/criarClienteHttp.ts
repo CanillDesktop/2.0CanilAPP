@@ -1,7 +1,8 @@
 import axios, { type AxiosInstance } from 'axios';
 import { urlBaseApi } from '../config/variaveisAmbiente';
 import { ErroApi } from './erroApi';
-import type { RespostaErroApi } from '../../shared/types/respostaErroApi';
+import type { RespostaErroApi, RespostaErroValidacaoApi } from '../../shared/types/respostaErroApi';
+import { isRespostaErroApi, isRespostaErroValidacaoApi } from '../../shared/types/respostaErroApi';
 import { obterAccessToken } from '../../shared/services/armazenamentoSessao';
 
 /**
@@ -31,15 +32,24 @@ export function criarClienteHttp(): AxiosInstance {
     (resposta) => resposta,
     (erro) => {
       const status = erro.response?.status ?? 0;
-      const dados = erro.response?.data as RespostaErroApi | undefined;
-      let mensagem =
-        dados && typeof dados.details === 'string'
-          ? dados.details
-          : erro.message ?? 'Falha na requisição';
+      const dados: unknown = erro.response?.data;
+
+      let mensagem = 'Falha na requisição';
+      let erros;
+
+      if (dados && isRespostaErroValidacaoApi(dados)) {
+        mensagem = 'Ocorreram erros de validação';
+        erros = (dados as RespostaErroValidacaoApi).errors;
+      } else if (dados && isRespostaErroApi(dados)) {
+        mensagem = (dados as RespostaErroApi).details;
+      } else {
+        mensagem = erro.message;
+      }
+
       if (status === 403) {
         mensagem = 'Você não tem permissão para acessar este recurso.';
       }
-      return Promise.reject(new ErroApi(mensagem, status, dados ?? erro.response?.data));
+      return Promise.reject(new ErroApi(mensagem, status, dados, erros));
     },
   );
 
