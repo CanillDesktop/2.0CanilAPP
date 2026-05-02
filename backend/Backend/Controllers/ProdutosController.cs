@@ -6,6 +6,7 @@ using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
+using Backend.Pagination;
 
 namespace Backend.Controllers
 {
@@ -23,21 +24,12 @@ namespace Backend.Controllers
             _logger = logger;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProdutosLeituraDTO>>> Get([FromQuery] ProdutosFiltroDTO filtro)
+        [HttpGet("pagination")]
+        public async Task<ActionResult<IEnumerable<ProdutosLeituraDTO>>> Get([FromQuery] ProdutosFiltroDTO filtro, [FromQuery] ProdutosParameters produtosParameters)
         {
-            var filteredRequest = HttpContext.Request.GetDisplayUrl().Contains('?');
+            var pagedResult = await _service.BuscarTodosAsync(filtro, produtosParameters);
 
-            IEnumerable<ProdutosLeituraDTO> result;
-
-            if (!filteredRequest || filtro == null)
-            {
-                result = (await _service.BuscarTodosAsync()).Select(p => (ProdutosLeituraDTO)p);
-            }
-            else
-            {
-                result = (await _service.BuscarTodosAsync(filtro)).Select(p => (ProdutosLeituraDTO)p);
-            }
+            var result = pagedResult.Select(p => (ProdutosLeituraDTO)p);
 
             return Ok(result);
         }

@@ -1,11 +1,31 @@
 import { obterClienteHttp } from '../../../infrastructure/http/clienteHttpSingleton';
 import { montarQueryString } from '../../../shared/utils/montarQueryString';
-import type { ProdutoCadastroDto, ProdutoFiltroDto, ProdutoLeituraDto } from '../types/tiposProdutos';
+import type {
+  ProdutoCadastroDto,
+  ProdutoFiltroDto,
+  ProdutoLeituraDto,
+  ProdutoPaginacaoDto,
+} from '../types/tiposProdutos';
 
-export async function listarProdutosApi(filtro?: ProdutoFiltroDto): Promise<ProdutoLeituraDto[]> {
+const PADRAO_PAGINACAO: Required<ProdutoPaginacaoDto> = {
+  pageNumber: 1,
+  pageSize: 10,
+};
+
+export async function listarProdutosApi(
+  filtro?: ProdutoFiltroDto,
+  paginacao?: ProdutoPaginacaoDto,
+): Promise<ProdutoLeituraDto[]> {
   const cliente = obterClienteHttp();
-  const qs = filtro ? montarQueryString(filtro as Record<string, string | number | undefined>) : '';
-  const { data } = await cliente.get<ProdutoLeituraDto[]>(`/api/Produtos${qs}`);
+  const pageNumber = paginacao?.pageNumber ?? PADRAO_PAGINACAO.pageNumber;
+  const pageSize = paginacao?.pageSize ?? PADRAO_PAGINACAO.pageSize;
+  const params: Record<string, string | number | undefined> = {
+    pageNumber,
+    pageSize,
+    ...(filtro as Record<string, string | number | undefined> | undefined),
+  };
+  const qs = montarQueryString(params);
+  const { data } = await cliente.get<ProdutoLeituraDto[]>(`/api/Produtos/pagination${qs}`);
   return data;
 }
 

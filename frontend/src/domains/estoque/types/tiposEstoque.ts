@@ -11,6 +11,10 @@ export type LinhaOperacionalEstoque = {
   origem: 'produto' | 'medicamento' | 'insumo';
   status: 'ok' | 'baixo' | 'critico' | 'proximo_vencimento';
   ultimaMovimentacao: string;
+  /** Menor validade entre lotes (ms). Opcional em linhas montadas sem este dado. */
+  validadeMs?: number | null;
+  /** Última movimentação (ms). Opcional em linhas montadas sem este dado. */
+  movimentacaoMs?: number | null;
 };
 
 export type RetiradaEstoqueDto = {
