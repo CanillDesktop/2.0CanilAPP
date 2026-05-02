@@ -65,8 +65,6 @@ public class Program
                 options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
                 options.KnownNetworks.Clear();
                 options.KnownProxies.Clear();
-                options.KnownProxies.Add(IPAddress.Loopback);
-                options.KnownProxies.Add(IPAddress.IPv6Loopback);
             });
 
             var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -89,7 +87,8 @@ public class Program
                                 var uri = new Uri(origin);
                                 return uri.Host is "localhost" or "127.0.0.1" or "::1"
                                     || uri.Host.StartsWith("192.168.", StringComparison.Ordinal)
-                                    || uri.Host.StartsWith("10.", StringComparison.Ordinal);
+                                    || uri.Host.StartsWith("10.", StringComparison.Ordinal)
+                                    || uri.Host.Contains("canil-frontend.pages.dev", StringComparison.Ordinal);
                             })
                             .AllowAnyHeader()
                             .AllowAnyMethod()
