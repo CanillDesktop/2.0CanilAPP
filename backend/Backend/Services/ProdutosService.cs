@@ -6,6 +6,7 @@ using Backend.Models.Produtos;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
 using System.Diagnostics;
+using Backend.Pagination;
 
 namespace Backend.Services
 {
@@ -133,6 +134,6 @@ namespace Backend.Services
             return await _repository.DeleteAsync(produto);
         }
 
-        public async Task<IEnumerable<ProdutosModel>> BuscarTodosAsync(ProdutosFiltroDTO filtro) => await _repository.GetAsync(filtro);
+        public async Task<IEnumerable<ProdutosModel>> BuscarTodosAsync(ProdutosFiltroDTO filtro, ProdutosParameters produtosParameters) => await _repository.GetAsync(filtro, produtosParameters);
     }
 }
