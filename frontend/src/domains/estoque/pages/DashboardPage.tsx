@@ -123,7 +123,7 @@ export function DashboardPage() {
       setErroCarregamento(null);
       try {
         const [produtos, medicamentos, insumos] = await Promise.all([
-          listarProdutosApi(),
+          listarProdutosApi(undefined, { pageNumber: 1, pageSize: 50 }),
           listarMedicamentosApi(),
           listarInsumosApi(),
         ]);
