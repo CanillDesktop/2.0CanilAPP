@@ -1,12 +1,21 @@
-type Props = {
+type ErroProps = {
   mensagem: string | null;
+  errosValidacao?: string[] | null;
 };
 
-export function PainelErro({ mensagem }: Props) {
+export function PainelErro({ mensagem, errosValidacao }: ErroProps) {
   if (!mensagem) return null;
   return (
-    <div className="painel-erro" role="alert">
-      {mensagem}
-    </div>
+    errosValidacao ?
+      <div className="painel-erro" role="alert">
+        <ul style={{ listStyle: "none" }}>
+          {errosValidacao.map((erro, index) => (
+            <li key={index}>{erro}</li>
+          ))}
+        </ul>
+      </div>
+      : <div className="painel-erro" role="alert">
+        {mensagem}
+      </div>
   );
 }

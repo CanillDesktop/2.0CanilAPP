@@ -53,7 +53,7 @@ const textFieldSx = {
 export function FormularioNovoLote() {
   const [params] = useSearchParams();
   const navegar = useNavigate();
-  const { criarLote, carregando, erro } = useMutacaoEstoque();
+  const { criarLote, carregando, erro, errosValidacao } = useMutacaoEstoque();
 
   const inicialIdItem = useMemo(() => Number(params.get('idItem')) || 0, [params]);
   const inicialCodItem = useMemo(() => params.get('codItem') ?? '', [params]);
@@ -155,7 +155,7 @@ export function FormularioNovoLote() {
                   Campos obrigatórios: item, lote, quantidade e data de entrega.
                 </Typography>
               </Box>
-              <PainelErro mensagem={erro} />
+              <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField

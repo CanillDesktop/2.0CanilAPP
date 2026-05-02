@@ -72,7 +72,7 @@ export function FormularioProduto() {
   const navegar = useNavigate();
   const { usuario } = useAutenticacao();
   const papelUsuario = mapearPapelUsuario(usuario?.permissao);
-  const { criar, carregando, erro } = useMutacaoProduto();
+  const { criar, carregando, erro, errosValidacao } = useMutacaoProduto();
   const themeExterno = useTheme();
   const isMobile = useMediaQuery(themeExterno.breakpoints.down('sm'));
   const ehMobileMenu = useMediaQuery(themeExterno.breakpoints.down('md'));
@@ -212,7 +212,7 @@ export function FormularioProduto() {
             Preencha os dados essenciais e, se necessário, já registre o estoque inicial.
           </Typography>
 
-          <PainelErro mensagem={erro} />
+          <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
 
           <Box component="form" onSubmit={aoEnviar}>
             <Card sx={{ p: { xs: 2, sm: 3 }, mb: 3, borderRadius: 3, bgcolor: '#0f172a' }}>

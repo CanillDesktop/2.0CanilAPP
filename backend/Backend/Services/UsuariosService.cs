@@ -24,7 +24,7 @@ public class UsuariosService : IUsuariosService
     public async Task<UsuariosModel?> CriarAsync(UsuariosModel usuario)
     {
         if (await _repository.GetByEmailAsync(usuario.Email) != null)
-            throw new RegraDeNegocioInfringidaException("Usuário já existe");
+            throw new RegraDeNegocioInfringidaException("Este email já está em uso por outro usuário");
 
         var totalUsuarios = await _repository.CountAsync();
         var deveSerAdmin = totalUsuarios < 2;

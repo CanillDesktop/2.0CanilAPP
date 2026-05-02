@@ -8,7 +8,7 @@ import type { InsumoCadastroDto } from '../types/tiposInsumos';
 
 export function FormularioInsumo() {
   const navegar = useNavigate();
-  const { criar, carregando, erro } = useMutacaoInsumo();
+  const { criar, carregando, erro, errosValidacao } = useMutacaoInsumo();
   const [descricaoSimplificada, setDescricaoSimplificada] = useState('');
   const [descricaoDetalhada, setDescricaoDetalhada] = useState('');
   const [lote, setLote] = useState('');
@@ -39,7 +39,7 @@ export function FormularioInsumo() {
   return (
     <form className="cartao" onSubmit={aoEnviar}>
       <h1>Novo insumo</h1>
-      <PainelErro mensagem={erro} />
+      <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
       <label>
         Descrição simplificada
         <input value={descricaoSimplificada} onChange={(e) => setDescricaoSimplificada(e.target.value)} required />

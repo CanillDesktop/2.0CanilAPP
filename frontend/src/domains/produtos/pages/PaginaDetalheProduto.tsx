@@ -53,7 +53,7 @@ export function PaginaDetalheProduto() {
   const [drawerAbertoMobile, setDrawerAbertoMobile] = useState(false);
 
   const { estado, carregar } = useProdutoDetalhe(Number.isFinite(id) ? id : undefined);
-  const { excluir, carregando, erro } = useMutacaoProduto();
+  const { excluir, carregando, erro, errosValidacao } = useMutacaoProduto();
 
   useEffect(() => {
     void carregar();
@@ -127,7 +127,7 @@ export function PaginaDetalheProduto() {
             </Button>
           </Stack>
 
-          <PainelErro mensagem={estado.erro ?? erro} />
+          <PainelErro mensagem={estado.erro ?? erro} errosValidacao={errosValidacao} />
           <IndicadorCarregamento visivel={estado.carregando || carregando} />
 
           {p && (

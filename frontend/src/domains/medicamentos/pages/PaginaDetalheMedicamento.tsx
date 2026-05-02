@@ -9,7 +9,7 @@ export function PaginaDetalheMedicamento() {
   const id = Number(params.id);
   const navegar = useNavigate();
   const { estado, carregar } = useMedicamentoDetalhe(Number.isFinite(id) ? id : undefined);
-  const { excluir, carregando, erro } = useMutacaoMedicamento();
+  const { excluir, carregando, erro, errosValidacao } = useMutacaoMedicamento();
 
   useEffect(() => {
     void carregar();
@@ -32,7 +32,7 @@ export function PaginaDetalheMedicamento() {
           Voltar
         </Link>
       </header>
-      <PainelErro mensagem={estado.erro ?? erro} />
+      <PainelErro mensagem={estado.erro ?? erro} errosValidacao={errosValidacao} />
       <IndicadorCarregamento visivel={estado.carregando || carregando} />
       {m && (
         <>

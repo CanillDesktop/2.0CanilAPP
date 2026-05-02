@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
+import { extrairMensagemErroApi, ErroApi } from '../../../infrastructure/http/erroApi';
 import { mesclarUsuarioArmazenado } from '../../../shared/services/armazenamentoSessao';
 import type { UsuarioSessao } from '../../../shared/types/usuarioSessao';
 import { usuariosService } from '../services/usuariosService';
@@ -22,6 +22,7 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
   const [carregandoLista, setCarregandoLista] = useState(false);
   const [carregandoAcao, setCarregandoAcao] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [errosValidacao, setErrosValidacao] = useState<string[] | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
 
   const carregarUsuarios = useCallback(async () => {
@@ -65,6 +66,7 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
   const atualizarUsuario = useCallback(async (id: number, dto: UsuarioAtualizacaoDto) => {
     setCarregandoAcao(true);
     setErro(null);
+    setErrosValidacao(null);
     setSucesso(null);
     try {
       const atualizado = await usuariosService.atualizar(id, dto);
@@ -83,6 +85,9 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
       return atualizado;
     } catch (e) {
       setErro(extrairMensagemErroApi(e));
+      if (e instanceof ErroApi && e.errors) {
+        setErrosValidacao(e.extrairMensagemErros());
+      }
       return null;
     } finally {
       setCarregandoAcao(false);
@@ -92,6 +97,7 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
   const trocarSenha = useCallback(async (id: number, dto: TrocarSenhaDto): Promise<boolean> => {
     setCarregandoAcao(true);
     setErro(null);
+    setErrosValidacao(null);
     setSucesso(null);
     try {
       await usuariosService.trocarSenha(id, dto);
@@ -99,6 +105,9 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
       return true;
     } catch (e) {
       setErro(extrairMensagemErroApi(e));
+      if (e instanceof ErroApi && e.errors) {
+        setErrosValidacao(e.extrairMensagemErros());
+      }
       return false;
     } finally {
       setCarregandoAcao(false);
@@ -108,14 +117,18 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
   const criarUsuario = useCallback(async (dto: UsuarioCadastroComConfirmacaoDto) => {
     setCarregandoAcao(true);
     setErro(null);
+    setErrosValidacao(null);
     setSucesso(null);
     try {
-        const novo = await usuariosService.criar(dto);
+      const novo = await usuariosService.criar(dto);
       setUsuarios((atual) => [novo, ...atual]);
       setSucesso('Usuário cadastrado com sucesso.');
       return novo;
     } catch (e) {
       setErro(extrairMensagemErroApi(e));
+      if (e instanceof ErroApi && e.errors) {
+        setErrosValidacao(e.extrairMensagemErros());
+      }
       return null;
     } finally {
       setCarregandoAcao(false);
@@ -131,10 +144,11 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
     ): Promise<boolean> => {
       setCarregandoAcao(true);
       setErro(null);
+      setErrosValidacao(null);
       setSucesso(null);
       try {
-          if (acao === 'inativar') await usuariosService.inativar(id, dto);
-          else await usuariosService.remover(id, dto);
+        if (acao === 'inativar') await usuariosService.inativar(id, dto);
+        else await usuariosService.remover(id, dto);
 
         setUsuarios((atual) => {
           if (acao === 'remover') return atual.filter((item) => item.id !== id);
@@ -144,6 +158,9 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
         return true;
       } catch (e) {
         setErro(extrairMensagemErroApi(e));
+        if (e instanceof ErroApi && e.errors) {
+        setErrosValidacao(e.extrairMensagemErros());
+      }
         return false;
       } finally {
         setCarregandoAcao(false);
@@ -183,5 +200,6 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
     criarUsuario,
     executarAcaoCritica,
     filtrarUsuarios,
+    errosValidacao
   };
 }
