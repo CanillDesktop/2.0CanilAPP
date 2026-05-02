@@ -7,6 +7,6 @@ namespace Backend.Repositories.Interfaces
     public interface IProdutosRepository : ICRUDEstoqueRepository<ProdutosModel>
     {
 
-        Task<IEnumerable<ProdutosModel>> GetAsync(ProdutosFiltroDTO filtro, ProdutosParameters produtosParameters);
+        Task<PagedList<ProdutosModel>> GetAsync(ProdutosFiltroDTO filtro, ProdutosParameters produtosParameters);
     }
 }

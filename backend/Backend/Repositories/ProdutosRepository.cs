@@ -12,12 +12,12 @@ namespace Backend.Repositories
     {
         public ProdutosRepository(CanilAppDbContext context) : base(context) { }
 
-        public async Task<IEnumerable<ProdutosModel>> GetAsync(ProdutosFiltroDTO filtro, ProdutosParameters produtosParameters)
+        public async Task<PagedList<ProdutosModel>> GetAsync(ProdutosFiltroDTO filtro, ProdutosParameters produtosParameters)
         { 
             ArgumentNullException.ThrowIfNull(filtro);
             ArgumentNullException.ThrowIfNull(produtosParameters);
 
-            var query = _context.Produtos
+            var query = _context.Produtos            
                 .Include(p => p.ItensEstoque)
                 .Include(p => p.ItemNivelEstoque)
                 .Where(p => p.IsDeleted == false)
@@ -42,10 +42,7 @@ namespace Backend.Repositories
                 query = query.Where(p => p.ItensEstoque!.Any(e => e.DataValidade == filtro.DataValidade));
 
             var count = await query.CountAsync();
-            var items = await query.Skip((produtosParameters.PageNumber - 1) * produtosParameters.PageSize)
-                                   .Take(produtosParameters.PageSize)
-                                   .ToListAsync();
-
+            var items = await query.OrderBy(p => p.Id).Skip((produtosParameters.PageNumber - 1) * produtosParameters.PageSize).Take(produtosParameters.PageSize) .ToListAsync();
 
             return new PagedList<ProdutosModel>(items, count, produtosParameters.PageNumber, produtosParameters.PageSize);
         }
