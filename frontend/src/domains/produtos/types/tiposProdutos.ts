@@ -34,3 +34,8 @@ export type ProdutoFiltroDto = {
   dataEntrega?: string;
   dataValidade?: string;
 };
+
+export type ProdutoPaginacaoDto = {
+  pageNumber?: number;
+  pageSize?: number;
+};

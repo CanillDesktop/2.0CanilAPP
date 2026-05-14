@@ -1,13 +1,14 @@
 import { useCallback } from 'react';
 import { useEstadoAssincrono } from '../../../shared/hooks/useEstadoAssincrono';
 import { servicoProdutos } from '../services/servicoProdutos';
-import type { ProdutoFiltroDto, ProdutoLeituraDto } from '../types/tiposProdutos';
+import type { ProdutoFiltroDto, ProdutoLeituraDto, ProdutoPaginacaoDto } from '../types/tiposProdutos';
 
 export function useListaProdutos() {
   const { estado, executar } = useEstadoAssincrono<ProdutoLeituraDto[]>();
 
   const carregar = useCallback(
-    (filtro?: ProdutoFiltroDto) => executar(() => servicoProdutos.listar(filtro)),
+    (filtro?: ProdutoFiltroDto, paginacao?: ProdutoPaginacaoDto) =>
+      executar(() => servicoProdutos.listar(filtro, paginacao)),
     [executar],
   );
 

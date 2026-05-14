@@ -1,5 +1,5 @@
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
-import { Box, Chip, LinearProgress, Paper, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, LinearProgress, Pagination, Paper, Stack, Typography } from '@mui/material';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 import { rotuloTipoItem } from '../utils/rotulosEstoque';
 
@@ -9,11 +9,17 @@ type AlertaCardProps = {
   variante: AlertaCardVariante;
   titulo: string;
   descricao: string;
+  /** Itens já paginados (slice da página atual). */
   itens: LinhaOperacionalEstoque[];
+  /** Total após filtros (ex.: categoria), para chip e contagem. */
+  totalFiltrado: number;
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  isMobile: boolean;
   carregando: boolean;
   vazioLabel: string;
   onItemClick: (item: LinhaOperacionalEstoque) => void;
-  maxItens?: number;
 };
 
 function rotuloChipContagem(carregando: boolean, total: number) {
@@ -28,17 +34,21 @@ export function AlertaCard({
   titulo,
   descricao,
   itens,
+  totalFiltrado,
+  page,
+  totalPages,
+  onPageChange,
+  isMobile,
   carregando,
   vazioLabel,
   onItemClick,
-  maxItens = 8,
 }: AlertaCardProps) {
   const ehMinimo = variante === 'abaixo_minimo';
   const chipOutline = ehMinimo
     ? { borderColor: 'rgba(248, 113, 113, 0.55)', color: '#fecaca' }
     : { borderColor: 'rgba(251, 191, 36, 0.55)', color: '#fde68a' };
 
-  const lista = itens.slice(0, maxItens);
+  const lista = itens;
 
   return (
     <Paper
@@ -69,7 +79,7 @@ export function AlertaCard({
               color={ehMinimo ? 'error' : 'warning'}
               variant="outlined"
               sx={{ fontWeight: 700, ...chipOutline }}
-              label={rotuloChipContagem(carregando, itens.length)}
+              label={rotuloChipContagem(carregando, totalFiltrado)}
             />
           </Stack>
           <Typography variant="body2" sx={{ color: 'rgba(203, 213, 225, 0.9)' }}>
@@ -207,6 +217,75 @@ export function AlertaCard({
             {vazioLabel}
           </Typography>
         )}
+        {!carregando && totalFiltrado > 0 ? (
+          <Stack spacing={1.5} sx={{ pt: 0.5 }}>
+            <Typography variant="caption" sx={{ color: 'rgba(148, 163, 184, 0.95)', fontWeight: 600, display: 'block' }}>
+              {totalFiltrado} {totalFiltrado === 1 ? 'item' : 'itens'}
+            </Typography>
+            {totalPages > 1 ? (
+              isMobile ? (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    mt: 0.5,
+                  }}
+                >
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    disabled={page <= 1}
+                    onClick={() => onPageChange(page - 1)}
+                    sx={{
+                      borderColor: 'rgba(148,163,184,0.35)',
+                      color: '#e2e8f0',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Anterior
+                  </Button>
+                  <Typography variant="body2" sx={{ color: '#e2e8f0', fontWeight: 600 }}>
+                    Página {page}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    disabled={page >= totalPages}
+                    onClick={() => onPageChange(page + 1)}
+                    sx={{
+                      borderColor: 'rgba(148,163,184,0.35)',
+                      color: '#e2e8f0',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Próxima
+                  </Button>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', justifyContent: 'center', pt: 0.5 }}>
+                  <Pagination
+                    count={totalPages}
+                    page={page}
+                    onChange={(_e, value) => onPageChange(value)}
+                    color="standard"
+                    size="small"
+                    sx={{
+                      '& .MuiPaginationItem-root': { color: '#e2e8f0' },
+                      '& .Mui-selected': {
+                        bgcolor: ehMinimo ? 'rgba(248, 113, 113, 0.35)' : 'rgba(251, 191, 36, 0.35)',
+                      },
+                    }}
+                  />
+                </Box>
+              )
+            ) : null}
+          </Stack>
+        ) : null}
       </Stack>
     </Paper>
   );

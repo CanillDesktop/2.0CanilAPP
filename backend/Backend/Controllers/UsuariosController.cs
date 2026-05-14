@@ -1,4 +1,4 @@
-﻿using Backend.DTOs.Usuario;
+using Backend.DTOs.Usuario;
 using Backend.Exceptions;
 using Backend.Models;
 using Backend.Services.Interfaces;

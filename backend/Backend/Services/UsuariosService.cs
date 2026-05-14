@@ -1,4 +1,4 @@
-﻿using Backend.Exceptions;
+using Backend.Exceptions;
 using Backend.Models.Enums;
 using Backend.Models.Usuarios;
 using Backend.Repositories.Interfaces;

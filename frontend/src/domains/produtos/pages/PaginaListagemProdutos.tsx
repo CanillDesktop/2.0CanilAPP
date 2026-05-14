@@ -14,6 +14,7 @@ import {
   Skeleton,
   Snackbar,
   Stack,
+  TablePagination,
   Typography,
 } from '@mui/material';
 import { motion } from 'framer-motion';
@@ -29,30 +30,13 @@ import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 
 const MotionBox = motion(Box);
 
-const produtosMock: ProdutoLeituraDto[] = [
-  {
-    id: 9901,
-    codigo: 'PRD-001',
-    nomeOuDescricaoSimples: 'Racao Premium Adulto',
-    descricaoDetalhada: 'Racao seca premium',
-    unidade: 1,
-    categoria: 1,
-    itemNivelEstoque: { id: 9901, nivelMinimoEstoque: 30 },
-    itensEstoque: [
-      { id: 9901, codigo: 'PRD-001', quantidade: 120, dataEntrega: '2026-04-20', dataValidade: '2026-07-10' },
-    ],
-  },
-  {
-    id: 9902,
-    codigo: 'PRD-002',
-    nomeOuDescricaoSimples: 'Areia Higienica',
-    descricaoDetalhada: 'Areia com controle de odor',
-    unidade: 1,
-    categoria: 2,
-    itemNivelEstoque: { id: 9902, nivelMinimoEstoque: 25 },
-    itensEstoque: [{ id: 9902, codigo: 'PRD-002', quantidade: 10, dataEntrega: '2026-04-19', dataValidade: null }],
-  },
-];
+/** Total exibido na paginação sem metadados do backend: estimativa para habilitar “próxima” quando a página veio cheia. */
+function estimarContagemParaPaginacao(page: number, rowsPerPage: number, itensNestaPagina: number): number {
+  if (itensNestaPagina === 0 && page === 0) return 0;
+  if (itensNestaPagina === 0 && page > 0) return page * rowsPerPage;
+  if (itensNestaPagina > 0 && itensNestaPagina < rowsPerPage) return page * rowsPerPage + itensNestaPagina;
+  return (page + 1) * rowsPerPage + 1;
+}
 
 function obterStatus(item: ProdutoLeituraDto): 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer' {
   const quantidade = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
@@ -85,13 +69,16 @@ export function PaginaListagemProdutos() {
     mensagem: '',
     tipo: 'success',
   });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
-    void carregar();
-  }, [carregar]);
+    void carregar(undefined, { pageNumber: page + 1, pageSize: rowsPerPage });
+  }, [carregar, page, rowsPerPage]);
 
-  const itensBase = estado.dados?.length ? estado.dados : produtosMock;
+  const itensBase = estado.dados ?? [];
   const categorias = Array.from(new Set(itensBase.map((item) => String(item.categoria))));
+  const countPaginacao = estimarContagemParaPaginacao(page, rowsPerPage, itensBase.length);
 
   const itensFiltrados = useMemo(() => {
     return itensBase.filter((item) => {
@@ -117,7 +104,7 @@ export function PaginaListagemProdutos() {
     const ok = await excluir(idExclusao);
     if (ok) {
       setSnackbar({ open: true, mensagem: 'Produto excluido com sucesso.', tipo: 'success' });
-      await carregar();
+      await carregar(undefined, { pageNumber: page + 1, pageSize: rowsPerPage });
     } else {
       setSnackbar({ open: true, mensagem: 'Nao foi possivel excluir o produto.', tipo: 'error' });
     }
@@ -163,15 +150,20 @@ export function PaginaListagemProdutos() {
             onNovoProduto={() => navigate('/produtos/novo')}
           />
 
-          <KpiSectionProdutos
-            carregando={estado.carregando}
-            kpis={[
-              { titulo: 'Total de produtos', valor: kpis.total, icon: <Inventory2OutlinedIcon />, cor: 'primary.main' },
-              { titulo: 'Baixo estoque', valor: kpis.baixo, icon: <ReportProblemOutlinedIcon />, cor: 'warning.main' },
-              { titulo: 'Sem estoque', valor: kpis.semEstoque, icon: <RemoveShoppingCartOutlinedIcon />, cor: 'error.main' },
-              { titulo: 'Ativos', valor: kpis.ativos, icon: <TaskAltOutlinedIcon />, cor: 'success.main' },
-            ]}
-          />
+          <Stack sx={{ gap: 0.5 }}>
+            <KpiSectionProdutos
+              carregando={estado.carregando}
+              kpis={[
+                { titulo: 'Total (nesta página)', valor: kpis.total, icon: <Inventory2OutlinedIcon />, cor: 'primary.main' },
+                { titulo: 'Baixo estoque', valor: kpis.baixo, icon: <ReportProblemOutlinedIcon />, cor: 'warning.main' },
+                { titulo: 'Sem estoque', valor: kpis.semEstoque, icon: <RemoveShoppingCartOutlinedIcon />, cor: 'error.main' },
+                { titulo: 'Ativos', valor: kpis.ativos, icon: <TaskAltOutlinedIcon />, cor: 'success.main' },
+              ]}
+            />
+            <Typography variant="caption" sx={{ color: 'rgba(148, 163, 184, 0.95)', px: 0.5 }}>
+              Indicadores consideram só os produtos carregados nesta página; filtros abaixo aplicam sobre ela.
+            </Typography>
+          </Stack>
 
           {estado.erro && <Alert severity="error">{estado.erro}</Alert>}
 
@@ -215,10 +207,32 @@ export function PaginaListagemProdutos() {
                 >
                   <Typography variant="h6">Nenhum produto encontrado</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Ajuste os filtros ou cadastre um novo produto.
+                    Ajuste os filtros, troque de página ou cadastre um novo produto.
                   </Typography>
                 </Box>
               )}
+              <TablePagination
+                component="div"
+                sx={{
+                  color: '#e2e8f0',
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  '& .MuiTablePagination-toolbar': { minHeight: 52 },
+                  '& .MuiTablePagination-selectIcon, & .MuiTablePagination-actions': { color: '#94a3b8' },
+                }}
+                rowsPerPageOptions={[5, 10, 25, 50]}
+                count={countPaginacao}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={(_, newPage) => setPage(newPage)}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(Number.parseInt(e.target.value, 10));
+                  setPage(0);
+                }}
+                labelRowsPerPage="Itens por página"
+                labelDisplayedRows={({ from, to, count }) =>
+                  count > 0 ? `${from}–${to} de ${count > (page + 1) * rowsPerPage ? `mais de ${to}` : count}` : '0–0 de 0'
+                }
+              />
             </>
           )}
         </Stack>

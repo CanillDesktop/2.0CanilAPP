@@ -23,5 +23,5 @@ export function useBuscaCategoria(itens: LinhaOperacionalEstoque[], categoria: C
     return daCategoria.filter((item) => item.nome.toLowerCase().includes(debouncedTerm));
   }, [itens, categoria, debouncedTerm]);
 
-  return { searchTerm, setSearchTerm, resultados };
+  return { searchTerm, setSearchTerm, resultados, termoNomeDebounced: debouncedTerm };
 }

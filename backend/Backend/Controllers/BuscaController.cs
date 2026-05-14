@@ -39,7 +39,7 @@ namespace Backend.Controllers
                 return Ok(Array.Empty<BuscaItemDTO>());
             }
 
-            var produtosTask = _produtosService.BuscarTodosAsync(new DTOs.Produtos.ProdutosFiltroDTO());
+            var produtosTask = _produtosService.BuscarTodosAsync(new DTOs.Produtos.ProdutosFiltroDTO(), new Backend.Pagination.ProdutosParameters());
             var medicamentosTask = _medicamentosService.BuscarTodosAsync(new DTOs.Medicamentos.MedicamentosFiltroDTO());
             var insumosTask = _insumosService.BuscarTodosAsync(new DTOs.Insumos.InsumosFiltroDTO());
 
