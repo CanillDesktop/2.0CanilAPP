@@ -20,15 +20,34 @@ import {
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 import { FilterBarInsumos } from '../components/FilterBarInsumos';
 import { KpiSectionInsumos } from '../components/KpiSectionInsumos';
 import { TabelaInsumos } from '../components/TabelaInsumos';
 import { useListaInsumos, useMutacaoInsumo } from '../hooks/useInsumos';
 import type { InsumoLeituraDto } from '../types/tiposInsumos';
-import { obterStatusInsumo, type StatusInsumo } from '../utils/statusInsumo';
-import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 
 const MotionBox = motion(Box);
+
+type StatusInsumo = 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
+
+function obterStatus(item: InsumoLeituraDto): StatusInsumo {
+  const quantidade = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
+  const minimo = item.itemNivelEstoque?.nivelMinimoEstoque ?? 0;
+  const hoje = new Date();
+  const limiteVencimento = new Date();
+  limiteVencimento.setDate(hoje.getDate() + 30);
+  const temLoteAVencer = item.itensEstoque.some((lote) => {
+    if (!lote.dataValidade) return false;
+    const validade = new Date(lote.dataValidade);
+    if (Number.isNaN(validade.getTime())) return false;
+    return validade >= hoje && validade <= limiteVencimento;
+  });
+  if (quantidade <= 0) return 'sem_estoque';
+  if (temLoteAVencer) return 'a_vencer';
+  if (quantidade < minimo) return 'baixo';
+  return 'ativo';
+}
 
 export function PaginaListagemInsumos() {
   const { estado, carregar } = useListaInsumos();
@@ -62,7 +81,7 @@ export function PaginaListagemInsumos() {
       const texto = `${item.codigo} ${item.nomeOuDescricaoSimples}`.toLowerCase();
       const bateBusca = texto.includes(busca.toLowerCase());
       const bateUnidade = unidade === 'todas' ? true : String(item.unidade) === unidade;
-      const statusItem = obterStatusInsumo(item);
+      const statusItem = obterStatus(item);
       const bateStatus = status === 'todos' ? true : statusItem === status;
       return bateBusca && bateUnidade && bateStatus;
     });
@@ -75,16 +94,16 @@ export function PaginaListagemInsumos() {
 
   const kpis = useMemo(() => {
     const total = itensPagina.length;
-    const baixo = itensPagina.filter((item) => obterStatusInsumo(item) === 'baixo').length;
-    const semEstoque = itensPagina.filter((item) => obterStatusInsumo(item) === 'sem_estoque').length;
-    const ativos = itensPagina.filter((item) => obterStatusInsumo(item) === 'ativo').length;
+    const baixo = itensPagina.filter((item) => obterStatus(item) === 'baixo').length;
+    const semEstoque = itensPagina.filter((item) => obterStatus(item) === 'sem_estoque').length;
+    const ativos = itensPagina.filter((item) => obterStatus(item) === 'ativo').length;
     return { total, baixo, semEstoque, ativos };
   }, [itensPagina]);
 
   useEffect(() => {
     const maxPage = Math.max(0, Math.ceil(itensFiltrados.length / rowsPerPage) - 1);
     if (page > maxPage) setPage(maxPage);
-  }, [itensFiltrados.length, rowsPerPage, page]);
+  }, [itensFiltrados.length, page, rowsPerPage]);
 
   async function confirmarExclusao() {
     if (idExclusao == null) return;
@@ -216,9 +235,7 @@ export function PaginaListagemInsumos() {
                   setPage(0);
                 }}
                 labelRowsPerPage="Itens por página"
-                labelDisplayedRows={({ from, to, count }) =>
-                  count > 0 ? `${from}–${to} de ${count}` : '0–0 de 0'
-                }
+                labelDisplayedRows={({ from, to, count }) => (count > 0 ? `${from}-${to} de ${count}` : '0-0 de 0')}
               />
             </>
           )}
