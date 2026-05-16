@@ -14,4 +14,10 @@ public interface IRetiradaEstoqueRepository
         RetiradaEstoqueFiltroConsulta filtros,
         RetiradaEstoqueParameters parameters,
         CancellationToken cancellationToken = default);
+
+    Task<RetiradaEstoqueHistoricoExportacaoConsulta> ListarHistoricoParaExportacaoAsync(
+        RetiradaEstoqueFiltroConsulta filtros,
+        bool ordemDataAscendente,
+        int limiteLinhas,
+        CancellationToken cancellationToken = default);
 }

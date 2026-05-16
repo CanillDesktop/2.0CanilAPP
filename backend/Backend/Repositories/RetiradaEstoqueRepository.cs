@@ -75,6 +75,26 @@ public class RetiradaEstoqueRepository : IRetiradaEstoqueRepository
             totalComoRecebedor);
     }
 
+    public async Task<RetiradaEstoqueHistoricoExportacaoConsulta> ListarHistoricoParaExportacaoAsync(
+        RetiradaEstoqueFiltroConsulta filtros,
+        bool ordemDataAscendente,
+        int limiteLinhas,
+        CancellationToken cancellationToken = default)
+    {
+        var intersecao = MontarIntersecao(filtros);
+        var totalIntersec = await intersecao.CountAsync(cancellationToken);
+        var sumQtd = await intersecao.SumQuantidadeAsync(cancellationToken);
+
+        var linhasProj = RetiradaEstoqueConsultaQueryable.ProjecaoHistoricoOrdenado(
+            _context,
+            intersecao,
+            ordemDataAscendente);
+
+        var linhas = await linhasProj.Take(limiteLinhas + 1).ToListAsync(cancellationToken);
+
+        return new RetiradaEstoqueHistoricoExportacaoConsulta(linhas, totalIntersec, sumQtd);
+    }
+
     private IQueryable<RetiradaEstoqueModel> MontarIntersecao(RetiradaEstoqueFiltroConsulta filtros)
     {
         var baseQ = _context.RetiradaEstoque.AsNoTracking().FiltrarDataETermo(filtros);

@@ -14,10 +14,14 @@ namespace Backend.Controllers;
 public class RetiradaEstoqueController : ControllerBase
 {
     private readonly IRetiradaEstoqueService _service;
+    private readonly IRetiradaEstoqueHistoricoExportService _exportService;
 
-    public RetiradaEstoqueController(IRetiradaEstoqueService service)
+    public RetiradaEstoqueController(
+        IRetiradaEstoqueService service,
+        IRetiradaEstoqueHistoricoExportService exportService)
     {
         _service = service;
+        _exportService = exportService;
     }
 
     [HttpGet]
@@ -48,6 +52,65 @@ public class RetiradaEstoqueController : ControllerBase
             {
                 Title = "Filtros inválidos",
                 Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message,
+            });
+        }
+    }
+
+    [HttpGet("historico/exportar/xlsx")]
+    public async Task<IActionResult> ExportarHistoricoXlsx(
+        [FromQuery] RetiradaEstoqueFiltroDTO? filtro,
+        [FromQuery] bool ordemDataAscendente = false,
+        CancellationToken cancellationToken = default) =>
+        await ExportarHistoricoInternoAsync(
+            () => _exportService.ExportarHistoricoXlsxAsync(
+                filtro ?? new RetiradaEstoqueFiltroDTO(),
+                ordemDataAscendente,
+                cancellationToken));
+
+    [HttpGet("historico/exportar/csv")]
+    public async Task<IActionResult> ExportarHistoricoCsv(
+        [FromQuery] RetiradaEstoqueFiltroDTO? filtro,
+        [FromQuery] bool ordemDataAscendente = false,
+        CancellationToken cancellationToken = default) =>
+        await ExportarHistoricoInternoAsync(
+            () => _exportService.ExportarHistoricoCsvAsync(
+                filtro ?? new RetiradaEstoqueFiltroDTO(),
+                ordemDataAscendente,
+                cancellationToken));
+
+    private async Task<IActionResult> ExportarHistoricoInternoAsync(
+        Func<Task<ArquivoExportadoDTO>> gerar)
+    {
+        try
+        {
+            var arquivo = await gerar();
+            return File(arquivo.Conteudo, arquivo.ContentType, arquivo.NomeArquivo);
+        }
+        catch (ExportacaoRetiradasLimiteExcedidoException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Recorte muito grande para exportação",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message,
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Filtros inválidos",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message,
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                Title = "Falha ao gerar arquivo de exportação",
+                Status = StatusCodes.Status500InternalServerError,
                 Details = ex.Message,
             });
         }

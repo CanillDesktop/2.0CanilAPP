@@ -189,6 +189,7 @@ public class Program
             builder.Services.AddScoped<IEstoqueItemService, EstoqueItemService>();
             builder.Services.AddScoped<IEstoqueItemRepository, EstoqueItemRepository>();
             builder.Services.AddScoped<IRetiradaEstoqueService, RetiradaEstoqueService>();
+            builder.Services.AddScoped<IRetiradaEstoqueHistoricoExportService, RetiradaEstoqueHistoricoExportService>();
             builder.Services.AddScoped<IRetiradaEstoqueRepository, RetiradaEstoqueRepository>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
