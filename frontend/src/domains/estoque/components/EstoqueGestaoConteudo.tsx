@@ -3,19 +3,18 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import {
   Box,
-  Button,
   Card,
   CardContent,
-  Chip,
-  Pagination,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
   Typography,
+  Chip,
 } from '@mui/material';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 import type { CampoOrdenacaoEstoque } from '../hooks/useListaEstoqueProcessada';
@@ -26,13 +25,22 @@ const sxCelula = {
   borderColor: 'rgba(148, 163, 184, 0.12)',
 };
 
+const sxPaginacao = {
+  color: '#e2e8f0',
+  borderTop: '1px solid rgba(255,255,255,0.06)',
+  '& .MuiTablePagination-toolbar': { minHeight: 52, flexWrap: 'wrap', gap: 1 },
+  '& .MuiTablePagination-selectIcon, & .MuiTablePagination-actions': { color: '#94a3b8' },
+  '& .MuiInputBase-root': { color: '#e2e8f0' },
+};
+
 type Props = {
   isMobile: boolean;
   carregando: boolean;
   dadosPaginados: LinhaOperacionalEstoque[];
   totalFiltrado: number;
   page: number;
-  totalPages: number;
+  rowsPerPage: number;
+  onRowsPerPageChange: (rows: number) => void;
   onPageChange: (page: number) => void;
   orderBy: CampoOrdenacaoEstoque;
   orderDirection: 'asc' | 'desc';
@@ -82,19 +90,50 @@ function CabecalhoOrdenavel({
   );
 }
 
+function BarraPaginacao({
+  totalFiltrado,
+  page,
+  rowsPerPage,
+  onPageChange,
+  onRowsPerPageChange,
+}: {
+  totalFiltrado: number;
+  page: number;
+  rowsPerPage: number;
+  onPageChange: (page: number) => void;
+  onRowsPerPageChange: (rows: number) => void;
+}) {
+  return (
+    <TablePagination
+      component="div"
+      sx={sxPaginacao}
+      rowsPerPageOptions={[5, 10, 25, 50]}
+      count={totalFiltrado}
+      rowsPerPage={rowsPerPage}
+      page={page - 1}
+      onPageChange={(_, newPage) => onPageChange(newPage + 1)}
+      onRowsPerPageChange={(e) => onRowsPerPageChange(Number.parseInt(e.target.value, 10))}
+      labelRowsPerPage="Itens por página"
+      labelDisplayedRows={({ from, to, count }) => (count === 0 ? '0–0 de 0' : `${from}–${to} de ${count}`)}
+    />
+  );
+}
+
 export function EstoqueGestaoConteudo({
   isMobile,
   carregando,
   dadosPaginados,
   totalFiltrado,
   page,
-  totalPages,
+  rowsPerPage,
+  onRowsPerPageChange,
   onPageChange,
   orderBy,
   orderDirection,
   onSort,
   onRowClick,
 }: Props) {
+
   if (carregando) {
     return (
       <Stack spacing={1.2}>
@@ -162,27 +201,13 @@ export function EstoqueGestaoConteudo({
             </Card>
           ))}
         </Stack>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, flexWrap: 'wrap', gap: 1 }}>
-          <Button
-            variant="outlined"
-            disabled={page <= 1}
-            onClick={() => onPageChange(page - 1)}
-            sx={{ borderColor: 'rgba(148,163,184,0.35)', color: '#e2e8f0' }}
-          >
-            Anterior
-          </Button>
-          <Typography sx={{ color: '#e2e8f0' }}>
-            Página {page} / {totalPages}
-          </Typography>
-          <Button
-            variant="outlined"
-            disabled={page >= totalPages}
-            onClick={() => onPageChange(page + 1)}
-            sx={{ borderColor: 'rgba(148,163,184,0.35)', color: '#e2e8f0' }}
-          >
-            Próxima
-          </Button>
-        </Box>
+        <BarraPaginacao
+          totalFiltrado={totalFiltrado}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={onPageChange}
+          onRowsPerPageChange={onRowsPerPageChange}
+        />
       </Stack>
     );
   }
@@ -264,19 +289,14 @@ export function EstoqueGestaoConteudo({
             </TableBody>
           </Table>
         </TableContainer>
-      </Card>
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
-        <Pagination
-          count={totalPages}
+        <BarraPaginacao
+          totalFiltrado={totalFiltrado}
           page={page}
-          onChange={(_, value) => onPageChange(value)}
-          color="primary"
-          sx={{
-            '& .MuiPaginationItem-root': { color: '#e2e8f0' },
-            '& .Mui-selected': { bgcolor: 'rgba(37,99,235,0.35) !important' },
-          }}
+          rowsPerPage={rowsPerPage}
+          onPageChange={onPageChange}
+          onRowsPerPageChange={onRowsPerPageChange}
         />
-      </Box>
+      </Card>
     </Stack>
   );
 }

@@ -4,8 +4,19 @@ import {
   excluirItemEstoqueApi,
   obterItemEstoquePorIdApi,
 } from '../api/estoqueItensApi';
+import {
+  consultarHistoricoRetiradasApi,
+  exportarHistoricoRetiradasCsvApi,
+  exportarHistoricoRetiradasXlsxApi,
+} from '../api/retiradaHistoricoApi';
 import { registrarRetiradaApi } from '../api/retiradaEstoqueApi';
-import type { ItemEstoqueDto, RetiradaEstoqueDto } from '../types/tiposEstoque';
+import type {
+  ItemEstoqueDto,
+  RetiradaEstoqueDto,
+  RetiradaHistoricoFiltroDto,
+  RetiradaHistoricoListaPaginadaDto,
+  RetiradaPaginacaoDto,
+} from '../types/tiposEstoque';
 
 export const servicoEstoque = {
   obterItemPorId(id: number): Promise<ItemEstoqueDto> {
@@ -22,5 +33,23 @@ export const servicoEstoque = {
   },
   registrarRetirada(dto: RetiradaEstoqueDto): Promise<void> {
     return registrarRetiradaApi(dto);
+  },
+  consultarHistoricoRetiradas(
+    filtro: RetiradaHistoricoFiltroDto,
+    paginacao?: RetiradaPaginacaoDto,
+  ): Promise<RetiradaHistoricoListaPaginadaDto> {
+    return consultarHistoricoRetiradasApi(filtro, paginacao);
+  },
+  exportarHistoricoRetiradasXlsx(
+    filtro: RetiradaHistoricoFiltroDto,
+    ordemDataAscendente?: boolean,
+  ): Promise<void> {
+    return exportarHistoricoRetiradasXlsxApi(filtro, ordemDataAscendente);
+  },
+  exportarHistoricoRetiradasCsv(
+    filtro: RetiradaHistoricoFiltroDto,
+    ordemDataAscendente?: boolean,
+  ): Promise<void> {
+    return exportarHistoricoRetiradasCsvApi(filtro, ordemDataAscendente);
   },
 };

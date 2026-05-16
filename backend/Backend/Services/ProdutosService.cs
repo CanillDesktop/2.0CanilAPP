@@ -141,6 +141,35 @@ namespace Backend.Services
             return await _repository.DeleteAsync(produto);
         }
 
-        public async Task<IEnumerable<ProdutosModel>> BuscarTodosAsync(ProdutosFiltroDTO filtro, ProdutosParameters produtosParameters) => await _repository.GetAsync(filtro, produtosParameters);
+        public async Task<ProdutosListaPaginadaDTO> BuscarPaginadoAsync(
+            ProdutosFiltroDTO filtro,
+            ProdutosParameters produtosParameters,
+            CancellationToken cancellationToken = default)
+        {
+            var consulta = await _repository.ConsultarPaginadoAsync(filtro, produtosParameters, cancellationToken);
+
+            var pageNumber = Math.Max(produtosParameters.PageNumber, 1);
+            var pageSize = produtosParameters.PageSize;
+            var totalPages = consulta.TotalCount == 0
+                ? 0
+                : (int)Math.Ceiling(consulta.TotalCount / (double)pageSize);
+
+            return new ProdutosListaPaginadaDTO
+            {
+                Items = consulta.Items.Select(p => (ProdutosLeituraDTO)p).ToList(),
+                TotalCount = consulta.TotalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                Resumo = new ProdutosListaResumoDTO
+                {
+                    TotalNoRecorte = consulta.Resumo.TotalNoRecorte,
+                    Ativos = consulta.Resumo.Ativos,
+                    BaixoEstoque = consulta.Resumo.BaixoEstoque,
+                    SemEstoque = consulta.Resumo.SemEstoque,
+                    AVencer = consulta.Resumo.AVencer,
+                },
+            };
+        }
     }
 }

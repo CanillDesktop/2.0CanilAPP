@@ -1,3 +1,4 @@
+using Backend.DTOs.Usuario;
 using Backend.Models;
 using Backend.Models.Usuarios;
 using System.Linq.Expressions;
@@ -8,4 +9,7 @@ public interface IUsuariosRepository : ICRUDRepository<UsuariosModel>
 {
     Task<UsuariosModel?> GetByEmailAsync(string email);
     Task<int> CountAsync(Expression<Func<UsuariosModel, bool>>? predicate = null);
+
+    Task<IReadOnlyList<UsuarioResumoFiltroDTO>> ListarResumoParaFiltrosAsync(
+        CancellationToken cancellationToken = default);
 }

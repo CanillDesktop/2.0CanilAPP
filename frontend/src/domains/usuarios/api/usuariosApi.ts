@@ -5,6 +5,7 @@ import type {
   UsuarioAtualizacaoDto,
   UsuarioCadastroComConfirmacaoDto,
   UsuarioCriadoDto,
+  UsuarioResumoFiltroDto,
 } from '../types/tiposUsuarios';
 
 export async function criarUsuarioApi(dto: UsuarioCadastroComConfirmacaoDto): Promise<UsuarioCriadoDto> {
@@ -16,6 +17,12 @@ export async function criarUsuarioApi(dto: UsuarioCadastroComConfirmacaoDto): Pr
 export async function listarUsuariosApi(): Promise<UsuarioCriadoDto[]> {
   const cliente = obterClienteHttp();
   const { data } = await cliente.get<UsuarioCriadoDto[]>('/api/Usuarios');
+  return data;
+}
+
+export async function listarUsuariosResumoParaRetiradasApi(): Promise<UsuarioResumoFiltroDto[]> {
+  const cliente = obterClienteHttp();
+  const { data } = await cliente.get<UsuarioResumoFiltroDto[]>('/api/Usuarios/resumo-filtro-retiradas');
   return data;
 }
 

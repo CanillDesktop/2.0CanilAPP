@@ -25,13 +25,17 @@ namespace Backend.Controllers
         }
 
         [HttpGet("pagination")]
-        public async Task<ActionResult<IEnumerable<ProdutosLeituraDTO>>> Get([FromQuery] ProdutosFiltroDTO filtro, [FromQuery] ProdutosParameters produtosParameters)
+        public async Task<ActionResult<ProdutosListaPaginadaDTO>> GetPagination(
+            [FromQuery] ProdutosFiltroDTO? filtro,
+            [FromQuery] ProdutosParameters? produtosParameters,
+            CancellationToken cancellationToken)
         {
-            var pagedResult = await _service.BuscarTodosAsync(filtro, produtosParameters);
+            var resultado = await _service.BuscarPaginadoAsync(
+                filtro ?? new ProdutosFiltroDTO(),
+                produtosParameters ?? new ProdutosParameters(),
+                cancellationToken);
 
-            var result = pagedResult.Select(p => (ProdutosLeituraDTO)p);
-
-            return Ok(result);
+            return Ok(resultado);
         }
 
         [HttpGet("{id}", Name = "GetProduto")]

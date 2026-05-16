@@ -2,10 +2,12 @@
 using Backend.Models.Produtos;
 using Backend.Pagination;
 
-namespace Backend.Services.Interfaces
+namespace Backend.Services.Interfaces;
+
+public interface IProdutosService : ICRUDEstoqueService<ProdutosModel>
 {
-    public interface IProdutosService : ICRUDEstoqueService<ProdutosModel>
-    {
-        Task<IEnumerable<ProdutosModel>> BuscarTodosAsync(ProdutosFiltroDTO filtro, ProdutosParameters produtosParameters);
-    }
+    Task<ProdutosListaPaginadaDTO> BuscarPaginadoAsync(
+        ProdutosFiltroDTO filtro,
+        ProdutosParameters produtosParameters,
+        CancellationToken cancellationToken = default);
 }

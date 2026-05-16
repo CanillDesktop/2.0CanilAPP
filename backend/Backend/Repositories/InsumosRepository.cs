@@ -15,9 +15,9 @@ namespace Backend.Repositories
             ArgumentNullException.ThrowIfNull(filtro);
 
             var query = _context.Insumos
-                .Include(i => i.ItensEstoque)
+                .Include(i => i.ItensEstoque.Where(e => !e.IsDeleted))
                 .Include(i => i.ItemNivelEstoque)
-                .Include(i => i.IsDeleted == false)
+                .Where(i => i.IsDeleted == false)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(filtro.CodInsumo))
@@ -27,14 +27,13 @@ namespace Backend.Repositories
                 query = query.Where(i => i.DescricaoSimplificada!.Contains(filtro.DescricaoSimplificada));
 
             if (!string.IsNullOrWhiteSpace(filtro.NFe))
-                query = query.Where(i => i.ItensEstoque!.Any(e => !string.IsNullOrWhiteSpace(e.NFe) && e.NFe.Contains(filtro.NFe)));
+                query = query.Where(i => i.ItensEstoque!.Any(e => !e.IsDeleted && !string.IsNullOrWhiteSpace(e.NFe) && e.NFe.Contains(filtro.NFe)));
 
             if (filtro.DataEntrega != null)
-                query = query.Where(i => i.ItensEstoque!.Any(i => i.DataEntrega == filtro.DataEntrega));
-
+                query = query.Where(i => i.ItensEstoque!.Any(e => !e.IsDeleted && e.DataEntrega == filtro.DataEntrega));
 
             if (filtro.DataValidade != null)
-                query = query.Where(i => i.ItensEstoque!.Any(e => e.DataValidade == filtro.DataValidade));
+                query = query.Where(i => i.ItensEstoque!.Any(e => !e.IsDeleted && e.DataValidade == filtro.DataValidade));
 
             var insumos = await query.ToListAsync();
             return insumos;

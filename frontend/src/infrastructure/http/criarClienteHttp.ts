@@ -30,12 +30,21 @@ export function criarClienteHttp(): AxiosInstance {
 
   cliente.interceptors.response.use(
     (resposta) => resposta,
-    (erro) => {
+    async (erro) => {
       const status = erro.response?.status ?? 0;
-      const dados: unknown = erro.response?.data;
+      let dados: unknown = erro.response?.data;
 
       let mensagem = 'Falha na requisição';
       let erros;
+
+      if (dados instanceof Blob) {
+        try {
+          const texto = await dados.text();
+          dados = JSON.parse(texto) as unknown;
+        } catch {
+          dados = undefined;
+        }
+      }
 
       if (dados && isRespostaErroValidacaoApi(dados)) {
         mensagem = 'Ocorreram erros de validação';

@@ -1,50 +1,64 @@
 ﻿using Backend.Context;
 using Backend.DTOs.Produtos;
-using Backend.Models.Enums;
 using Backend.Models.Produtos;
 using Backend.Pagination;
 using Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Repositories
+namespace Backend.Repositories;
+
+public class ProdutosRepository : BaseCRUDEstoqueRepository<ProdutosModel>, IProdutosRepository
 {
-    public class ProdutosRepository : BaseCRUDEstoqueRepository<ProdutosModel>, IProdutosRepository
+    public ProdutosRepository(CanilAppDbContext context) : base(context) { }
+
+    public async Task<ProdutosConsultaPaginada> ConsultarPaginadoAsync(
+        ProdutosFiltroDTO filtro,
+        ProdutosParameters produtosParameters,
+        CancellationToken cancellationToken = default)
     {
-        public ProdutosRepository(CanilAppDbContext context) : base(context) { }
+        var pageNumber = Math.Max(produtosParameters.PageNumber, 1);
+        var pageSize = produtosParameters.PageSize;
 
-        public async Task<PagedList<ProdutosModel>> GetAsync(ProdutosFiltroDTO filtro, ProdutosParameters produtosParameters)
-        { 
-            ArgumentNullException.ThrowIfNull(filtro);
-            ArgumentNullException.ThrowIfNull(produtosParameters);
+        var filtrada = ProdutosConsultaQueryable.AplicarFiltros(
+            ProdutosConsultaQueryable.Base(_context.Produtos.AsQueryable()),
+            filtro);
 
-            var query = _context.Produtos            
-                .Include(p => p.ItensEstoque)
-                .Include(p => p.ItemNivelEstoque)
-                .Where(p => p.IsDeleted == false)
-                .AsQueryable();
+        var hoje = DateTime.UtcNow.Date;
+        var limiteVencimento = hoje.AddDays(30);
 
-            if (!string.IsNullOrWhiteSpace(filtro.CodProduto))
-                query = query.Where(p => p.Codigo!.Contains(filtro.CodProduto));
+        var resumo = new ProdutosResumoConsulta(
+            TotalNoRecorte: await filtrada.CountAsync(cancellationToken),
+            Ativos: await filtrada.CountAsync(
+                p => p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
+                     && p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)
+                        >= (p.ItemNivelEstoque != null ? p.ItemNivelEstoque.NivelMinimoEstoque : 0),
+                cancellationToken),
+            BaixoEstoque: await filtrada.CountAsync(
+                p => p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
+                     && p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)
+                        < (p.ItemNivelEstoque != null ? p.ItemNivelEstoque.NivelMinimoEstoque : 0),
+                cancellationToken),
+            SemEstoque: await filtrada.CountAsync(
+                p => !p.ItensEstoque.Any(e => !e.IsDeleted)
+                     || p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) <= 0,
+                cancellationToken),
+            AVencer: await filtrada.CountAsync(
+                p => p.ItensEstoque.Any(e =>
+                    !e.IsDeleted
+                    && e.DataValidade != null
+                    && e.DataValidade >= hoje
+                    && e.DataValidade <= limiteVencimento),
+                cancellationToken));
 
-            if (!string.IsNullOrWhiteSpace(filtro.DescricaoSimples))
-                query = query.Where(p => p.DescricaoSimples!.Contains(filtro.DescricaoSimples));
+        var comStatus = ProdutosConsultaQueryable.AplicarStatusEstoque(filtrada, filtro.StatusEstoque);
+        var totalCount = await comStatus.CountAsync(cancellationToken);
 
-            if (!string.IsNullOrWhiteSpace(filtro.NFe))
-                query = query.Where(p => p.ItensEstoque!.Any(e => !string.IsNullOrWhiteSpace(e.NFe) && e.NFe.Contains(filtro.NFe)));
+        var items = await comStatus
+            .OrderBy(p => p.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
 
-            if (Enum.IsDefined(typeof(CategoriaEnum), filtro.Categoria))
-                query = query.Where(p => p.Categoria == (CategoriaEnum)filtro.Categoria);
-
-            if (filtro.DataEntrega != null)
-                query = query.Where(p => p.ItensEstoque!.Any(e => e.DataEntrega == filtro.DataEntrega));
-
-            if (filtro.DataValidade != null)
-                query = query.Where(p => p.ItensEstoque!.Any(e => e.DataValidade == filtro.DataValidade));
-
-            var count = await query.CountAsync();
-            var items = await query.OrderBy(p => p.Id).Skip((produtosParameters.PageNumber - 1) * produtosParameters.PageSize).Take(produtosParameters.PageSize) .ToListAsync();
-
-            return new PagedList<ProdutosModel>(items, count, produtosParameters.PageNumber, produtosParameters.PageSize);
-        }
+        return new ProdutosConsultaPaginada(items, totalCount, resumo);
     }
 }

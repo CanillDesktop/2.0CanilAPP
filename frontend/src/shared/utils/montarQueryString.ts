@@ -1,5 +1,7 @@
 /** Monta query string a partir de um objeto simples (valores undefined/null são ignorados). */
-export function montarQueryString(params: Record<string, string | number | undefined | null>): string {
+export function montarQueryString(
+  params: Record<string, string | number | boolean | undefined | null>,
+): string {
   const partes: string[] = [];
   for (const [chave, valor] of Object.entries(params)) {
     if (valor === undefined || valor === null || valor === '') continue;

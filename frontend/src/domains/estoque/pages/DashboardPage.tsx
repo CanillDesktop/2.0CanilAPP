@@ -25,7 +25,7 @@ import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { mapearPapelUsuario } from '../../../shared/types/papelUsuario';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
-import { listarProdutosApi } from '../../produtos/api/produtosApi';
+import { listarProdutosPaginadosApi } from '../../produtos/api/produtosApi';
 import { AlertaCard } from '../components/AlertaCard';
 import { BuscaCategoriaTabs } from '../components/BuscaCategoriaTabs';
 import { ResumoItensCadastrados, type ContagemPorClasse } from '../components/ResumoItensCadastrados';
@@ -122,11 +122,12 @@ export function DashboardPage() {
       setCarregando(true);
       setErroCarregamento(null);
       try {
-        const [produtos, medicamentos, insumos] = await Promise.all([
-          listarProdutosApi(undefined, { pageNumber: 1, pageSize: 50 }),
+        const [produtosPaginado, medicamentos, insumos] = await Promise.all([
+          listarProdutosPaginadosApi(undefined, { pageNumber: 1, pageSize: 50 }),
           listarMedicamentosApi(),
           listarInsumosApi(),
         ]);
+        const produtos = produtosPaginado.items;
         if (!ativo) return;
         setContagemPorOrigem({
           produtos: produtos.length,
