@@ -51,6 +51,15 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
             throw new ModelIncompletaException("Um ou mais campos obrigatórios não foram preenchidos");
         }
 
+        if (dto.IdUsuarioRecebedor.HasValue && dto.IdUsuarioRecebedor.Value > 0)
+        {
+            var recId = dto.IdUsuarioRecebedor.Value;
+            var recebedorExiste =
+                await _context.Usuarios.AsNoTracking().AnyAsync(u => u.Id == recId && !u.IsDeleted);
+            if (!recebedorExiste)
+                throw new ModelIncompletaException("Usuário recebedor informado não foi encontrado ou está inativo.");
+        }
+
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
         try
@@ -68,6 +77,12 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
 
             var now = DateTime.UtcNow;
             var editor = _userSessionService.EditedBy ?? string.Empty;
+
+            dto.DataHoraRetirada = now;
+            dto.Status = RetiradaEstoqueStatus.Confirmada;
+
+            if (int.TryParse(_userSessionService.UserId, out var usuarioLogado))
+                dto.IdUsuarioRetirante = usuarioLogado;
 
             var linhasBaixa = await _context.ItensEstoque
                 .Where(e =>

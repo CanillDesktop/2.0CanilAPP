@@ -92,5 +92,30 @@ public class CanilAppDbContext : DbContext
         modelBuilder.Entity<RetiradaEstoqueModel>()
             .Property(r => r.Id)
             .ValueGeneratedOnAdd();
+
+        modelBuilder.Entity<RetiradaEstoqueModel>()
+            .HasOne<UsuariosModel>()
+            .WithMany()
+            .HasForeignKey(r => r.IdUsuarioRetirante)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<RetiradaEstoqueModel>()
+            .HasOne<UsuariosModel>()
+            .WithMany()
+            .HasForeignKey(r => r.IdUsuarioRecebedor)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<RetiradaEstoqueModel>()
+            .HasIndex(r => r.DataHoraRetirada);
+
+        modelBuilder.Entity<RetiradaEstoqueModel>()
+            .HasIndex(r => r.IdUsuarioRetirante);
+
+        modelBuilder.Entity<RetiradaEstoqueModel>()
+            .HasIndex(r => r.IdUsuarioRecebedor);
+
+        modelBuilder.Entity<RetiradaEstoqueModel>()
+            .Property(r => r.Status)
+            .HasMaxLength(48);
     }
 }

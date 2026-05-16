@@ -9,14 +9,29 @@ public class RetiradaEstoqueModel
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
+
     public string Codigo { get; set; } = string.Empty;
     public string NomeOuDescricaoSimples { get; set; } = string.Empty;
     public int Quantidade { get; set; }
     public string Lote { get; set; } = string.Empty;
-    public string De { get; set; } = string.Empty;
-    public string Para { get; set; } = string.Empty;
-    public DateTime DataHoraRetirada = DateTime.UtcNow;
 
+    /// <summary>Texto informado sobre quem retira (instantâneo histórico; pode diferir do cadastro atual).</summary>
+    public string De { get; set; } = string.Empty;
+
+    /// <summary>Destino textual (pessoa externa ou descrição livre).</summary>
+    public string Para { get; set; } = string.Empty;
+
+    public DateTime DataHoraRetirada { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Notas de auditoria (motivo opcional).</summary>
+    public string? Observacao { get; set; }
+
+    /// <summary>Estado atual da linha na trilha de auditoria (ex.: CONFIRMADA).</summary>
+    public string Status { get; set; } = RetiradaEstoqueStatus.Confirmada;
+
+    public int? IdUsuarioRetirante { get; set; }
+
+    public int? IdUsuarioRecebedor { get; set; }
 
     public static implicit operator RetiradaEstoqueModel(RetiradaEstoqueDTO dto)
     {
@@ -28,7 +43,8 @@ public class RetiradaEstoqueModel
             De = dto.De,
             Para = dto.Para,
             Quantidade = dto.Quantidade,
-            DataHoraRetirada = dto.DataHoraRetirada
+            Observacao = dto.Observacao,
+            IdUsuarioRecebedor = dto.IdUsuarioRecebedor,
         };
     }
 
@@ -42,7 +58,9 @@ public class RetiradaEstoqueModel
             De = model.De,
             Para = model.Para,
             Quantidade = model.Quantidade,
-            DataHoraRetirada = model.DataHoraRetirada
+            DataHoraRetirada = model.DataHoraRetirada,
+            Observacao = model.Observacao,
+            IdUsuarioRecebedor = model.IdUsuarioRecebedor,
         };
     }
 }
