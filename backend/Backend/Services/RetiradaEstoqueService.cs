@@ -1,6 +1,9 @@
 ﻿using Backend.Context;
+using Backend.DTOs.Estoque;
 using Backend.Exceptions;
 using Backend.Models.Estoque;
+using Backend.Pagination;
+using Backend.Repositories;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +32,67 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
 
     public async Task<IEnumerable<RetiradaEstoqueModel>> BuscarTodosAsync() =>
         await _retiradaRepository.GetAsync();
+
+    public async Task<RetiradaEstoqueHistoricoListaPaginadaDTO> ConsultarHistoricoPaginadoAsync(
+        RetiradaEstoqueFiltroDTO filtro,
+        RetiradaEstoqueParameters parameters,
+        CancellationToken cancellationToken = default)
+    {
+        var janela = RetiradaEstoqueFiltrosResolver.ResolverPeriodoOuDatas(filtro);
+
+        var idRetiranteLista =
+            filtro.IdUsuarioRetirante.HasValue && filtro.IdUsuarioRetirante.Value > 0
+                ? filtro.IdUsuarioRetirante
+                : null;
+        var idRecebedorLista =
+            filtro.IdUsuarioRecebedor.HasValue && filtro.IdUsuarioRecebedor.Value > 0
+                ? filtro.IdUsuarioRecebedor
+                : null;
+
+        var consultaFiltros = new RetiradaEstoqueFiltroConsulta(
+            janela.InicioUtcInclusive,
+            janela.FimUtcInclusive,
+            idRetiranteLista,
+            idRecebedorLista,
+            string.IsNullOrWhiteSpace(filtro.TermoBusca) ? null : filtro.TermoBusca.Trim());
+
+        var pageNumber = Math.Max(parameters.PageNumber, 1);
+        var parametrosPagina = new RetiradaEstoqueParameters
+        {
+            PageNumber = pageNumber,
+            PageSize = parameters.PageSize,
+            OrdemDataAscendente = parameters.OrdemDataAscendente,
+        };
+
+        var consulta = await _retiradaRepository.ConsultarHistoricoAsync(
+            consultaFiltros,
+            parametrosPagina,
+            cancellationToken);
+
+        var totalPages = consulta.TotalRegistrosIntersecao == 0
+            ? 0
+            : (int)Math.Ceiling(consulta.TotalRegistrosIntersecao / (double)parametrosPagina.PageSize);
+
+        var metricas = new RetiradaEstoqueMetricasFiltragemDTO
+        {
+            TotalRegistrosNoRecorte = consulta.TotalRegistrosIntersecao,
+            SomaQuantidadeItens = consulta.SomaQuantidadeIntersecao,
+            TotalRetiradasFeitasPorUsuarioRetiranteFiltro = consulta.TotalComoSomenteRetirante,
+            TotalRetiradasRecebidasPorUsuarioRecebedorFiltro = consulta.TotalComoSomenteRecebedor,
+        };
+
+        return new RetiradaEstoqueHistoricoListaPaginadaDTO
+        {
+            Items = consulta.Linhas.ToList(),
+            TotalCount = consulta.TotalRegistrosIntersecao,
+            PageNumber = pageNumber,
+            PageSize = parametrosPagina.PageSize,
+            TotalPages = totalPages,
+            Metricas = metricas,
+            DataInicioUtcAplicada = janela.InicioUtcInclusive,
+            DataFimUtcInclusiveAplicada = janela.FimUtcInclusive,
+        };
+    }
 
     public async Task<RetiradaEstoqueModel?> CriarAsync(string lote, RetiradaEstoqueModel dto)
     {
