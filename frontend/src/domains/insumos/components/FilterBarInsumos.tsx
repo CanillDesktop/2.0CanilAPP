@@ -15,13 +15,14 @@ import {
   useTheme,
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import type { StatusInsumo } from '../utils/statusInsumo';
 
 const MotionButton = motion(Button);
 
+type StatusInsumo = 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
+
 type FilterBarInsumosProps = {
   busca: string;
-  unidade: 'todas' | string;
+  unidade: string;
   status: 'todos' | StatusInsumo;
   unidades: string[];
   onBuscaChange: (valor: string) => void;
