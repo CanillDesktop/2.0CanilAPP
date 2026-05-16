@@ -25,9 +25,8 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Fragment, useState } from 'react';
-import type { InsumoLeituraDto } from '../types/tiposInsumos';
-import { obterStatusInsumo, type StatusInsumo } from '../utils/statusInsumo';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
+import type { InsumoLeituraDto } from '../types/tiposInsumos';
 
 type Props = {
   itens: InsumoLeituraDto[];
@@ -38,11 +37,13 @@ type Props = {
   onRegistrarRetirada: (insumo: InsumoLeituraDto, lote: ItemEstoqueDto) => void;
 };
 
+type StatusInsumo = 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
+
 type LinhaInsumo = {
   id: number;
   codigo: string;
   nome: string;
-  unidadeRotulo: string;
+  unidadeNome: string;
   quantidade: number;
   status: StatusInsumo;
   ultimaMovimentacao: string;
@@ -50,8 +51,22 @@ type LinhaInsumo = {
 
 const MotionAction = motion.div;
 
-function rotuloUnidade(unidade: number) {
-  return String(unidade);
+export function obterStatusInsumo(item: InsumoLeituraDto): StatusInsumo {
+  const quantidade = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
+  const minimo = item.itemNivelEstoque?.nivelMinimoEstoque ?? 0;
+  const hoje = new Date();
+  const limiteVencimento = new Date();
+  limiteVencimento.setDate(hoje.getDate() + 30);
+  const temLoteAVencer = item.itensEstoque.some((lote) => {
+    if (!lote.dataValidade) return false;
+    const validade = new Date(lote.dataValidade);
+    if (Number.isNaN(validade.getTime())) return false;
+    return validade >= hoje && validade <= limiteVencimento;
+  });
+  if (quantidade <= 0) return 'sem_estoque';
+  if (temLoteAVencer) return 'a_vencer';
+  if (quantidade < minimo) return 'baixo';
+  return 'ativo';
 }
 
 function mapearLinha(item: InsumoLeituraDto): LinhaInsumo {
@@ -65,7 +80,7 @@ function mapearLinha(item: InsumoLeituraDto): LinhaInsumo {
     id: item.id,
     codigo: item.codigo,
     nome: item.nomeOuDescricaoSimples,
-    unidadeRotulo: rotuloUnidade(item.unidade),
+    unidadeNome: `Unidade ${item.unidade}`,
     quantidade,
     status: obterStatusInsumo(item),
     ultimaMovimentacao: ultimaData ? ultimaData.toLocaleDateString('pt-BR') : 'Sem movimentacao',
@@ -295,18 +310,10 @@ export function TabelaInsumos({
                   </Typography>
                   {statusChip(linha.status)}
                 </Stack>
-                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>
-                  Codigo: {linha.codigo}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>
-                  Unidade: {linha.unidadeRotulo}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>
-                  Quantidade: {linha.quantidade}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>
-                  Ultima movimentacao: {linha.ultimaMovimentacao}
-                </Typography>
+                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>Codigo: {linha.codigo}</Typography>
+                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>Unidade: {linha.unidadeNome}</Typography>
+                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>Quantidade: {linha.quantidade}</Typography>
+                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>Ultima movimentacao: {linha.ultimaMovimentacao}</Typography>
                 <AcoesLinha
                   id={linha.id}
                   onVisualizar={onVisualizar}
@@ -359,7 +366,7 @@ export function TabelaInsumos({
                   </TableCell>
                   <TableCell sx={{ color: '#e2e8f0' }}>{linha.codigo}</TableCell>
                   <TableCell sx={{ color: '#e2e8f0' }}>{linha.nome}</TableCell>
-                  <TableCell sx={{ color: '#e2e8f0' }}>{linha.unidadeRotulo}</TableCell>
+                  <TableCell sx={{ color: '#e2e8f0' }}>{linha.unidadeNome}</TableCell>
                   <TableCell sx={{ color: '#e2e8f0' }}>{linha.quantidade}</TableCell>
                   <TableCell>{statusChip(linha.status)}</TableCell>
                   <TableCell sx={{ color: '#e2e8f0' }}>{linha.ultimaMovimentacao}</TableCell>

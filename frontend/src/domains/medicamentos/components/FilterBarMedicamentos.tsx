@@ -18,29 +18,29 @@ import { motion } from 'framer-motion';
 
 const MotionButton = motion(Button);
 
-type StatusInsumo = 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
+type StatusMedicamento = 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
 
-type FilterBarInsumosProps = {
+type FilterBarMedicamentosProps = {
   busca: string;
-  unidade: string;
-  status: 'todos' | StatusInsumo;
-  unidades: string[];
+  prioridade: string;
+  status: 'todos' | StatusMedicamento;
+  prioridades: string[];
   onBuscaChange: (valor: string) => void;
-  onUnidadeChange: (valor: string) => void;
-  onStatusChange: (valor: 'todos' | StatusInsumo) => void;
-  onNovoInsumo: () => void;
+  onPrioridadeChange: (valor: string) => void;
+  onStatusChange: (valor: 'todos' | StatusMedicamento) => void;
+  onNovoMedicamento: () => void;
 };
 
-export function FilterBarInsumos({
+export function FilterBarMedicamentos({
   busca,
-  unidade,
+  prioridade,
   status,
-  unidades,
+  prioridades,
   onBuscaChange,
-  onUnidadeChange,
+  onPrioridadeChange,
   onStatusChange,
-  onNovoInsumo,
-}: FilterBarInsumosProps) {
+  onNovoMedicamento,
+}: FilterBarMedicamentosProps) {
   const theme = useTheme();
 
   const inputSx = {
@@ -86,7 +86,7 @@ export function FilterBarInsumos({
   };
 
   function handleStatusChange(e: SelectChangeEvent) {
-    onStatusChange(e.target.value as 'todos' | StatusInsumo);
+    onStatusChange(e.target.value as 'todos' | StatusMedicamento);
   }
 
   return (
@@ -121,12 +121,12 @@ export function FilterBarInsumos({
         </Grid>
         <Grid size={{ xs: 6, md: 3 }}>
           <FormControl size="small" fullWidth>
-            <InputLabel sx={labelSx}>Unidade</InputLabel>
-            <Select label="Unidade" value={unidade} onChange={(e) => onUnidadeChange(e.target.value)} sx={inputSx}>
+            <InputLabel sx={labelSx}>Prioridade</InputLabel>
+            <Select label="Prioridade" value={prioridade} onChange={(e) => onPrioridadeChange(e.target.value)} sx={inputSx}>
               <MenuItem value="todas">Todas</MenuItem>
-              {unidades.map((u) => (
-                <MenuItem key={u} value={u}>
-                  Unidade {u}
+              {prioridades.map((p) => (
+                <MenuItem key={p} value={p}>
+                  Prioridade {p}
                 </MenuItem>
               ))}
             </Select>
@@ -152,7 +152,7 @@ export function FilterBarInsumos({
               transition={{ duration: 0.15 }}
               variant="contained"
               startIcon={<AddOutlinedIcon />}
-              onClick={onNovoInsumo}
+              onClick={onNovoMedicamento}
               sx={{
                 minHeight: 40,
                 fontWeight: 700,
@@ -166,7 +166,7 @@ export function FilterBarInsumos({
                 },
               }}
             >
-              Novo insumo
+              Novo medicamento
             </MotionButton>
           </Box>
         </Grid>
