@@ -2,6 +2,7 @@
 using Backend.Models.Estoque;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services
 {
@@ -50,6 +51,12 @@ namespace Backend.Services
                 var result = await _repository.UpdateAsync(itemExistente);
                 return result;
             }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                throw new ConflitoDeConcorrenciaEstoqueException(
+                    EstoqueConcurrencyMessages.ItemAlteradoPorOutraOperacao,
+                    ex);
+            }
             catch (ArgumentNullException ex)
             {
                 throw new ArgumentNullException(null, ex.Message);
@@ -58,14 +65,23 @@ namespace Backend.Services
 
         public async Task<bool> DeletarAsync(string lote)
         {
-            var itemEstoque = await _repository.GetByLoteAsync(lote);
+            try
+            {
+                var itemEstoque = await _repository.GetByLoteAsync(lote);
 
-            if (itemEstoque == null) return false;
+                if (itemEstoque == null) return false;
 
-            itemEstoque.IsDeleted = true;
-            itemEstoque.DataHoraAtualizacao = DateTime.UtcNow;
+                itemEstoque.IsDeleted = true;
+                itemEstoque.DataHoraAtualizacao = DateTime.UtcNow;
 
-            return await _repository.DeleteAsync(itemEstoque);
+                return await _repository.DeleteAsync(itemEstoque);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                throw new ConflitoDeConcorrenciaEstoqueException(
+                    EstoqueConcurrencyMessages.ItemAlteradoPorOutraOperacao,
+                    ex);
+            }
         }
     }
 }

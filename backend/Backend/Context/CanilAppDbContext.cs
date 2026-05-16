@@ -1,9 +1,9 @@
 ﻿using Backend.Models;
-using Backend.Models.Estoque;
 using Backend.Models.Insumos;
 using Backend.Models.Medicamentos;
 using Backend.Models.Produtos;
 using Backend.Models.Usuarios;
+using Backend.Models.Estoque;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Context;
@@ -12,6 +12,31 @@ public class CanilAppDbContext : DbContext
 {
     public CanilAppDbContext(DbContextOptions<CanilAppDbContext> options) : base(options)
     {
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        BumpItemEstoqueVersaoParaAlteracoesRastreadas();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        BumpItemEstoqueVersaoParaAlteracoesRastreadas();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Garante que cada UPDATE persista um novo valor de Versao (WHERE Versao = valor original).
+    /// Caminhos que usam ExecuteUpdate já atualizam Versao na própria instrução SQL.
+    /// </summary>
+    private void BumpItemEstoqueVersaoParaAlteracoesRastreadas()
+    {
+        foreach (var entry in ChangeTracker.Entries<ItemEstoqueModel>())
+        {
+            if (entry.State == EntityState.Modified)
+                entry.Entity.Versao++;
+        }
     }
 
     public DbSet<MedicamentosModel> Medicamentos { get; set; }
@@ -40,6 +65,10 @@ public class CanilAppDbContext : DbContext
             .WithMany(p => p.ItensEstoque)
             .HasForeignKey(i => i.Id)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ItemEstoqueModel>()
+            .Property(i => i.Versao)
+            .IsConcurrencyToken();
 
         modelBuilder.Entity<ItemNivelEstoqueModel>()
             .HasKey(i => i.Id);

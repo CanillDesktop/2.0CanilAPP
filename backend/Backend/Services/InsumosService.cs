@@ -5,6 +5,7 @@ using Backend.Models.Estoque;
 using Backend.Models.Insumos;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 
 namespace Backend.Services
@@ -147,6 +148,12 @@ namespace Backend.Services
             catch (ArgumentNullException ex)
             {
                 throw new ArgumentNullException(null, ex.Message);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                throw new ConflitoDeConcorrenciaEstoqueException(
+                    EstoqueConcurrencyMessages.ItemAlteradoPorOutraOperacao,
+                    ex);
             }
             catch (Exception ex)
             {

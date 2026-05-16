@@ -96,6 +96,15 @@ namespace Backend.Controllers
                     Details = ex.Message ?? "Produto não encontrado"
                 });
             }
+            catch (ConflitoDeConcorrenciaEstoqueException ex)
+            {
+                return Conflict(new ErrorResponse
+                {
+                    Title = "Conflito ao atualizar estoque",
+                    Status = StatusCodes.Status409Conflict,
+                    Details = ex.Message
+                });
+            }
         }
 
         [HttpDelete("{id}")]

@@ -3,28 +3,27 @@ using Backend.Models.Estoque;
 using Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Repositories
+namespace Backend.Repositories;
+
+public class RetiradaEstoqueRepository : IRetiradaEstoqueRepository
 {
-    public class RetiradaEstoqueRepository : IRetiradaEstoqueRepository
+    private readonly CanilAppDbContext _context;
+
+    public RetiradaEstoqueRepository(CanilAppDbContext context)
     {
-        private readonly CanilAppDbContext _context;
+        _context = context;
+    }
 
-        public RetiradaEstoqueRepository(CanilAppDbContext context)
-        {
-            _context = context;
-        }
+    public async Task<IEnumerable<RetiradaEstoqueModel>> GetAsync() =>
+        await _context.RetiradaEstoque.ToListAsync();
 
-        public async Task<IEnumerable<RetiradaEstoqueModel>> GetAsync()
-        {
-            return await _context.RetiradaEstoque.ToListAsync();
-        }
+    public async Task<RetiradaEstoqueModel?> CreateAsync(RetiradaEstoqueModel model, bool saveChanges = true)
+    {
+        await _context.RetiradaEstoque.AddAsync(model);
 
-        public async Task<RetiradaEstoqueModel?> CreateAsync(RetiradaEstoqueModel model)
-        {
-            await _context.RetiradaEstoque.AddAsync(model);
+        if (saveChanges)
             await _context.SaveChangesAsync();
 
-            return model;
-        }
+        return model;
     }
 }
