@@ -20,7 +20,7 @@ import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { mapearPapelUsuario } from '../../../shared/types/papelUsuario';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
-import { listarProdutosApi } from '../../produtos/api/produtosApi';
+import { listarTodosProdutosParaEstoqueApi } from '../../produtos/api/produtosApi';
 import { EstoqueGestaoConteudo } from '../components/EstoqueGestaoConteudo';
 import { PainelFiltrosEstoque } from '../components/PainelFiltrosEstoque';
 import { SidebarEstoque } from '../components/SidebarEstoque';
@@ -83,12 +83,11 @@ export function PaginaListagemEstoque() {
   const [orderBy, setOrderBy] = useState<CampoOrdenacaoEstoque>('nome');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const ehMobileMenu = useMediaQuery(theme.breakpoints.down('md'));
-
-  const rowsPerPage = isMobile ? 5 : 10;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -105,7 +104,7 @@ export function PaginaListagemEstoque() {
       setErroCarregamento(null);
       try {
         const [produtos, medicamentos, insumos] = await Promise.all([
-          listarProdutosApi(undefined, { pageNumber: 1, pageSize: 50 }),
+          listarTodosProdutosParaEstoqueApi(),
           listarMedicamentosApi(),
           listarInsumosApi(),
         ]);
@@ -211,7 +210,7 @@ export function PaginaListagemEstoque() {
     ],
   );
 
-  const { dadosPaginados, totalFiltrado, totalPages, paginaSegura } = useListaEstoqueProcessada(
+  const { dadosPaginados, totalFiltrado, paginaSegura } = useListaEstoqueProcessada(
     linhasOperacionais,
     opcoesProcessamento,
   );
@@ -269,6 +268,7 @@ export function PaginaListagemEstoque() {
   }
 
   function handleSort(field: CampoOrdenacaoEstoque) {
+    setPage(1);
     if (orderBy === field) {
       setOrderDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     } else {
@@ -405,7 +405,11 @@ export function PaginaListagemEstoque() {
               dadosPaginados={dadosPaginados}
               totalFiltrado={totalFiltrado}
               page={paginaSegura}
-              totalPages={totalPages}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(n) => {
+                setRowsPerPage(n);
+                setPage(1);
+              }}
               onPageChange={setPage}
               orderBy={orderBy}
               orderDirection={orderDirection}

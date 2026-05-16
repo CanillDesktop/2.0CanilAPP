@@ -79,18 +79,30 @@ namespace Backend.Controllers
         [HttpDelete("{lote}")]
         public async Task<IActionResult> Delete(string lote)
         {
-            var sucesso = await _service.DeletarAsync(lote);
-            if (!sucesso)
+            try
             {
-                return NotFound(new ErrorResponse
+                var sucesso = await _service.DeletarAsync(lote);
+                if (!sucesso)
                 {
-                    Title = "Recurso não encontrado",
-                    Status = StatusCodes.Status404NotFound,
-                    Details = $"Item de estoque de lote {lote} não encontrado"
+                    return NotFound(new ErrorResponse
+                    {
+                        Title = "Recurso não encontrado",
+                        Status = StatusCodes.Status404NotFound,
+                        Details = $"Item de estoque de lote {lote} não encontrado"
+                    });
+                }
+
+                return NoContent();
+            }
+            catch (ConflitoDeConcorrenciaEstoqueException ex)
+            {
+                return Conflict(new ErrorResponse
+                {
+                    Title = "Conflito ao atualizar estoque",
+                    Status = StatusCodes.Status409Conflict,
+                    Details = ex.Message
                 });
             }
-
-            return NoContent();
         }
     }
 }

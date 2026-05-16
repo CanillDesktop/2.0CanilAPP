@@ -20,6 +20,16 @@ public class UsuariosController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>Listagem compacta para filtros do histórico de retiradas (qualquer usuário autenticado).</summary>
+    [Authorize]
+    [HttpGet("resumo-filtro-retiradas")]
+    public async Task<ActionResult<IReadOnlyList<UsuarioResumoFiltroDTO>>> GetResumoFiltroRetiradas(
+        CancellationToken cancellationToken)
+    {
+        var dados = await _service.ListarResumoParaFiltrosHistoricoRetiradasAsync(cancellationToken);
+        return Ok(dados);
+    }
+
     [Authorize(Roles = "ADMIN")]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UsuarioResponseDTO>>> Get()

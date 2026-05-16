@@ -1,4 +1,5 @@
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
+import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicationOutlinedIcon from '@mui/icons-material/MedicationOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
@@ -32,6 +33,7 @@ const itensNavegacao: ItemNavegacao[] = [
   { titulo: 'Produtos', rota: '/produtos', icone: <Inventory2OutlinedIcon /> },
   { titulo: 'Medicamentos', rota: '/medicamentos', icone: <MedicationOutlinedIcon /> },
   { titulo: 'Insumos', rota: '/insumos', icone: <ScienceOutlinedIcon /> },
+  { titulo: 'Histórico retiradas', rota: '/estoque/historico-retiradas', icone: <HistoryOutlinedIcon /> },
   { titulo: 'Estoque', rota: '/estoque', icone: <WarehouseOutlinedIcon /> },
   { titulo: 'Usuários', rota: '/usuarios', icone: <PeopleOutlinedIcon /> },
 ];
@@ -58,6 +60,14 @@ function ConteudoSidebar({
   const navigate = useNavigate();
   const itens = itensVisiveisParaPapel(papelUsuario);
 
+  const itemAtivoMaisEspecifico = [...itens]
+    .filter((i) => location.pathname === i.rota || location.pathname.startsWith(`${i.rota}/`))
+    .reduce<(typeof itens)[number] | undefined>(
+      (melhor, atual) =>
+        !melhor || atual.rota.length > melhor.rota.length ? atual : melhor,
+      undefined,
+    );
+
   return (
     <Box sx={{ width: larguraSidebar, bgcolor: 'background.paper', height: '100%' }}>
       <Toolbar sx={{ minHeight: 72, px: 2.5 }}>
@@ -67,7 +77,8 @@ function ConteudoSidebar({
       </Toolbar>
       <List sx={{ px: 1.2 }}>
         {itens.map((item) => {
-          const ativo = location.pathname === item.rota || location.pathname.startsWith(`${item.rota}/`);
+          const ativo =
+            !!itemAtivoMaisEspecifico && itemAtivoMaisEspecifico.titulo === item.titulo;
 
           return (
             <ListItemButton

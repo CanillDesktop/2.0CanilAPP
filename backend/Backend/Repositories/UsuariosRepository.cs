@@ -1,4 +1,5 @@
 using Backend.Context;
+using Backend.DTOs.Usuario;
 using Backend.Models.Usuarios;
 using Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -22,9 +23,25 @@ public class UsuariosRepository : BaseCRUDRepository<UsuariosModel>, IUsuariosRe
         {
             return await _context.Usuarios.CountAsync(predicate);
         }
-        else
-        {
-            return await _context.Usuarios.CountAsync();
-        }
+
+        return await _context.Usuarios.CountAsync();
+    }
+
+    public async Task<IReadOnlyList<UsuarioResumoFiltroDTO>> ListarResumoParaFiltrosAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.Usuarios.AsNoTracking()
+            .Where(u => !u.IsDeleted)
+            .OrderBy(u => u.PrimeiroNome)
+            .ThenBy(u => u.Sobrenome)
+            .Select(u => new UsuarioResumoFiltroDTO
+            {
+                Id = u.Id,
+                NomeExibicao =
+                    string.IsNullOrWhiteSpace(u.Sobrenome)
+                        ? u.PrimeiroNome
+                        : (u.PrimeiroNome + " " + u.Sobrenome!).Trim(),
+            })
+            .ToListAsync(cancellationToken);
     }
 }

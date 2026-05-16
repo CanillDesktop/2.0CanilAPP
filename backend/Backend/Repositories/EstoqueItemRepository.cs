@@ -33,29 +33,32 @@ namespace Backend.Repositories
             return itemEstoque;
         }
 
-        public async Task<ItemEstoqueModel> CreateAsync(ItemEstoqueModel model)
+        public async Task<ItemEstoqueModel> CreateAsync(ItemEstoqueModel model, bool saveChanges = true)
         {
             ArgumentNullException.ThrowIfNull(model);
 
             _context.ItensEstoque.Add(model);
-            await _context.SaveChangesAsync();
+            if (saveChanges)
+                await _context.SaveChangesAsync();
 
             return model;
         }
 
-        public async Task<ItemEstoqueModel?> UpdateAsync(ItemEstoqueModel model)
+        public async Task<ItemEstoqueModel?> UpdateAsync(ItemEstoqueModel model, bool saveChanges = true)
         {
             ArgumentNullException.ThrowIfNull(model);
 
             _context.Entry(model).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            if (saveChanges)
+                await _context.SaveChangesAsync();
             return model;
         }
 
-        public async Task<bool> DeleteAsync(ItemEstoqueModel model)
+        public async Task<bool> DeleteAsync(ItemEstoqueModel model, bool saveChanges = true)
         {
             _context.ItensEstoque.Update(model);
-            await _context.SaveChangesAsync();
+            if (saveChanges)
+                await _context.SaveChangesAsync();
 
             return true;
         }

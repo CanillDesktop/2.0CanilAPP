@@ -1,3 +1,4 @@
+using Backend.DTOs.Usuario;
 using Backend.Exceptions;
 using Backend.Models.Enums;
 using Backend.Models.Usuarios;
@@ -193,16 +194,20 @@ public class UsuariosService : IUsuariosService
             throw new InvalidOperationException("Não é possível remover ou inativar o último administrador ativo");
     }
 
+    public Task<IReadOnlyList<UsuarioResumoFiltroDTO>> ListarResumoParaFiltrosHistoricoRetiradasAsync(
+        CancellationToken cancellationToken = default)
+        => _repository.ListarResumoParaFiltrosAsync(cancellationToken);
+
     private bool IsAdmin()
     {
         return _userSessionService.Role == "ADMIN";
     }
 
-    private static async Task<bool> ConfirmarSenhaUsuario(UsuariosModel usuario, string senha)
+    private static Task<bool> ConfirmarSenhaUsuario(UsuariosModel usuario, string senha)
     {
         if (usuario == null || string.IsNullOrWhiteSpace(senha) || string.IsNullOrEmpty(usuario.HashSenha))
-            return false;
+            return Task.FromResult(false);
 
-        return BCrypt.Net.BCrypt.Verify(senha, usuario.HashSenha);
+        return Task.FromResult(BCrypt.Net.BCrypt.Verify(senha, usuario.HashSenha));
     }
 }

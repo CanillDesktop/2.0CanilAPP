@@ -15,17 +15,18 @@ import {
   useTheme,
 } from '@mui/material';
 import { motion } from 'framer-motion';
+import { OPCOES_CATEGORIA_PRODUTO_FILTRO } from '../constants/opcoesCategoriaProduto';
+import type { ProdutoStatusEstoqueFiltro } from '../types/tiposProdutos';
 
 const MotionButton = motion(Button);
 
 type FilterBarProdutosProps = {
   busca: string;
-  categoria: string;
-  status: 'todos' | 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
-  categorias: string[];
+  categoria: 'todas' | string;
+  status: ProdutoStatusEstoqueFiltro;
   onBuscaChange: (valor: string) => void;
   onCategoriaChange: (valor: string) => void;
-  onStatusChange: (valor: 'todos' | 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer') => void;
+  onStatusChange: (valor: ProdutoStatusEstoqueFiltro) => void;
   onNovoProduto: () => void;
 };
 
@@ -33,7 +34,6 @@ export function FilterBarProdutos({
   busca,
   categoria,
   status,
-  categorias,
   onBuscaChange,
   onCategoriaChange,
   onStatusChange,
@@ -84,7 +84,7 @@ export function FilterBarProdutos({
   };
 
   function handleStatusChange(e: SelectChangeEvent) {
-    onStatusChange(e.target.value as 'todos' | 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer');
+    onStatusChange(e.target.value as ProdutoStatusEstoqueFiltro);
   }
 
   return (
@@ -122,9 +122,9 @@ export function FilterBarProdutos({
             <InputLabel sx={labelSx}>Categoria</InputLabel>
             <Select label="Categoria" value={categoria} onChange={(e) => onCategoriaChange(e.target.value)} sx={inputSx}>
               <MenuItem value="todas">Todas</MenuItem>
-              {categorias.map((cat) => (
-                <MenuItem key={cat} value={cat}>
-                  Categoria {cat}
+              {OPCOES_CATEGORIA_PRODUTO_FILTRO.map((cat) => (
+                <MenuItem key={cat.valor} value={String(cat.valor)}>
+                  {cat.rotulo}
                 </MenuItem>
               ))}
             </Select>

@@ -6,8 +6,8 @@ namespace Backend.Repositories.Interfaces
     {
         Task<IEnumerable<ItemEstoqueModel>> GetByCodigoAsync(string codigo);
         Task<ItemEstoqueModel?> GetByLoteAsync(string lote);
-        Task<ItemEstoqueModel> CreateAsync(ItemEstoqueModel obj);
-        Task<ItemEstoqueModel?> UpdateAsync(ItemEstoqueModel obj);
-        Task<bool> DeleteAsync(ItemEstoqueModel obj);
+        Task<ItemEstoqueModel> CreateAsync(ItemEstoqueModel obj, bool saveChanges = true);
+        Task<ItemEstoqueModel?> UpdateAsync(ItemEstoqueModel obj, bool saveChanges = true);
+        Task<bool> DeleteAsync(ItemEstoqueModel obj, bool saveChanges = true);
     }
 }

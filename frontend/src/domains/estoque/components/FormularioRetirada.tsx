@@ -1,5 +1,6 @@
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -16,8 +17,10 @@ import {
 import CheckIcon from '@mui/icons-material/Check';
 import SaveIcon from '@mui/icons-material/Save';
 import { LoadingButton } from '@mui/lab';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { listarUsuariosResumoParaRetiradasApi } from '../../usuarios/api/usuariosApi';
+import type { UsuarioResumoFiltroDto } from '../../usuarios/types/tiposUsuarios';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
 import type { RetiradaEstoqueDto, RetiradaNavegacaoState, RetiradaRequest } from '../types/tiposEstoque';
 
@@ -28,6 +31,9 @@ export function FormularioRetirada() {
   const { registrarRetirada, carregando, erro } = useMutacaoEstoque();
   const [de, setDe] = useState('');
   const [para, setPara] = useState('');
+  const [idUsuarioRecebedor, setIdUsuarioRecebedor] = useState<number | undefined>();
+  const [usuariosResumo, setUsuariosResumo] = useState<UsuarioResumoFiltroDto[]>([]);
+  const [observacao, setObservacao] = useState('');
   const [quantidade, setQuantidade] = useState(0);
   const [erroValidacao, setErroValidacao] = useState<string | null>(null);
   const [confirmarAberto, setConfirmarAberto] = useState(false);
@@ -44,6 +50,15 @@ export function FormularioRetirada() {
   });
 
   const quantidadeDisponivel = data?.quantidadeDisponivel ?? 0;
+  const destinatarioSelecionado =
+    idUsuarioRecebedor != null ? usuariosResumo.find((u) => u.id === idUsuarioRecebedor) ?? null : null;
+
+  useEffect(() => {
+    void listarUsuariosResumoParaRetiradasApi()
+      .then(setUsuariosResumo)
+      .catch(() => setUsuariosResumo([]));
+  }, []);
+
   const retiradaValida = useMemo(() => {
     return Boolean(data) && de.trim().length > 0 && para.trim().length > 0 && quantidade > 0 && quantidade <= quantidadeDisponivel;
   }, [data, de, para, quantidade, quantidadeDisponivel]);
@@ -87,6 +102,8 @@ export function FormularioRetirada() {
       para: payloadRetirada.destino,
       quantidade: payloadRetirada.quantidade,
       dataHoraRetirada: new Date().toISOString(),
+      observacao: observacao.trim() || undefined,
+      idUsuarioRecebedor: idUsuarioRecebedor,
     };
 
     const ok = await registrarRetirada(dto);
@@ -190,10 +207,27 @@ export function FormularioRetirada() {
             helperText={!de.trim() && Boolean(erroValidacao) ? 'Campo obrigatorio' : ' '}
             sx={campoSx}
           />
+
+          <Autocomplete
+            options={usuariosResumo}
+            getOptionLabel={(o) => o.nomeExibicao}
+            value={destinatarioSelecionado}
+            onChange={(_, v) => {
+              setIdUsuarioRecebedor(v?.id);
+              if (v) setPara(v.nomeExibicao);
+            }}
+            renderInput={(params) => (
+              <TextField {...params} label="Destinatário cadastrado (opcional)" sx={campoSx} />
+            )}
+          />
+
           <TextField
             label="Para quem"
             value={para}
-            onChange={(e) => setPara(e.target.value)}
+            onChange={(e) => {
+              setPara(e.target.value);
+              setIdUsuarioRecebedor(undefined);
+            }}
             required
             fullWidth
             error={!para.trim() && Boolean(erroValidacao)}
@@ -216,6 +250,16 @@ export function FormularioRetirada() {
                   ? 'Quantidade deve ser maior que zero'
                   : ' '
             }
+            sx={campoSx}
+          />
+
+          <TextField
+            label="Observação / motivo"
+            value={observacao}
+            onChange={(e) => setObservacao(e.target.value)}
+            fullWidth
+            multiline
+            minRows={2}
             sx={campoSx}
           />
 

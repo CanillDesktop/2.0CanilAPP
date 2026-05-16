@@ -16,7 +16,7 @@ namespace Backend.Repositories
             ArgumentNullException.ThrowIfNull(filtro);
 
             var query = _context.Medicamentos
-                .Include(m => m.ItensEstoque)
+                .Include(m => m.ItensEstoque.Where(e => !e.IsDeleted))
                 .Include(m => m.ItemNivelEstoque)
                 .Where(m => m.IsDeleted == false)
                 .AsQueryable();
@@ -34,7 +34,7 @@ namespace Backend.Repositories
                 query = query.Where(m => m.Descricao!.Contains(filtro.DescricaoMedicamento));
 
             if (!string.IsNullOrWhiteSpace(filtro.NFe))
-                query = query.Where(m => m.ItensEstoque!.Any(e => !string.IsNullOrWhiteSpace(e.NFe) && e.NFe.Contains(filtro.NFe)));
+                query = query.Where(m => m.ItensEstoque!.Any(e => !e.IsDeleted && !string.IsNullOrWhiteSpace(e.NFe) && e.NFe.Contains(filtro.NFe)));
 
             if (Enum.IsDefined(typeof(PrioridadeEnum), filtro.Prioridade))
                 query = query.Where(m => m.Prioridade == (PrioridadeEnum)filtro.Prioridade);
@@ -43,10 +43,10 @@ namespace Backend.Repositories
                 query = query.Where(m => m.PublicoAlvo == (PublicoAlvoMedicamentoEnum)filtro.PublicoAlvo);
 
             if (filtro.DataEntrega != null)
-                query = query.Where(m => m.ItensEstoque!.Any(e => e.DataEntrega == filtro.DataEntrega));
+                query = query.Where(m => m.ItensEstoque!.Any(e => !e.IsDeleted && e.DataEntrega == filtro.DataEntrega));
 
             if (filtro.DataValidade != null)
-                query = query.Where(m => m.ItensEstoque!.Any(e => e.DataValidade == filtro.DataValidade));
+                query = query.Where(m => m.ItensEstoque!.Any(e => !e.IsDeleted && e.DataValidade == filtro.DataValidade));
 
             var medicamentos = await query.ToListAsync();
             return medicamentos;

@@ -20,6 +20,12 @@ public class ItemEstoqueModel : BaseModel
         }
     }
     public int Quantidade { get; set; }
+
+    /// <summary>
+    /// Token de concorrência otimista por linha de estoque (incrementado a cada alteração bem-sucedida).
+    /// </summary>
+    public long Versao { get; set; }
+
     public DateTime DataEntrega { get; set; }
     public string? NFe { get; set; } = string.Empty;
     public DateTime? DataValidade { get; set; }

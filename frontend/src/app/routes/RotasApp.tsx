@@ -19,6 +19,7 @@ import { PaginaListagemInsumos } from '../../domains/insumos/pages/PaginaListage
 import { PaginaDetalheItemEstoque } from '../../domains/estoque/pages/PaginaDetalheItemEstoque';
 import { PaginaFormularioLote } from '../../domains/estoque/pages/PaginaFormularioLote';
 import { PaginaFormularioRetirada } from '../../domains/estoque/pages/PaginaFormularioRetirada';
+import { PaginaHistoricoRetiradasEstoque } from '../../domains/estoque/pages/PaginaHistoricoRetiradasEstoque';
 import { PaginaListagemEstoque } from '../../domains/estoque/pages/PaginaListagemEstoque';
 import { DashboardPage } from '../../domains/estoque/pages/DashboardPage';
 
@@ -54,6 +55,7 @@ export function RotasApp() {
 
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="estoque" element={<PaginaListagemEstoque />} />
+          <Route path="estoque/historico-retiradas" element={<PaginaHistoricoRetiradasEstoque />} />
           <Route path="estoque/item/:id" element={<PaginaDetalheItemEstoque />} />
           <Route path="estoque/lotes/novo" element={<PaginaFormularioLote />} />
           <Route path="estoque/retirada" element={<PaginaFormularioRetirada />} />

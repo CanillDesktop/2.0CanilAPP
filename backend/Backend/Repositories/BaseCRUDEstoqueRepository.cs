@@ -18,7 +18,7 @@ namespace Backend.Repositories
         {
             var registros = await _context.Set<T>()
                 .Include(p => p.ItemNivelEstoque)
-                .Include(p => p.ItensEstoque)
+                .Include(p => p.ItensEstoque.Where(e => !e.IsDeleted))
                 .Where(p => p.IsDeleted == false)
                 .ToListAsync();
 
@@ -28,7 +28,7 @@ namespace Backend.Repositories
         public async Task<T?> GetByIdAsync(int id)
         {
             var registro = await _context.Set<T>()
-                .Include(p => p.ItensEstoque)
+                .Include(p => p.ItensEstoque.Where(e => !e.IsDeleted))
                 .Include(p => p.ItemNivelEstoque)
                 .Where(p => p.IsDeleted == false)
                 .FirstOrDefaultAsync(p => p.Id == id);

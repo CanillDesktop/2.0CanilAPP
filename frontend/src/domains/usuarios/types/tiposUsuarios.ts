@@ -36,6 +36,11 @@ export type ConfirmacaoSenhaDto = {
   senhaConfirmacao: string;
 };
 
+export type UsuarioResumoFiltroDto = {
+  id: number;
+  nomeExibicao: string;
+};
+
 export type FiltrosUsuarios = {
   busca?: string;
   status?: 'todos' | 'ativos' | 'inativos';
