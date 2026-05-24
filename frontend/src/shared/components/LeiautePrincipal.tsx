@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 export function LeiautePrincipal() {
   const location = useLocation();
   const ehTelaComLayoutCheio =
+    location.pathname.startsWith('/login') ||
     location.pathname.startsWith('/estoque') ||
     location.pathname.startsWith('/dashboard') ||
     location.pathname.startsWith('/usuarios') ||
