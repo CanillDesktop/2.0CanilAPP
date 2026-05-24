@@ -27,6 +27,7 @@ import { motion } from 'framer-motion';
 import { Fragment, useState } from 'react';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 import type { InsumoLeituraDto } from '../types/tiposInsumos';
+import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 
 type Props = {
   itens: InsumoLeituraDto[];
@@ -277,6 +278,7 @@ export function TabelaInsumos({
   onMovimentar,
   onRegistrarRetirada,
 }: Props) {
+  const estilos = useEstilosListagem();
   const theme = useTheme();
   const ehMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
@@ -330,10 +332,10 @@ export function TabelaInsumos({
   }
 
   return (
-    <Card sx={{ borderRadius: 3, backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.05)' }}>
+    <Card sx={estilos.cardTabela}>
       <Table>
         <TableHead>
-          <TableRow sx={{ backgroundColor: '#020617' }}>
+          <TableRow sx={estilos.cabecalhoTabela}>
             <TableCell sx={{ width: 54 }} />
             <TableCell sx={{ color: '#94a3b8', fontWeight: 600 }}>Codigo</TableCell>
             <TableCell sx={{ color: '#94a3b8', fontWeight: 600 }}>Nome</TableCell>

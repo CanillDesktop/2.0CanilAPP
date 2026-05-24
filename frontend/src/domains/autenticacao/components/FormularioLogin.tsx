@@ -15,6 +15,8 @@ import {
   Typography,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useAcaoLogin } from '../hooks/useAcaoLogin';
 
 type Props = {
@@ -22,6 +24,8 @@ type Props = {
 };
 
 export function FormularioLogin({ aoAutenticar }: Props) {
+  const { cores } = useTemaApp();
+  const campoSx = estilosCampoFormulario(cores);
   const { entrar, carregando, erro, errosValidacao } = useAcaoLogin();
   const [login, setLogin] = useState('');
   const [senha, setSenha] = useState('');
@@ -42,9 +46,9 @@ export function FormularioLogin({ aoAutenticar }: Props) {
         minHeight: { xs: 'auto', md: 540 },
         p: { xs: 3, sm: 4.5 },
         borderRadius: 4,
-        border: '1px solid rgba(148, 163, 184, 0.18)',
-        backgroundColor: 'rgba(15, 23, 42, 0.94)',
-        boxShadow: '0 26px 80px rgba(0, 0, 0, 0.42)',
+        border: `1px solid ${cores.borderForte}`,
+        backgroundColor: cores.bgCard,
+        boxShadow: cores.sombraCard,
         backdropFilter: 'blur(18px)',
       }}
     >
@@ -58,16 +62,16 @@ export function FormularioLogin({ aoAutenticar }: Props) {
               placeItems: 'center',
               mb: 2,
               borderRadius: 3,
-              backgroundColor: 'rgba(37, 99, 235, 0.18)',
-              color: '#93c5fd',
+              backgroundColor: `${cores.accent}2e`,
+              color: cores.chipIcon,
             }}
           >
             <LockOutlinedIcon />
           </Box>
-          <Typography variant="h4" sx={{ color: '#e2e8f0', fontWeight: 800, letterSpacing: -0.5 }}>
+          <Typography variant="h4" sx={{ color: cores.textPrimary, fontWeight: 800, letterSpacing: -0.5 }}>
             Entrar
           </Typography>
-          <Typography variant="body2" sx={{ mt: 1, color: 'rgba(203, 213, 225, 0.82)' }}>
+          <Typography variant="body2" sx={{ mt: 1, color: cores.textSecondary }}>
             Informe suas credenciais para acessar o painel administrativo.
           </Typography>
         </Box>
@@ -137,13 +141,13 @@ export function FormularioLogin({ aoAutenticar }: Props) {
             borderRadius: 2,
             fontWeight: 800,
             textTransform: 'none',
-            backgroundColor: '#2563eb',
+            backgroundColor: cores.accent,
             color: '#f8fafc',
             '&:hover': {
-              backgroundColor: '#1d4ed8',
+              backgroundColor: cores.accentHover,
             },
             '&:disabled': {
-              backgroundColor: 'rgba(37, 99, 235, 0.42)',
+              backgroundColor: `${cores.accent}6b`,
               color: 'rgba(248, 250, 252, 0.72)',
             },
           }}
@@ -151,13 +155,13 @@ export function FormularioLogin({ aoAutenticar }: Props) {
           {carregando ? 'Entrando...' : 'Entrar'}
         </Button>
 
-        <Typography variant="body2" sx={{ color: 'rgba(203, 213, 225, 0.78)', textAlign: 'center' }}>
+        <Typography variant="body2" sx={{ color: cores.textSecondary, textAlign: 'center' }}>
           Ainda nao tem acesso?{' '}
           <Box
             component={Link}
             to="/cadastro"
             sx={{
-              color: '#7dd3fc',
+              color: cores.focus,
               fontWeight: 700,
               textDecoration: 'none',
               '&:hover': { textDecoration: 'underline' },
@@ -170,34 +174,3 @@ export function FormularioLogin({ aoAutenticar }: Props) {
     </Paper>
   );
 }
-
-const campoSx = {
-  '& .MuiInputLabel-root': {
-    color: '#cbd5e1',
-  },
-  '& .MuiInputLabel-root.Mui-focused': {
-    color: '#7dd3fc',
-  },
-  '& .MuiInputBase-input': {
-    color: '#f8fafc',
-  },
-  '& .MuiInputAdornment-root': {
-    color: '#94a3b8',
-  },
-  '& .MuiOutlinedInput-root': {
-    minHeight: 54,
-    borderRadius: 2,
-    backgroundColor: '#020617',
-    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-    '& .MuiOutlinedInput-notchedOutline': {
-      borderColor: 'rgba(148, 163, 184, 0.5)',
-    },
-    '&:hover .MuiOutlinedInput-notchedOutline': {
-      borderColor: 'rgba(125, 211, 252, 0.75)',
-    },
-    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-      borderColor: '#38bdf8',
-      boxShadow: '0 0 0 2px rgba(56, 189, 248, 0.22)',
-    },
-  },
-};

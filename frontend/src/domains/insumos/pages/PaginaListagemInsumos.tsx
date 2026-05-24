@@ -21,6 +21,8 @@ import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
+import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
+import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { FilterBarInsumos } from '../components/FilterBarInsumos';
 import { KpiSectionInsumos } from '../components/KpiSectionInsumos';
 import { TabelaInsumos } from '../components/TabelaInsumos';
@@ -53,6 +55,7 @@ export function PaginaListagemInsumos() {
   const { estado, carregar } = useListaInsumos();
   const { excluir, carregando: carregandoExclusao } = useMutacaoInsumo();
   const navigate = useNavigate();
+  const estilos = useEstilosListagem();
   const [busca, setBusca] = useState('');
   const [unidade, setUnidade] = useState<'todas' | string>('todas');
   const [status, setStatus] = useState<'todos' | StatusInsumo>('todos');
@@ -118,29 +121,27 @@ export function PaginaListagemInsumos() {
   }
 
   return (
-    <section>
+    <section style={{ minHeight: '100vh', backgroundColor: estilos.cores.bgShell }}>
       <MotionBox initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}>
-        <Stack
-          sx={{
-            gap: 3,
-            backgroundColor: '#020617',
-            borderRadius: 3,
-            p: { xs: 1.5, md: 2 },
-          }}
-        >
-          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-            <Button
-              startIcon={<ArrowBackIcon />}
-              variant="outlined"
-              onClick={() => navigate('/dashboard')}
-              sx={{
-                textTransform: 'none',
-                borderRadius: 2,
-              }}
-            >
-              Voltar ao inicio
-            </Button>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#e2e8f0' }}>
+        <Stack sx={estilos.painel}>
+          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+            <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+              <Button
+                startIcon={<ArrowBackIcon />}
+                variant="outlined"
+                onClick={() => navigate('/dashboard')}
+                sx={{
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  borderColor: estilos.cores.borderForte,
+                  color: estilos.cores.textPrimary,
+                }}
+              >
+                Voltar ao inicio
+              </Button>
+              <BotaoAlternarTema variante="icone" />
+            </Stack>
+            <Typography variant="h5" sx={estilos.titulo}>
               Insumos
             </Typography>
           </Stack>
@@ -166,7 +167,7 @@ export function PaginaListagemInsumos() {
                 { titulo: 'Ativos', valor: kpis.ativos, icon: <TaskAltOutlinedIcon />, cor: 'success.main' },
               ]}
             />
-            <Typography variant="caption" sx={{ color: 'rgba(148, 163, 184, 0.95)', px: 0.5 }}>
+            <Typography variant="caption" sx={estilos.legenda}>
               Indicadores consideram só os insumos desta página da tabela; filtros aplicam sobre a lista completa carregada.
             </Typography>
           </Stack>
@@ -203,14 +204,7 @@ export function PaginaListagemInsumos() {
                   }
                 />
               ) : (
-                <Box
-                  sx={{
-                    border: '1px dashed rgba(255,255,255,0.3)',
-                    borderRadius: 3,
-                    p: 3,
-                    backgroundColor: '#0f172a',
-                  }}
-                >
+                <Box sx={estilos.estadoVazio}>
                   <Typography variant="h6">Nenhum insumo encontrado</Typography>
                   <Typography variant="body2" color="text.secondary">
                     Ajuste os filtros, troque de página ou cadastre um novo insumo.
@@ -219,12 +213,7 @@ export function PaginaListagemInsumos() {
               )}
               <TablePagination
                 component="div"
-                sx={{
-                  color: '#e2e8f0',
-                  borderTop: '1px solid rgba(255,255,255,0.06)',
-                  '& .MuiTablePagination-toolbar': { minHeight: 52 },
-                  '& .MuiTablePagination-selectIcon, & .MuiTablePagination-actions': { color: '#94a3b8' },
-                }}
+                sx={estilos.paginacao}
                 rowsPerPageOptions={[5, 10, 25, 50]}
                 count={itensFiltrados.length}
                 rowsPerPage={rowsPerPage}

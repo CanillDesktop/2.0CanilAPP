@@ -17,6 +17,8 @@ import {
   Typography,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import type { PapelUsuarioApp } from '../../../shared/types/papelUsuario';
 
 export const larguraSidebar = 252;
@@ -58,6 +60,7 @@ function ConteudoSidebar({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { cores } = useTemaApp();
   const itens = itensVisiveisParaPapel(papelUsuario);
 
   const itemAtivoMaisEspecifico = [...itens]
@@ -96,6 +99,9 @@ function ConteudoSidebar({
           );
         })}
       </List>
+      <Box sx={{ px: 1.2, pb: 2, borderTop: `1px solid ${cores.sidebarBorder}`, pt: 1 }}>
+        <BotaoAlternarTema />
+      </Box>
     </Box>
   );
 }
@@ -118,7 +124,7 @@ export function SidebarEstoque({ abertoMobile, aoFecharMobile, ehMobile, papelUs
         '& .MuiDrawer-paper': {
           width: larguraSidebar,
           boxSizing: 'border-box',
-          borderRight: '1px solid rgba(255,255,255,0.08)',
+          borderRight: (theme) => `1px solid ${theme.palette.divider}`,
           top: 0,
           height: '100vh',
         },

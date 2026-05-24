@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Box, Grid, Skeleton, Stack, Typography } from '@mui/material';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 
 type Kpi = {
   titulo: string;
@@ -9,6 +10,8 @@ type Kpi = {
 };
 
 export function KpiSectionProdutos({ kpis, carregando }: { kpis: Kpi[]; carregando: boolean }) {
+  const { cores } = useTemaApp();
+
   return (
     <Grid container spacing={2} sx={{ mb: 3 }}>
       {kpis.map((kpi) => (
@@ -17,9 +20,9 @@ export function KpiSectionProdutos({ kpis, carregando }: { kpis: Kpi[]; carregan
             sx={{
               borderRadius: 3,
               p: 2,
-              border: '1px solid rgba(255,255,255,0.05)',
-              backgroundColor: '#0f172a',
-              color: '#e2e8f0',
+              border: `1px solid ${cores.border}`,
+              backgroundColor: cores.bgCard,
+              color: cores.textPrimary,
             }}
           >
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>

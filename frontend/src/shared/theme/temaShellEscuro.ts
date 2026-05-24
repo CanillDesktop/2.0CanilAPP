@@ -1,21 +1,4 @@
-import { createTheme } from '@mui/material';
+import { criarTemaMui } from './criarTemaMui';
 
-export const temaShellEscuro = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#020617',
-      paper: '#0f172a',
-    },
-    text: {
-      primary: '#e2e8f0',
-      secondary: 'rgba(203, 213, 225, 0.85)',
-    },
-  },
-  shape: {
-    borderRadius: 12,
-  },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-  },
-});
+/** @deprecated Use ProvedorTemaApp + criarTemaMui(modo) */
+export const temaShellEscuro = criarTemaMui('dark');
