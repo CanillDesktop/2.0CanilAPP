@@ -51,9 +51,9 @@ type LinhaProduto = {
 const MotionAction = motion.div;
 
 function categoriaNome(categoria: number) {
-  if (categoria === 1) return 'Racao';
+  if (categoria === 1) return 'Ração';
   if (categoria === 2) return 'Higiene';
-  if (categoria === 3) return 'Acessorio';
+  if (categoria === 3) return 'Acessório';
   return `Categoria ${categoria}`;
 }
 
@@ -86,19 +86,19 @@ function mapearLinha(item: ProdutoLeituraDto): LinhaProduto {
     categoriaNome: categoriaNome(item.categoria),
     quantidade,
     status,
-    ultimaMovimentacao: ultimaData ? ultimaData.toLocaleDateString('pt-BR') : 'Sem movimentacao',
+    ultimaMovimentacao: ultimaData ? ultimaData.toLocaleDateString('pt-BR') : 'Sem movimentação',
   };
 }
 
 function statusChip(status: LinhaProduto['status']) {
   if (status === 'ativo') return <Chip label="Ativo" color="success" size="small" />;
-  if (status === 'a_vencer') return <Chip label="Proximo do vencimento" color="error" size="small" />;
-  if (status === 'baixo') return <Chip label="Lote abaixo do nivel minimo" color="warning" size="small" />;
+  if (status === 'a_vencer') return <Chip label="Próximo do vencimento" color="error" size="small" />;
+  if (status === 'baixo') return <Chip label="Lote abaixo do nível mínimo" color="warning" size="small" />;
   return <Chip label="Sem estoque" color="error" size="small" />;
 }
 
 function statusValidadeChip(dataValidade?: string | null, quantidadeLote = 0, nivelMinimo = 0) {
-  if (quantidadeLote < nivelMinimo) return <Chip label="Nivel baixo" color="warning" size="small" />;
+  if (quantidadeLote < nivelMinimo) return <Chip label="Nível baixo" color="warning" size="small" />;
   if (!dataValidade) return <Chip label="Sem validade" size="small" />;
   const validade = new Date(dataValidade);
   const hoje = new Date();
@@ -106,7 +106,7 @@ function statusValidadeChip(dataValidade?: string | null, quantidadeLote = 0, ni
   limite.setDate(hoje.getDate() + 30);
   if (validade < hoje) return <Chip label="Vencido" color="error" size="small" />;
   if (validade <= limite) return <Chip label="A vencer" color="error" size="small" />;
-  return <Chip label="Valido" color="success" size="small" />;
+  return <Chip label="Válido" color="success" size="small" />;
 }
 
 function LoteCard({
@@ -306,10 +306,10 @@ export function TabelaProdutos({ itens, onVisualizar, onEditar, onExcluir, onMov
                   </Typography>
                   {statusChip(linha.status)}
                 </Stack>
-                <Typography variant="body2" sx={estilos.celulaTexto}>Codigo: {linha.codigo}</Typography>
+                <Typography variant="body2" sx={estilos.celulaTexto}>Código: {linha.codigo}</Typography>
                 <Typography variant="body2" sx={estilos.celulaTexto}>Categoria: {linha.categoriaNome}</Typography>
                 <Typography variant="body2" sx={estilos.celulaTexto}>Quantidade: {linha.quantidade}</Typography>
-                <Typography variant="body2" sx={estilos.celulaTexto}>Ultima movimentacao: {linha.ultimaMovimentacao}</Typography>
+                <Typography variant="body2" sx={estilos.celulaTexto}>Última movimentação: {linha.ultimaMovimentacao}</Typography>
                 <AcoesLinha
                   id={linha.id}
                   onVisualizar={onVisualizar}
@@ -331,13 +331,13 @@ export function TabelaProdutos({ itens, onVisualizar, onEditar, onExcluir, onMov
         <TableHead>
           <TableRow sx={estilos.cabecalhoTabela}>
             <TableCell sx={{ width: 54 }} />
-            <TableCell sx={estilos.celulaCabecalho}>Codigo</TableCell>
+            <TableCell sx={estilos.celulaCabecalho}>Código</TableCell>
             <TableCell sx={estilos.celulaCabecalho}>Nome</TableCell>
             <TableCell sx={estilos.celulaCabecalho}>Categoria</TableCell>
             <TableCell sx={estilos.celulaCabecalho}>Quantidade</TableCell>
             <TableCell sx={estilos.celulaCabecalho}>Status</TableCell>
-            <TableCell sx={estilos.celulaCabecalho}>Ultima movimentacao</TableCell>
-            <TableCell sx={estilos.celulaCabecalho}>Acoes</TableCell>
+            <TableCell sx={estilos.celulaCabecalho}>Última movimentação</TableCell>
+            <TableCell sx={estilos.celulaCabecalho}>Ações</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

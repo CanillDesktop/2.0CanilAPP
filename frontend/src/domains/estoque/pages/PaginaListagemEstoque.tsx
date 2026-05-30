@@ -1,9 +1,6 @@
-import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import {
   Box,
-  Button,
   Card,
-  IconButton,
   Stack,
   Tab,
   Tabs,
@@ -15,15 +12,12 @@ import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
-import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
-import { mapearPapelUsuario } from '../../../shared/types/papelUsuario';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
 import { listarTodosProdutosParaEstoqueApi } from '../../produtos/api/produtosApi';
 import { EstoqueGestaoConteudo } from '../components/EstoqueGestaoConteudo';
 import { PainelFiltrosEstoque } from '../components/PainelFiltrosEstoque';
-import { SidebarEstoque } from '../components/SidebarEstoque';
 import { useListaEstoqueProcessada, type CampoOrdenacaoEstoque } from '../hooks/useListaEstoqueProcessada';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 
@@ -43,12 +37,10 @@ function lerAbaEstoqueSalva(): number {
 export function PaginaListagemEstoque() {
   const navigate = useNavigate();
   const { usuario } = useAutenticacao();
-  const papelUsuario = mapearPapelUsuario(usuario?.permissao);
   const [abaTipo, setAbaTipo] = useState(lerAbaEstoqueSalva);
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
   const [linhasOperacionais, setLinhasOperacionais] = useState<LinhaOperacionalEstoque[]>([]);
-  const [drawerAbertoMobile, setDrawerAbertoMobile] = useState(false);
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -67,7 +59,6 @@ export function PaginaListagemEstoque() {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const ehMobileMenu = useMediaQuery(theme.breakpoints.down('md'));
   const { cores } = useTemaApp();
   const estilos = useEstilosListagem();
 
@@ -273,53 +264,25 @@ export function PaginaListagemEstoque() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: cores.bgShell }}>
-      <SidebarEstoque
-        abertoMobile={drawerAbertoMobile}
-        aoFecharMobile={() => setDrawerAbertoMobile(false)}
-        ehMobile={ehMobileMenu}
-        papelUsuario={papelUsuario}
-      />
-      <Box
-        sx={{
-          flex: 1,
-          px: { xs: 2, sm: 3, md: 4 },
-          pt: 2,
-          pb: 4,
-          borderLeft: { md: `1px solid ${cores.sidebarBorder}` },
-          backgroundColor: cores.bgConteudo,
-        }}
-      >
-        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2, gap: 1 }}>
-          {ehMobileMenu ? (
-            <IconButton color="inherit" onClick={() => setDrawerAbertoMobile(true)} sx={{ color: cores.textPrimary }}>
-              <MenuOutlinedIcon />
-            </IconButton>
-          ) : (
-            <Box />
-          )}
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <BotaoAlternarTema variante="icone" />
-            <Button
-              variant="outlined"
-              sx={{ borderColor: cores.borderForte, color: cores.textPrimary }}
-              onClick={() => navigate('/dashboard')}
-            >
-              Voltar ao inicio
-            </Button>
-          </Stack>
-        </Stack>
+    <Box
+      sx={{
+        px: { xs: 2, sm: 3, md: 4 },
+        pt: 2,
+        pb: 4,
+        backgroundColor: cores.bgConteudo,
+        minHeight: '100%',
+      }}
+    >
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 800, color: cores.textPrimary }}>
+          Gestão de estoque
+        </Typography>
+        <Typography variant="body2" sx={{ color: cores.textSecondary }}>
+          Filtros, ordenação e paginação — {usuario?.primeiroNome ?? 'equipe'}
+        </Typography>
+      </Box>
 
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: cores.textPrimary }}>
-            Gestão de estoque
-          </Typography>
-          <Typography variant="body2" sx={{ color: cores.textSecondary }}>
-            Filtros, ordenação e paginação — {usuario?.primeiroNome ?? 'equipe'}
-          </Typography>
-        </Box>
-
-        <Tabs
+      <Tabs
           value={abaTipo}
           onChange={aoMudarAba}
           textColor="inherit"
@@ -393,7 +356,6 @@ export function PaginaListagemEstoque() {
               onRowClick={navegarParaDetalhe}
             />
           </Stack>
-      </Box>
     </Box>
   );
 }

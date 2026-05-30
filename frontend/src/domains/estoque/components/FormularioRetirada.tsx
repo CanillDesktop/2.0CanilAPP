@@ -1,3 +1,6 @@
+import CheckIcon from '@mui/icons-material/Check';
+import SaveIcon from '@mui/icons-material/Save';
+import { LoadingButton } from '@mui/lab';
 import {
   Alert,
   Autocomplete,
@@ -14,11 +17,11 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
-import SaveIcon from '@mui/icons-material/Save';
-import { LoadingButton } from '@mui/lab';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
+import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { listarUsuariosResumoParaRetiradasApi } from '../../usuarios/api/usuariosApi';
 import type { UsuarioResumoFiltroDto } from '../../usuarios/types/tiposUsuarios';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
@@ -29,6 +32,20 @@ export function FormularioRetirada() {
   const location = useLocation();
   const data = location.state as RetiradaNavegacaoState | undefined;
   const { registrarRetirada, carregando, erro } = useMutacaoEstoque();
+  const { cores } = useTemaApp();
+  const estilos = useEstilosListagem();
+  const sxCampo = {
+    ...estilosCampoFormulario(cores),
+    mb: 2,
+    '& .MuiInputBase-input.Mui-disabled': {
+      color: cores.textSecondary,
+      WebkitTextFillColor: cores.textSecondary,
+    },
+    '& .MuiOutlinedInput-root.Mui-disabled': {
+      backgroundColor: cores.hoverSurface,
+    },
+  };
+
   const [de, setDe] = useState('');
   const [para, setPara] = useState('');
   const [idUsuarioRecebedor, setIdUsuarioRecebedor] = useState<number | undefined>();
@@ -131,40 +148,13 @@ export function FormularioRetirada() {
     });
   }
 
-  const campoSx = {
-    mb: 2,
-    '& .MuiInputLabel-root': {
-      color: '#cbd5e1',
-    },
-    '& .MuiInputLabel-root.Mui-focused': {
-      color: '#7dd3fc',
-    },
-    '& .MuiInputBase-input.Mui-disabled': {
-      color: '#e2e8f0',
-      WebkitTextFillColor: '#e2e8f0',
-    },
-    '& .MuiOutlinedInput-root': {
-      backgroundColor: '#020617',
-      color: '#fff',
-      '& fieldset': {
-        borderColor: 'rgba(148,163,184,0.35)',
-      },
-      '&:hover fieldset': {
-        borderColor: 'rgba(125,211,252,0.7)',
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: '#38bdf8',
-      },
-    },
-  };
-
   if (!data) {
     return (
       <Box sx={{ width: '100%', maxWidth: 600, p: 2 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
           Dados da retirada nao foram informados.
         </Alert>
-        <Button variant="contained" onClick={() => navegar('/produtos')}>
+        <Button variant="contained" onClick={() => navegar('/produtos')} sx={estilos.botaoPrimario}>
           Voltar para produtos
         </Button>
       </Box>
@@ -178,24 +168,27 @@ export function FormularioRetirada() {
         maxWidth: 600,
         p: 1,
         borderRadius: 3,
-        border: '1px solid rgba(255,255,255,0.12)',
-        backgroundColor: '#0f172a',
+        border: `1px solid ${cores.border}`,
+        backgroundColor: cores.bgCard,
+        boxShadow: cores.sombraCard,
       }}
     >
       <CardContent>
         <Stack sx={{ gap: 1.5 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: '#e2e8f0' }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, color: cores.textPrimary }}>
               Registrar retirada
             </Typography>
-            <Button onClick={() => navegar(-1)}>Voltar</Button>
+            <Button onClick={() => navegar(-1)} sx={{ color: cores.textMuted, textTransform: 'none' }}>
+              Voltar
+            </Button>
           </Box>
 
           {(erro || erroValidacao) && <Alert severity="error">{erroValidacao ?? erro}</Alert>}
 
-          <TextField label="Produto" value={data.produtoNome} disabled fullWidth sx={campoSx} />
-          <TextField label="Lote" value={data.loteCodigo} disabled fullWidth sx={campoSx} />
-          <TextField label="Quantidade disponivel" value={String(quantidadeDisponivel)} disabled fullWidth sx={campoSx} />
+          <TextField label="Produto" value={data.produtoNome} disabled fullWidth sx={sxCampo} />
+          <TextField label="Lote" value={data.loteCodigo} disabled fullWidth sx={sxCampo} />
+          <TextField label="Quantidade disponivel" value={String(quantidadeDisponivel)} disabled fullWidth sx={sxCampo} />
 
           <TextField
             label="Quem esta retirando"
@@ -205,7 +198,7 @@ export function FormularioRetirada() {
             fullWidth
             error={!de.trim() && Boolean(erroValidacao)}
             helperText={!de.trim() && Boolean(erroValidacao) ? 'Campo obrigatorio' : ' '}
-            sx={campoSx}
+            sx={sxCampo}
           />
 
           <Autocomplete
@@ -216,8 +209,11 @@ export function FormularioRetirada() {
               setIdUsuarioRecebedor(v?.id);
               if (v) setPara(v.nomeExibicao);
             }}
+            slotProps={{
+              paper: { sx: { bgcolor: cores.bgCard, border: `1px solid ${cores.border}` } },
+            }}
             renderInput={(params) => (
-              <TextField {...params} label="Destinatário cadastrado (opcional)" sx={campoSx} />
+              <TextField {...params} label="Destinatário cadastrado (opcional)" sx={sxCampo} />
             )}
           />
 
@@ -232,7 +228,7 @@ export function FormularioRetirada() {
             fullWidth
             error={!para.trim() && Boolean(erroValidacao)}
             helperText={!para.trim() && Boolean(erroValidacao) ? 'Campo obrigatorio' : ' '}
-            sx={campoSx}
+            sx={sxCampo}
           />
           <TextField
             label="Quantidade"
@@ -250,7 +246,7 @@ export function FormularioRetirada() {
                   ? 'Quantidade deve ser maior que zero'
                   : ' '
             }
-            sx={campoSx}
+            sx={sxCampo}
           />
 
           <TextField
@@ -260,7 +256,7 @@ export function FormularioRetirada() {
             fullWidth
             multiline
             minRows={2}
-            sx={campoSx}
+            sx={sxCampo}
           />
 
           <Box sx={{ display: 'flex' }}>
@@ -285,20 +281,7 @@ export function FormularioRetirada() {
                 setConfirmarAberto(true);
               }}
               disabled={!retiradaValida || carregando}
-              sx={{
-                mt: 1,
-                fontWeight: 700,
-                borderRadius: 2,
-                backgroundColor: '#7dd3fc',
-                color: '#082f49',
-                '&:hover': {
-                  backgroundColor: '#38bdf8',
-                },
-                '&.Mui-disabled': {
-                  backgroundColor: 'rgba(125,211,252,0.25)',
-                  color: 'rgba(226,232,240,0.55)',
-                },
-              }}
+              sx={{ ...estilos.botaoPrimario, mt: 1 }}
             >
               {submitSucesso ? 'Retirada confirmada' : 'Confirmar retirada'}
             </LoadingButton>
@@ -312,21 +295,21 @@ export function FormularioRetirada() {
         slotProps={{
           paper: {
             sx: {
-              backgroundColor: '#0f172a',
-              color: '#e2e8f0',
-              border: '1px solid rgba(255,255,255,0.08)',
+              backgroundColor: cores.bgCard,
+              color: cores.textPrimary,
+              border: `1px solid ${cores.border}`,
             },
           },
         }}
       >
-        <DialogTitle sx={{ color: '#e2e8f0', fontWeight: 700 }}>Confirmar retirada</DialogTitle>
+        <DialogTitle sx={{ color: cores.textPrimary, fontWeight: 700 }}>Confirmar retirada</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ color: '#cbd5e1' }}>
+          <Typography variant="body2" sx={{ color: cores.textSecondary }}>
             Confirma a retirada de {quantidade} unidade(s) do lote {data.loteCodigo}?
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmarAberto(false)} sx={{ color: '#93c5fd' }}>
+          <Button onClick={() => setConfirmarAberto(false)} sx={{ color: cores.textMuted, textTransform: 'none' }}>
             Cancelar
           </Button>
           <LoadingButton
@@ -336,10 +319,7 @@ export function FormularioRetirada() {
             variant="contained"
             onClick={confirmarRetirada}
             disabled={carregando}
-            sx={{
-              backgroundColor: '#2563eb',
-              '&:hover': { backgroundColor: '#1d4ed8' },
-            }}
+            sx={estilos.botaoPrimario}
           >
             Confirmar
           </LoadingButton>

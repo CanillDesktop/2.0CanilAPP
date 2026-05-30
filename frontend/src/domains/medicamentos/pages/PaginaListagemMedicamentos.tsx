@@ -20,8 +20,8 @@ import {
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
-import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { FilterBarMedicamentos } from '../components/FilterBarMedicamentos';
 import { KpiSectionMedicamentos } from '../components/KpiSectionMedicamentos';
@@ -60,7 +60,7 @@ export function PaginaListagemMedicamentos() {
   const [prioridade, setPrioridade] = useState<'todas' | string>('todas');
   const [status, setStatus] = useState<'todos' | StatusMedicamento>('todos');
   const [idExclusao, setIdExclusao] = useState<number | null>(null);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; mensagem: string; tipo: 'success' | 'error' }>({
+  const { snackbar, setSnackbar } = useSnackbarRetornoListagem({
     open: false,
     mensagem: '',
     tipo: 'success',
@@ -114,10 +114,10 @@ export function PaginaListagemMedicamentos() {
     if (idExclusao == null) return;
     const ok = await excluir(idExclusao);
     if (ok) {
-      setSnackbar({ open: true, mensagem: 'Medicamento excluido com sucesso.', tipo: 'success' });
+      setSnackbar({ open: true, mensagem: 'Medicamento excluído com sucesso.', tipo: 'success' });
       await carregar();
     } else {
-      setSnackbar({ open: true, mensagem: 'Nao foi possivel excluir o medicamento.', tipo: 'error' });
+      setSnackbar({ open: true, mensagem: 'Não foi possível excluir o medicamento.', tipo: 'error' });
     }
     setIdExclusao(null);
   }
@@ -139,9 +139,8 @@ export function PaginaListagemMedicamentos() {
                   color: estilos.cores.textPrimary,
                 }}
               >
-                Voltar ao inicio
+                Voltar ao início
               </Button>
-              <BotaoAlternarTema variante="icone" />
             </Stack>
             <Typography variant="h5" sx={estilos.titulo}>
               Medicamentos
@@ -198,7 +197,7 @@ export function PaginaListagemMedicamentos() {
                         produtoNome: medicamento.nomeOuDescricaoSimples,
                         codItem: medicamento.codigo,
                         loteId: `${medicamento.id}-${lote.lote ?? ''}`,
-                        loteCodigo: lote.lote ?? 'Sem codigo',
+                        loteCodigo: lote.lote ?? 'Sem código',
                         quantidadeDisponivel: lote.quantidade,
                         retornoRota: '/medicamentos',
                       },
@@ -234,7 +233,7 @@ export function PaginaListagemMedicamentos() {
       </MotionBox>
 
       <Dialog open={idExclusao != null} onClose={() => setIdExclusao(null)}>
-        <DialogTitle>Confirmar exclusao</DialogTitle>
+        <DialogTitle>Confirmar exclusão</DialogTitle>
         <DialogContent>
           <Typography variant="body2">Deseja realmente excluir este medicamento?</Typography>
         </DialogContent>

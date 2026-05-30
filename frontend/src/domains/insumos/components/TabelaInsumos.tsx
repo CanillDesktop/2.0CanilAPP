@@ -84,19 +84,19 @@ function mapearLinha(item: InsumoLeituraDto): LinhaInsumo {
     unidadeNome: `Unidade ${item.unidade}`,
     quantidade,
     status: obterStatusInsumo(item),
-    ultimaMovimentacao: ultimaData ? ultimaData.toLocaleDateString('pt-BR') : 'Sem movimentacao',
+    ultimaMovimentacao: ultimaData ? ultimaData.toLocaleDateString('pt-BR') : 'Sem movimentação',
   };
 }
 
 function statusChip(status: StatusInsumo) {
   if (status === 'ativo') return <Chip label="Ativo" color="success" size="small" />;
-  if (status === 'a_vencer') return <Chip label="Proximo do vencimento" color="error" size="small" />;
-  if (status === 'baixo') return <Chip label="Lote abaixo do nivel minimo" color="warning" size="small" />;
+  if (status === 'a_vencer') return <Chip label="Próximo do vencimento" color="error" size="small" />;
+  if (status === 'baixo') return <Chip label="Lote abaixo do nível mínimo" color="warning" size="small" />;
   return <Chip label="Sem estoque" color="error" size="small" />;
 }
 
 function statusValidadeChip(dataValidade?: string | null, quantidadeLote = 0, nivelMinimo = 0) {
-  if (quantidadeLote < nivelMinimo) return <Chip label="Nivel baixo" color="warning" size="small" />;
+  if (quantidadeLote < nivelMinimo) return <Chip label="Nível baixo" color="warning" size="small" />;
   if (!dataValidade) return <Chip label="Sem validade" size="small" />;
   const validade = new Date(dataValidade);
   const hoje = new Date();
@@ -104,7 +104,7 @@ function statusValidadeChip(dataValidade?: string | null, quantidadeLote = 0, ni
   limite.setDate(hoje.getDate() + 30);
   if (validade < hoje) return <Chip label="Vencido" color="error" size="small" />;
   if (validade <= limite) return <Chip label="A vencer" color="error" size="small" />;
-  return <Chip label="Valido" color="success" size="small" />;
+  return <Chip label="Válido" color="success" size="small" />;
 }
 
 function LoteCard({
@@ -116,33 +116,34 @@ function LoteCard({
   lote: ItemEstoqueDto;
   onRegistrarRetirada: (insumo: InsumoLeituraDto, lote: ItemEstoqueDto) => void;
 }) {
+  const { cores } = useEstilosListagem();
   const validade = lote.dataValidade ? new Date(lote.dataValidade).toLocaleDateString('pt-BR') : 'Sem validade';
   return (
     <Box
       sx={{
         p: 2,
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: `1px solid ${cores.border}`,
         '&:hover': {
-          backgroundColor: 'rgba(255,255,255,0.02)',
+          backgroundColor: cores.hoverSurfaceStrong,
         },
       }}
       onClick={(e) => e.stopPropagation()}
     >
       <Grid container spacing={2} sx={{ alignItems: 'center' }}>
         <Grid size={{ xs: 12, md: 3 }}>
-          <Typography sx={{ fontWeight: 700, color: '#e2e8f0' }}>Lote {lote.lote ?? '-'}</Typography>
+          <Typography sx={{ fontWeight: 700, color: cores.textPrimary }}>Lote {lote.lote ?? '-'}</Typography>
         </Grid>
         <Grid size={{ xs: 6, md: 2 }}>
-          <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+          <Typography variant="caption" sx={{ color: cores.textMuted }}>
             Quantidade
           </Typography>
-          <Typography sx={{ color: '#e2e8f0' }}>{lote.quantidade}</Typography>
+          <Typography sx={{ color: cores.textPrimary }}>{lote.quantidade}</Typography>
         </Grid>
         <Grid size={{ xs: 6, md: 3 }}>
-          <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+          <Typography variant="caption" sx={{ color: cores.textMuted }}>
             Validade
           </Typography>
-          <Typography sx={{ color: '#e2e8f0' }}>{validade}</Typography>
+          <Typography sx={{ color: cores.textPrimary }}>{validade}</Typography>
         </Grid>
         <Grid size={{ xs: 6, md: 2 }}>
           {statusValidadeChip(lote.dataValidade, lote.quantidade, insumo.itemNivelEstoque?.nivelMinimoEstoque ?? 0)}
@@ -175,11 +176,14 @@ function ExpandedRow({
   expanded: boolean;
   onRegistrarRetirada: (insumo: InsumoLeituraDto, lote: ItemEstoqueDto) => void;
 }) {
+  const estilos = useEstilosListagem();
+  const { cores } = estilos;
+
   return (
     <TableRow>
       <TableCell colSpan={8} sx={{ p: 0 }}>
         <Collapse in={expanded} timeout="auto" unmountOnExit>
-          <Box sx={{ p: 2, bgcolor: '#020617' }}>
+          <Box sx={estilos.linhaExpandida}>
             {insumo.itensEstoque.length ? (
               <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 {insumo.itensEstoque.map((lote, index) => (
@@ -192,7 +196,7 @@ function ExpandedRow({
                 ))}
               </Box>
             ) : (
-              <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+              <Typography variant="body2" sx={{ color: cores.textMuted }}>
                 Nenhum lote cadastrado para este insumo.
               </Typography>
             )}
@@ -279,6 +283,7 @@ export function TabelaInsumos({
   onRegistrarRetirada,
 }: Props) {
   const estilos = useEstilosListagem();
+  const { cores } = estilos;
   const theme = useTheme();
   const ehMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
@@ -294,28 +299,19 @@ export function TabelaInsumos({
     return (
       <Stack sx={{ gap: 1.2 }}>
         {linhas.map((linha) => (
-          <Card
-            key={linha.id}
-            sx={{
-              borderRadius: 3,
-              backgroundColor: '#0f172a',
-              border: '1px solid rgba(255,255,255,0.05)',
-              transition: 'transform 0.15s ease',
-              '&:hover': { transform: 'translateY(-1px)' },
-            }}
-          >
+          <Card key={linha.id} sx={estilos.cardMobile}>
             <CardContent>
               <Stack sx={{ gap: 1 }}>
                 <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#f1f5f9' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: cores.textPrimary }}>
                     {linha.nome}
                   </Typography>
                   {statusChip(linha.status)}
                 </Stack>
-                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>Codigo: {linha.codigo}</Typography>
-                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>Unidade: {linha.unidadeNome}</Typography>
-                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>Quantidade: {linha.quantidade}</Typography>
-                <Typography variant="body2" sx={{ color: '#e2e8f0' }}>Ultima movimentacao: {linha.ultimaMovimentacao}</Typography>
+                <Typography variant="body2" sx={estilos.celulaTexto}>Código: {linha.codigo}</Typography>
+                <Typography variant="body2" sx={estilos.celulaTexto}>Unidade: {linha.unidadeNome}</Typography>
+                <Typography variant="body2" sx={estilos.celulaTexto}>Quantidade: {linha.quantidade}</Typography>
+                <Typography variant="body2" sx={estilos.celulaTexto}>Última movimentação: {linha.ultimaMovimentacao}</Typography>
                 <AcoesLinha
                   id={linha.id}
                   onVisualizar={onVisualizar}
@@ -337,13 +333,13 @@ export function TabelaInsumos({
         <TableHead>
           <TableRow sx={estilos.cabecalhoTabela}>
             <TableCell sx={{ width: 54 }} />
-            <TableCell sx={{ color: '#94a3b8', fontWeight: 600 }}>Codigo</TableCell>
-            <TableCell sx={{ color: '#94a3b8', fontWeight: 600 }}>Nome</TableCell>
-            <TableCell sx={{ color: '#94a3b8', fontWeight: 600 }}>Unidade</TableCell>
-            <TableCell sx={{ color: '#94a3b8', fontWeight: 600 }}>Quantidade</TableCell>
-            <TableCell sx={{ color: '#94a3b8', fontWeight: 600 }}>Status</TableCell>
-            <TableCell sx={{ color: '#94a3b8', fontWeight: 600 }}>Ultima movimentacao</TableCell>
-            <TableCell sx={{ color: '#94a3b8', fontWeight: 600 }}>Acoes</TableCell>
+            <TableCell sx={estilos.celulaCabecalho}>Código</TableCell>
+            <TableCell sx={estilos.celulaCabecalho}>Nome</TableCell>
+            <TableCell sx={estilos.celulaCabecalho}>Unidade</TableCell>
+            <TableCell sx={estilos.celulaCabecalho}>Quantidade</TableCell>
+            <TableCell sx={estilos.celulaCabecalho}>Status</TableCell>
+            <TableCell sx={estilos.celulaCabecalho}>Última movimentação</TableCell>
+            <TableCell sx={estilos.celulaCabecalho}>Ações</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -357,21 +353,21 @@ export function TabelaInsumos({
                   onClick={() => handleToggleRow(insumo.id)}
                   sx={{
                     cursor: 'pointer',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    borderBottom: `1px solid ${cores.border}`,
                     transition: 'background-color 0.15s ease',
-                    backgroundColor: expanded ? 'rgba(255,255,255,0.02)' : 'transparent',
-                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.03)' },
+                    backgroundColor: expanded ? cores.hoverSurfaceStrong : 'transparent',
+                    '&:hover': { backgroundColor: cores.hoverSurface },
                   }}
                 >
                   <TableCell sx={{ color: '#93c5fd' }}>
                     {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
                   </TableCell>
-                  <TableCell sx={{ color: '#e2e8f0' }}>{linha.codigo}</TableCell>
-                  <TableCell sx={{ color: '#e2e8f0' }}>{linha.nome}</TableCell>
-                  <TableCell sx={{ color: '#e2e8f0' }}>{linha.unidadeNome}</TableCell>
-                  <TableCell sx={{ color: '#e2e8f0' }}>{linha.quantidade}</TableCell>
+                  <TableCell sx={estilos.celulaTexto}>{linha.codigo}</TableCell>
+                  <TableCell sx={estilos.celulaTexto}>{linha.nome}</TableCell>
+                  <TableCell sx={estilos.celulaTexto}>{linha.unidadeNome}</TableCell>
+                  <TableCell sx={estilos.celulaTexto}>{linha.quantidade}</TableCell>
                   <TableCell>{statusChip(linha.status)}</TableCell>
-                  <TableCell sx={{ color: '#e2e8f0' }}>{linha.ultimaMovimentacao}</TableCell>
+                  <TableCell sx={estilos.celulaTexto}>{linha.ultimaMovimentacao}</TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <AcoesLinha
                       id={linha.id}

@@ -1,10 +1,6 @@
-import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
-import { Box, Button, CssBaseline, IconButton, Stack, ThemeProvider, createTheme, useMediaQuery, useTheme } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
+import { Box, Button, CssBaseline, Stack, ThemeProvider, createTheme, useMediaQuery, useTheme } from '@mui/material';
+import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
-import { mapearPapelUsuario } from '../../../shared/types/papelUsuario';
-import { SidebarEstoque } from '../../estoque/components/SidebarEstoque';
 import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarregamento';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { LoteList } from '../components/LoteList';
@@ -45,12 +41,8 @@ export function PaginaDetalheProduto() {
   const location = useLocation();
   const id = Number(params.id);
   const navigate = useNavigate();
-  const { usuario } = useAutenticacao();
-  const papelUsuario = mapearPapelUsuario(usuario?.permissao);
   const themeExterno = useTheme();
   const isMobile = useMediaQuery(themeExterno.breakpoints.down('sm'));
-  const ehMobileMenu = useMediaQuery(themeExterno.breakpoints.down('md'));
-  const [drawerAbertoMobile, setDrawerAbertoMobile] = useState(false);
 
   const { estado, carregar } = useProdutoDetalhe(Number.isFinite(id) ? id : undefined);
   const { excluir, carregando, erro, errosValidacao } = useMutacaoProduto();
@@ -95,37 +87,23 @@ export function PaginaDetalheProduto() {
   return (
     <ThemeProvider theme={temaDetalheProduto}>
       <CssBaseline />
-      <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: '#020617' }}>
-        <SidebarEstoque
-          abertoMobile={drawerAbertoMobile}
-          aoFecharMobile={() => setDrawerAbertoMobile(false)}
-          ehMobile={ehMobileMenu}
-          papelUsuario={papelUsuario}
-        />
-        <Box
-          component="main"
-          sx={{
-            flex: 1,
-            p: { xs: 2, sm: 3 },
-            color: '#e2e8f0',
-          }}
-        >
-          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            {ehMobileMenu ? (
-              <IconButton color="inherit" onClick={() => setDrawerAbertoMobile(true)} sx={{ color: '#e2e8f0' }}>
-                <MenuOutlinedIcon />
-              </IconButton>
-            ) : (
-              <Box />
-            )}
-            <Button
-              variant="text"
-              onClick={() => navigate('/produtos')}
-              sx={{ color: 'rgba(203, 213, 225, 0.9)' }}
-            >
-              Lista de produtos
-            </Button>
-          </Stack>
+      <Box
+        component="main"
+        sx={{
+          p: { xs: 2, sm: 3 },
+          color: '#e2e8f0',
+          minHeight: '100%',
+        }}
+      >
+        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'flex-end', mb: 1 }}>
+          <Button
+            variant="text"
+            onClick={() => navigate('/produtos')}
+            sx={{ color: 'rgba(203, 213, 225, 0.9)' }}
+          >
+            Lista de produtos
+          </Button>
+        </Stack>
 
           <PainelErro mensagem={estado.erro ?? erro} errosValidacao={errosValidacao} />
           <IndicadorCarregamento visivel={estado.carregando || carregando} />
@@ -162,7 +140,6 @@ export function PaginaDetalheProduto() {
               />
             </>
           )}
-        </Box>
       </Box>
     </ThemeProvider>
   );

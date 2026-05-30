@@ -60,7 +60,7 @@ export function FilterBarProdutos({
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 5 }}>
           <TextField
-            placeholder="Buscar por nome ou codigo"
+            placeholder="Buscar por nome ou código"
             variant="outlined"
             size="small"
             fullWidth

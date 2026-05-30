@@ -1,5 +1,6 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { FUSO_BRASILIA } from '../../../shared/utils/fusoBrasilia';
 
 /** Formato fixo PT-BR no horário de Brasília (operação diária); UTC continua no tooltip técnico. */
@@ -44,20 +45,21 @@ export function partesInstanteAuditavel(iso: string): PartesInstanteAuditavel {
 
 /** Célula compacta para tabela — data empilhada + horário + ícone tooltip com UTC. */
 export function HistoricoRetiradasCelulaData({ iso }: { iso: string }) {
+  const { cores } = useTemaApp();
   const p = partesInstanteAuditavel(iso);
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.15, minWidth: 0 }}>
-        <Typography variant="body2" component="span" sx={{ fontWeight: 650, color: 'text.primary', lineHeight: 1.2 }}>
+        <Typography variant="body2" component="span" sx={{ fontWeight: 650, color: cores.textPrimary, lineHeight: 1.2 }}>
           {p.dataLocal}
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: 0.2 }}>
+        <Typography variant="caption" sx={{ color: cores.textMuted, letterSpacing: 0.2 }}>
           {p.horaLocal}
         </Typography>
       </Box>
       <Tooltip arrow title={`Referência técnica (UTC): ${p.tecnicoUtc}`}>
-        <IconButton size="small" aria-label="Ver referência em UTC">
+        <IconButton size="small" aria-label="Ver referência em UTC" sx={{ color: cores.textMuted }}>
           <InfoOutlinedIcon fontSize="inherit" />
         </IconButton>
       </Tooltip>

@@ -1,5 +1,6 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAutenticacao } from '../../app/providers/ContextoAutenticacao';
+import { AppShellAutenticado } from '../components/AppShellAutenticado';
 
 /**
  * Garante que apenas usuários autenticados acessem rotas filhas.
@@ -13,5 +14,7 @@ export function RotaProtegida() {
     return <Navigate to="/login" replace state={{ de: retorno }} />;
   }
 
-  return <Outlet />;
+  return (
+    <AppShellAutenticado />
+  );
 }
