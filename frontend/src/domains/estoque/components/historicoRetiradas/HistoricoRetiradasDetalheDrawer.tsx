@@ -9,6 +9,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { useTemaApp } from '../../../../app/providers/ContextoTemaApp';
 import { HistoricoRetiradasStatusChip } from './HistoricoRetiradasStatusChip';
 import { partesInstanteAuditavel } from '../../utils/historicoRetiradasDataFormat';
 import type { RetiradaHistoricoItemDto } from '../../types/tiposEstoque';
@@ -28,12 +29,21 @@ function LinhaCampo({
   valor: ReactNode;
   sub?: ReactNode;
 }) {
+  const { cores } = useTemaApp();
   return (
-    <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 1.5,
+        borderRadius: 1.5,
+        bgcolor: cores.bgInput,
+        borderColor: cores.border,
+      }}
+    >
+      <Typography variant="caption" sx={{ fontWeight: 600, color: cores.textMuted }}>
         {titulo}
       </Typography>
-      <Typography variant="body1" sx={{ mt: 0.5, wordBreak: 'break-word', fontWeight: 600 }}>
+      <Typography variant="body1" sx={{ mt: 0.5, wordBreak: 'break-word', fontWeight: 600, color: cores.textPrimary }}>
         {valor}
       </Typography>
       {sub}
@@ -43,6 +53,7 @@ function LinhaCampo({
 
 /** Drawer com leitura clara dos campos de auditoria; evita dispersão horizontal em telas de operação. */
 export function HistoricoRetiradasDetalheDrawer({ aberto: retirada, aoFechar }: Props) {
+  const { cores } = useTemaApp();
   const abertoBoolean = Boolean(retirada);
 
   const partes = retirada ? partesInstanteAuditavel(retirada.dataHoraRetirada) : null;
@@ -60,6 +71,9 @@ export function HistoricoRetiradasDetalheDrawer({ aberto: retirada, aoFechar }: 
           sx: {
             width: '100%',
             maxWidth: { xs: '100%', sm: 560 },
+            bgcolor: cores.bgCard,
+            color: cores.textPrimary,
+            borderLeft: `1px solid ${cores.border}`,
           },
         },
       }}
@@ -76,15 +90,15 @@ export function HistoricoRetiradasDetalheDrawer({ aberto: retirada, aoFechar }: 
             gap: 1,
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary }}>
             Detalhes da retirada {retirada ? `#${retirada.id}` : ''}
           </Typography>
-          <IconButton onClick={aoFechar} aria-label="Fechar detalhes">
+          <IconButton onClick={aoFechar} aria-label="Fechar detalhes" sx={{ color: cores.textPrimary }}>
             <CloseIcon />
           </IconButton>
         </Box>
 
-        <Divider />
+        <Divider sx={{ borderColor: cores.border }} />
 
         {!retirada ? null : (
           <Stack sx={{ p: 2, gap: 2 }}>
@@ -104,10 +118,10 @@ export function HistoricoRetiradasDetalheDrawer({ aberto: retirada, aoFechar }: 
               titulo="Data e horário"
               valor={
                 <Stack spacing={0.75}>
-                  <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 700, color: cores.textPrimary }}>
                     {partes!.dataLocal} · {partes!.horaLocal}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: cores.textMuted }}>
                     Horário de Brasília · referência técnica UTC: {partes!.tecnicoUtc}
                   </Typography>
                 </Stack>
@@ -119,10 +133,10 @@ export function HistoricoRetiradasDetalheDrawer({ aberto: retirada, aoFechar }: 
                 titulo="Produto"
                 valor={
                   <Stack spacing={0.35}>
-                    <Typography component="span" sx={{ fontWeight: 700 }}>
+                    <Typography component="span" sx={{ fontWeight: 700, color: cores.textPrimary }}>
                       {retirada.nomeProduto}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: cores.textMuted }}>
                       Código: {retirada.codigo}
                     </Typography>
                   </Stack>
@@ -131,11 +145,14 @@ export function HistoricoRetiradasDetalheDrawer({ aberto: retirada, aoFechar }: 
               <LinhaCampo titulo="Lote" valor={retirada.lote} />
             </Stack>
 
-            <LinhaCampo titulo="Quantidade retirada" valor={<Typography sx={{ fontSize: '1.25rem' }}>{retirada.quantidade}</Typography>} />
+            <LinhaCampo
+              titulo="Quantidade retirada"
+              valor={<Typography sx={{ fontSize: '1.25rem', color: cores.textPrimary }}>{retirada.quantidade}</Typography>}
+            />
 
-            <Divider />
+            <Divider sx={{ borderColor: cores.border }} />
 
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: cores.textMuted }}>
               Pessoas
             </Typography>
 
@@ -145,7 +162,7 @@ export function HistoricoRetiradasDetalheDrawer({ aberto: retirada, aoFechar }: 
                 valor={retirada.usuarioRetiranteExibicao}
                 sub={
                   retirada.idUsuarioRetirante != null ? (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: cores.textMuted }}>
                       Usuário vinculado (ID cadastro): {retirada.idUsuarioRetirante}
                     </Typography>
                   ) : (
@@ -160,7 +177,7 @@ export function HistoricoRetiradasDetalheDrawer({ aberto: retirada, aoFechar }: 
                 valor={retirada.usuarioRecebedorExibicao}
                 sub={
                   retirada.idUsuarioRecebedor != null ? (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: cores.textMuted }}>
                       Usuário vinculado (ID cadastro): {retirada.idUsuarioRecebedor}
                     </Typography>
                   ) : undefined
@@ -175,11 +192,11 @@ export function HistoricoRetiradasDetalheDrawer({ aberto: retirada, aoFechar }: 
               }
             />
 
-            <Box sx={{ bgcolor: 'action.hover', borderRadius: 2, p: 1.5 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 600 }}>
+            <Box sx={{ bgcolor: cores.metricCardBg, borderRadius: 2, p: 1.5, border: `1px solid ${cores.metricCardBorder}` }}>
+              <Typography variant="caption" sx={{ display: 'block', fontWeight: 600, color: cores.textMuted }}>
                 Nota de auditoria
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              <Typography variant="caption" sx={{ mt: 1, display: 'block', color: cores.textSecondary }}>
                 Os horários são apresentados no horário de Brasília para operação; o instante oficial armazenado pela API
                 está em formato ISO UTC.
               </Typography>

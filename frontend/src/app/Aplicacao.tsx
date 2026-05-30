@@ -1,10 +1,13 @@
 import { ProvedorAutenticacao } from './providers/ContextoAutenticacao';
+import { ProvedorTemaApp } from './providers/ContextoTemaApp';
 import { RotasApp } from './routes/RotasApp';
 
 export function Aplicacao() {
   return (
-    <ProvedorAutenticacao>
-      <RotasApp />
-    </ProvedorAutenticacao>
+    <ProvedorTemaApp>
+      <ProvedorAutenticacao>
+        <RotasApp />
+      </ProvedorAutenticacao>
+    </ProvedorTemaApp>
   );
 }

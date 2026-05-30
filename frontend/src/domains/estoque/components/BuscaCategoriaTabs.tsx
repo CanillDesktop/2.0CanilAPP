@@ -28,6 +28,8 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { estilosCampoFiltro } from '../../../shared/theme/estilosCampos';
 import { useBuscaCategoria, type CategoriaBusca } from '../hooks/useBuscaCategoria';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 import { corChipStatus, rotuloStatusEstoque } from '../utils/estoqueStatusUi';
@@ -110,20 +112,6 @@ function aplicarFiltrosAvancadosBusca(
   });
 }
 
-const sxCampoFiltroAvancado = {
-  '& .MuiOutlinedInput-root': {
-    borderRadius: 2,
-    backgroundColor: 'rgba(2, 6, 23, 0.55)',
-    color: '#e2e8f0',
-    '& fieldset': { borderColor: 'rgba(148, 163, 184, 0.35)' },
-    '&:hover fieldset': { borderColor: 'rgba(96, 165, 250, 0.45)' },
-    '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
-  },
-  '& .MuiInputLabel-root': { color: '#94a3b8' },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#93c5fd' },
-  '& .MuiInputBase-input': { color: '#e2e8f0' },
-} as const;
-
 function nivelPercentual(item: LinhaOperacionalEstoque): number {
   if (item.minimo <= 0) return item.quantidade > 0 ? 100 : 0;
   return Math.min(100, Math.round((item.quantidade / item.minimo) * 100));
@@ -153,6 +141,7 @@ function PainelPreviewItem({
   mostrarCabecalhoDrawer,
   onFecharDrawer,
 }: PreviewProps) {
+  const { cores } = useTemaApp();
   const pct = nivelPercentual(item);
   const corBarra = corBarraNivel(item);
 
@@ -160,14 +149,17 @@ function PainelPreviewItem({
     <Stack spacing={2.5}>
       {mostrarCabecalhoDrawer ? (
         <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.06 }}>
+          <Typography
+            variant="subtitle2"
+            sx={{ fontWeight: 700, color: cores.textMuted, textTransform: 'uppercase', letterSpacing: 0.06 }}
+          >
             Inspeção rápida
           </Typography>
           <IconButton
             size="small"
             onClick={onFecharDrawer}
             aria-label="Fechar painel"
-            sx={{ color: '#e2e8f0' }}
+            sx={{ color: cores.textPrimary }}
           >
             <CloseRoundedIcon />
           </IconButton>
@@ -175,21 +167,26 @@ function PainelPreviewItem({
       ) : null}
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2, flexWrap: 'wrap' }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, color: '#f1f5f9', lineHeight: 1.3, flex: '1 1 160px' }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, color: cores.textPrimary, lineHeight: 1.3, flex: '1 1 160px' }}>
           {item.nome}
         </Typography>
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <Chip label={categoriaLabel(item.origem)} size="small" variant="outlined" sx={{ borderColor: 'rgba(148,163,184,0.45)', color: '#e2e8f0' }} />
+          <Chip
+            label={categoriaLabel(item.origem)}
+            size="small"
+            variant="outlined"
+            sx={{ borderColor: cores.borderForte, color: cores.textPrimary }}
+          />
           <Chip label={rotuloStatusEstoque(item.status)} color={corChipStatus(item.status)} size="small" sx={{ fontWeight: 700 }} />
         </Stack>
       </Box>
 
       <Box>
         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'baseline', mb: 0.75 }}>
-          <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+          <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 600 }}>
             Nível em relação ao mínimo
           </Typography>
-          <Typography variant="caption" sx={{ color: '#cbd5e1', fontWeight: 700 }}>
+          <Typography variant="caption" sx={{ color: cores.textSecondary, fontWeight: 700 }}>
             {pct}%
           </Typography>
         </Stack>
@@ -200,7 +197,7 @@ function PainelPreviewItem({
           sx={{
             height: 8,
             borderRadius: 999,
-            bgcolor: 'rgba(30, 41, 59, 0.9)',
+            bgcolor: cores.hoverSurface,
             '& .MuiLinearProgress-bar': { borderRadius: 999 },
           }}
         />
@@ -208,28 +205,28 @@ function PainelPreviewItem({
 
       <Grid container spacing={2}>
         <Grid size={{ xs: 6 }}>
-          <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, display: 'block', mb: 0.35 }}>
+          <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 600, display: 'block', mb: 0.35 }}>
             Quantidade
           </Typography>
-          <Typography sx={{ color: '#f1f5f9', fontWeight: 700 }}>{item.quantidade}</Typography>
+          <Typography sx={{ color: cores.textPrimary, fontWeight: 700 }}>{item.quantidade}</Typography>
         </Grid>
         <Grid size={{ xs: 6 }}>
-          <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, display: 'block', mb: 0.35 }}>
+          <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 600, display: 'block', mb: 0.35 }}>
             Mínimo
           </Typography>
-          <Typography sx={{ color: '#f1f5f9', fontWeight: 700 }}>{item.minimo}</Typography>
+          <Typography sx={{ color: cores.textPrimary, fontWeight: 700 }}>{item.minimo}</Typography>
         </Grid>
         <Grid size={{ xs: 6 }}>
-          <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, display: 'block', mb: 0.35 }}>
+          <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 600, display: 'block', mb: 0.35 }}>
             Validade
           </Typography>
-          <Typography sx={{ color: '#e2e8f0', fontWeight: 600 }}>{item.validade}</Typography>
+          <Typography sx={{ color: cores.textPrimary, fontWeight: 600 }}>{item.validade}</Typography>
         </Grid>
         <Grid size={{ xs: 6 }}>
-          <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, display: 'block', mb: 0.35 }}>
+          <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 600, display: 'block', mb: 0.35 }}>
             Última mov.
           </Typography>
-          <Typography sx={{ color: '#e2e8f0', fontWeight: 600 }}>{item.ultimaMovimentacao}</Typography>
+          <Typography sx={{ color: cores.textPrimary, fontWeight: 600 }}>{item.ultimaMovimentacao}</Typography>
         </Grid>
       </Grid>
 
@@ -257,8 +254,8 @@ function PainelPreviewItem({
           sx={{
             textTransform: 'none',
             fontWeight: 700,
-            backgroundColor: '#2563eb',
-            '&:hover': { backgroundColor: '#1d4ed8' },
+            backgroundColor: cores.accent,
+            '&:hover': { backgroundColor: cores.accentHover },
           }}
         >
           Ver detalhes
@@ -270,15 +267,15 @@ function PainelPreviewItem({
           sx={{
             textTransform: 'none',
             fontWeight: 700,
-            borderColor: 'rgba(148,163,184,0.45)',
-            color: '#e2e8f0',
-            '&:hover': { borderColor: '#60a5fa', bgcolor: 'rgba(59,130,246,0.08)' },
+            borderColor: cores.borderForte,
+            color: cores.textPrimary,
+            '&:hover': { borderColor: cores.focus, bgcolor: cores.hoverSurface },
           }}
         >
           Registrar retirada
         </Button>
       </Box>
-      <Typography variant="caption" sx={{ color: 'rgba(148, 163, 184, 0.85)', display: 'block' }}>
+      <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block' }}>
         A retirada é feita por lote na ficha do item.
       </Typography>
     </Stack>
@@ -286,6 +283,7 @@ function PainelPreviewItem({
 }
 
 function EmptyPreview() {
+  const { cores } = useTemaApp();
   return (
     <Box
       sx={{
@@ -301,10 +299,10 @@ function EmptyPreview() {
         textAlign: 'center',
       }}
     >
-      <Typography variant="h6" sx={{ color: '#e2e8f0', fontWeight: 700 }}>
+      <Typography variant="h6" sx={{ color: cores.textPrimary, fontWeight: 700 }}>
         Nenhum item selecionado
       </Typography>
-      <Typography variant="body2" sx={{ color: '#94a3b8', maxWidth: 360 }}>
+      <Typography variant="body2" sx={{ color: cores.textMuted, maxWidth: 360 }}>
         Selecione um item à esquerda para visualizar detalhes e ações rápidas.
       </Typography>
     </Box>
@@ -312,6 +310,8 @@ function EmptyPreview() {
 }
 
 export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
+  const { cores } = useTemaApp();
+  const sxCampoFiltro = estilosCampoFiltro(cores);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const ehMobilePaginacao = useMediaQuery(theme.breakpoints.down('sm'));
@@ -415,9 +415,9 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
           onChange={(_, value: CategoriaBusca) => setSelectedTab(value)}
           variant="fullWidth"
           sx={{
-            '& .MuiTabs-indicator': { backgroundColor: '#3b82f6', height: 3 },
-            '& .MuiTab-root': { color: '#94a3b8', textTransform: 'none', fontWeight: 600 },
-            '& .Mui-selected': { color: '#e2e8f0' },
+            '& .MuiTabs-indicator': { backgroundColor: cores.accent, height: 3 },
+            '& .MuiTab-root': { color: cores.textMuted, textTransform: 'none', fontWeight: 600 },
+            '& .Mui-selected': { color: cores.textPrimary },
           }}
         >
           {categorias.map((categoria) => (
@@ -430,20 +430,10 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           placeholder={categoriaAtual.placeholder}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              borderRadius: 2,
-              backgroundColor: 'rgba(2, 6, 23, 0.65)',
-              color: '#e2e8f0',
-              '& fieldset': { borderColor: 'rgba(59,130,246,0.35)' },
-              '&:hover fieldset': { borderColor: '#3b82f6' },
-              '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
-            },
-            '& .MuiInputBase-input::placeholder': { color: '#94a3b8', opacity: 1 },
-          }}
+          sx={sxCampoFiltro}
           slotProps={{
             input: {
-              startAdornment: <SearchRoundedIcon sx={{ mr: 1, color: '#94a3b8' }} />,
+              startAdornment: <SearchRoundedIcon sx={{ mr: 1, color: cores.textMuted }} />,
             },
           }}
         />
@@ -453,18 +443,18 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
           disableGutters
           elevation={0}
           sx={{
-            bgcolor: 'rgba(2, 6, 23, 0.45)',
-            border: '1px solid rgba(148, 163, 184, 0.2)',
+            bgcolor: cores.bgInput,
+            border: `1px solid ${cores.border}`,
             borderRadius: 2,
             '&:before': { display: 'none' },
           }}
         >
           <AccordionSummary
-            expandIcon={<ExpandMoreIcon sx={{ color: '#94a3b8' }} />}
+            expandIcon={<ExpandMoreIcon sx={{ color: cores.textMuted }} />}
             sx={{ minHeight: 48, '& .MuiAccordionSummary-content': { my: 1 } }}
           >
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-              <Typography sx={{ fontWeight: 600, color: '#e2e8f0' }}>Filtros avançados</Typography>
+              <Typography sx={{ fontWeight: 600, color: cores.textPrimary }}>Filtros avançados</Typography>
               {temFiltroAvancadoAtivo ? (
                 <Chip label="Ativos" size="small" color="primary" sx={{ height: 22, fontWeight: 700 }} />
               ) : null}
@@ -481,7 +471,7 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
                   value={filtrosAvancados.qtdMin}
                   onChange={(e) => setFiltrosAvancados((p) => ({ ...p, qtdMin: e.target.value }))}
                   slotProps={{ htmlInput: { min: 0 } }}
-                  sx={sxCampoFiltroAvancado}
+                  sx={sxCampoFiltro}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -493,7 +483,7 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
                   value={filtrosAvancados.qtdMax}
                   onChange={(e) => setFiltrosAvancados((p) => ({ ...p, qtdMax: e.target.value }))}
                   slotProps={{ htmlInput: { min: 0 } }}
-                  sx={sxCampoFiltroAvancado}
+                  sx={sxCampoFiltro}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -505,7 +495,7 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
                   value={filtrosAvancados.validadeInicio}
                   onChange={(e) => setFiltrosAvancados((p) => ({ ...p, validadeInicio: e.target.value }))}
                   slotProps={{ htmlInput: { lang: 'pt-BR' }, inputLabel: { shrink: true } }}
-                  sx={sxCampoFiltroAvancado}
+                  sx={sxCampoFiltro}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -517,7 +507,7 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
                   value={filtrosAvancados.validadeFim}
                   onChange={(e) => setFiltrosAvancados((p) => ({ ...p, validadeFim: e.target.value }))}
                   slotProps={{ htmlInput: { lang: 'pt-BR' }, inputLabel: { shrink: true } }}
-                  sx={sxCampoFiltroAvancado}
+                  sx={sxCampoFiltro}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -529,7 +519,7 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
                   value={filtrosAvancados.movInicio}
                   onChange={(e) => setFiltrosAvancados((p) => ({ ...p, movInicio: e.target.value }))}
                   slotProps={{ htmlInput: { lang: 'pt-BR' }, inputLabel: { shrink: true } }}
-                  sx={sxCampoFiltroAvancado}
+                  sx={sxCampoFiltro}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -541,11 +531,11 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
                   value={filtrosAvancados.movFim}
                   onChange={(e) => setFiltrosAvancados((p) => ({ ...p, movFim: e.target.value }))}
                   slotProps={{ htmlInput: { lang: 'pt-BR' }, inputLabel: { shrink: true } }}
-                  sx={sxCampoFiltroAvancado}
+                  sx={sxCampoFiltro}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                <FormControl fullWidth size="small" sx={sxCampoFiltroAvancado}>
+                <FormControl fullWidth size="small" sx={sxCampoFiltro}>
                   <InputLabel id="busca-cat-status-label" shrink>
                     Status
                   </InputLabel>
@@ -560,7 +550,7 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
                         status: e.target.value as FiltrosAvancadosBusca['status'],
                       }))
                     }
-                    sx={{ borderRadius: 2, color: '#e2e8f0', '& .MuiSvgIcon-root': { color: '#94a3b8' } }}
+                    sx={{ borderRadius: 2, color: cores.textPrimary, '& .MuiSvgIcon-root': { color: cores.textMuted } }}
                   >
                     <MenuItem value="">Todos</MenuItem>
                     <MenuItem value="ok">OK</MenuItem>
@@ -575,7 +565,7 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
               size="small"
               variant="text"
               onClick={() => setFiltrosAvancados(FILTROS_AVANCADOS_INICIAL)}
-              sx={{ mt: 2, color: '#93c5fd', textTransform: 'none', fontWeight: 700 }}
+              sx={{ mt: 2, color: cores.focus, textTransform: 'none', fontWeight: 700 }}
             >
               Limpar filtros
             </Button>
@@ -586,7 +576,7 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
 
         <Stack spacing={1}>
           {mostrarVazio ? (
-            <Typography variant="body2" sx={{ color: '#94a3b8', py: 1 }}>
+            <Typography variant="body2" sx={{ color: cores.textMuted, py: 1 }}>
               Nenhum item encontrado.
             </Typography>
           ) : (
@@ -607,21 +597,21 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
                   sx={{
                     p: 2,
                     borderRadius: 2,
-                    border: selecionado ? '1px solid #3b82f6' : '1px solid rgba(71, 85, 105, 0.45)',
-                    backgroundColor: selecionado ? '#1e293b' : 'rgba(2, 6, 23, 0.55)',
+                    border: selecionado ? `1px solid ${cores.accent}` : `1px solid ${cores.alertItemBorder}`,
+                    backgroundColor: selecionado ? cores.hoverSurfaceStrong : cores.alertItemBg,
                     cursor: 'pointer',
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
                     '&:hover': {
                       transform: 'translateY(-2px)',
-                      backgroundColor: selecionado ? '#1e293b' : 'rgba(255,255,255,0.03)',
-                      borderColor: selecionado ? '#3b82f6' : 'rgba(59,130,246,0.6)',
-                      boxShadow: '0 10px 20px rgba(0,0,0,0.28)',
+                      backgroundColor: selecionado ? cores.hoverSurfaceStrong : cores.alertItemHoverBg,
+                      borderColor: selecionado ? cores.accent : cores.focus,
+                      boxShadow: cores.sombraCard,
                     },
                   }}
                 >
                   <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ color: '#e2e8f0', fontWeight: 600 }}>{item.nome}</Typography>
-                    <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                    <Typography sx={{ color: cores.textPrimary, fontWeight: 600 }}>{item.nome}</Typography>
+                    <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 600 }}>
                       {categoriaLabel(item.origem)}
                     </Typography>
                   </Stack>
@@ -641,7 +631,7 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
               gap: 1,
             }}
           >
-            <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+            <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 600 }}>
               {resultadosFiltrados.length} {resultadosFiltrados.length === 1 ? 'item' : 'itens'} · página {paginaSegura} de{' '}
               {totalPaginas}
             </Typography>
@@ -652,8 +642,8 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
               size={ehMobilePaginacao ? 'small' : 'medium'}
               color="primary"
               sx={{
-                '& .MuiPaginationItem-root': { color: '#e2e8f0' },
-                '& .Mui-selected': { bgcolor: 'rgba(59, 130, 246, 0.35)' },
+                '& .MuiPaginationItem-root': { color: cores.textPrimary },
+                '& .Mui-selected': { bgcolor: `${cores.accent}59` },
               }}
             />
           </Box>
@@ -674,16 +664,16 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
       sx={{
         p: { xs: 2, sm: 3 },
         borderRadius: 3,
-        backgroundColor: '#0f172a',
-        border: '1px solid rgba(255,255,255,0.08)',
+        backgroundColor: cores.bgCard,
+        border: `1px solid ${cores.border}`,
       }}
     >
       <Stack spacing={2}>
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#e2e8f0', textAlign: 'center', mb: 0.5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary, textAlign: 'center', mb: 0.5 }}>
             Busca por categoria
           </Typography>
-          <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', textAlign: 'center' }}>
+          <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block', textAlign: 'center' }}>
             Selecione a categoria e pesquise pelo nome.
           </Typography>
         </Box>
@@ -699,8 +689,8 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
                   sx: {
                     width: '100%',
                     maxWidth: 420,
-                    backgroundColor: '#0f172a',
-                    borderLeft: '1px solid rgba(148,163,184,0.2)',
+                    backgroundColor: cores.bgCard,
+                    borderLeft: `1px solid ${cores.border}`,
                     p: 3,
                   },
                 },
@@ -728,8 +718,8 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
                   minHeight: 360,
                   p: 3,
                   borderRadius: 3,
-                  backgroundColor: '#0f172a',
-                  border: '1px solid rgba(148,163,184,0.16)',
+                  backgroundColor: cores.bgCard,
+                  border: `1px solid ${cores.border}`,
                 }}
               >
                 {itemSelecionado ? (

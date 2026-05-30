@@ -3,20 +3,20 @@ import {
   Box,
   Button,
   Card,
-  CssBaseline,
   IconButton,
   Stack,
   Tab,
   Tabs,
-  ThemeProvider,
   Typography,
-  createTheme,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
+import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { mapearPapelUsuario } from '../../../shared/types/papelUsuario';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
@@ -26,26 +26,6 @@ import { PainelFiltrosEstoque } from '../components/PainelFiltrosEstoque';
 import { SidebarEstoque } from '../components/SidebarEstoque';
 import { useListaEstoqueProcessada, type CampoOrdenacaoEstoque } from '../hooks/useListaEstoqueProcessada';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
-
-const temaDashboard = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#020617',
-      paper: '#0f172a',
-    },
-    text: {
-      primary: '#e2e8f0',
-      secondary: 'rgba(203, 213, 225, 0.85)',
-    },
-  },
-  shape: {
-    borderRadius: 12,
-  },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-  },
-});
 
 const CHAVE_ABA_ESTOQUE = 'canipapp_estoque_aba_tipo';
 
@@ -88,6 +68,8 @@ export function PaginaListagemEstoque() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const ehMobileMenu = useMediaQuery(theme.breakpoints.down('md'));
+  const { cores } = useTemaApp();
+  const estilos = useEstilosListagem();
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -291,65 +273,66 @@ export function PaginaListagemEstoque() {
   }
 
   return (
-    <ThemeProvider theme={temaDashboard}>
-      <CssBaseline />
-      <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: '#020617' }}>
-        <SidebarEstoque
-          abertoMobile={drawerAbertoMobile}
-          aoFecharMobile={() => setDrawerAbertoMobile(false)}
-          ehMobile={ehMobileMenu}
-          papelUsuario={papelUsuario}
-        />
-        <Box
-          sx={{
-            flex: 1,
-            px: { xs: 2, sm: 3, md: 4 },
-            pt: 2,
-            pb: 4,
-            borderLeft: { md: '1px solid rgba(148, 163, 184, 0.12)' },
-            backgroundColor: '#040b1f',
-          }}
-        >
-          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            {ehMobileMenu ? (
-              <IconButton color="inherit" onClick={() => setDrawerAbertoMobile(true)} sx={{ color: '#e2e8f0' }}>
-                <MenuOutlinedIcon />
-              </IconButton>
-            ) : (
-              <Box />
-            )}
+    <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: cores.bgShell }}>
+      <SidebarEstoque
+        abertoMobile={drawerAbertoMobile}
+        aoFecharMobile={() => setDrawerAbertoMobile(false)}
+        ehMobile={ehMobileMenu}
+        papelUsuario={papelUsuario}
+      />
+      <Box
+        sx={{
+          flex: 1,
+          px: { xs: 2, sm: 3, md: 4 },
+          pt: 2,
+          pb: 4,
+          borderLeft: { md: `1px solid ${cores.sidebarBorder}` },
+          backgroundColor: cores.bgConteudo,
+        }}
+      >
+        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2, gap: 1 }}>
+          {ehMobileMenu ? (
+            <IconButton color="inherit" onClick={() => setDrawerAbertoMobile(true)} sx={{ color: cores.textPrimary }}>
+              <MenuOutlinedIcon />
+            </IconButton>
+          ) : (
+            <Box />
+          )}
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+            <BotaoAlternarTema variante="icone" />
             <Button
               variant="outlined"
-              sx={{ borderColor: 'rgba(148,163,184,0.35)', color: '#e2e8f0' }}
+              sx={{ borderColor: cores.borderForte, color: cores.textPrimary }}
               onClick={() => navigate('/dashboard')}
             >
               Voltar ao inicio
             </Button>
           </Stack>
+        </Stack>
 
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#e2e8f0' }}>
-              Gestão de estoque
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(203, 213, 225, 0.85)' }}>
-              Filtros, ordenação e paginação — {usuario?.primeiroNome ?? 'equipe'}
-            </Typography>
-          </Box>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: cores.textPrimary }}>
+            Gestão de estoque
+          </Typography>
+          <Typography variant="body2" sx={{ color: cores.textSecondary }}>
+            Filtros, ordenação e paginação — {usuario?.primeiroNome ?? 'equipe'}
+          </Typography>
+        </Box>
 
-          <Tabs
-            value={abaTipo}
-            onChange={aoMudarAba}
-            textColor="inherit"
-            indicatorColor="primary"
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              mb: 3,
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              '& .MuiTab-root': { color: 'rgba(226,232,240,0.72)' },
-              '& .Mui-selected': { color: '#e2e8f0' },
-            }}
-          >
+        <Tabs
+          value={abaTipo}
+          onChange={aoMudarAba}
+          textColor="inherit"
+          indicatorColor="primary"
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            mb: 3,
+            borderBottom: `1px solid ${cores.border}`,
+            '& .MuiTab-root': { color: cores.textMuted },
+            '& .Mui-selected': { color: cores.textPrimary },
+          }}
+        >
             <Tab label={`Produtos (${contagemPorOrigem.produtos})`} sx={{ textTransform: 'none', fontWeight: 600 }} />
             <Tab
               label={`Medicamentos (${contagemPorOrigem.medicamentos})`}
@@ -359,15 +342,8 @@ export function PaginaListagemEstoque() {
           </Tabs>
 
           <Stack spacing={3}>
-            <Card
-              sx={{
-                p: { xs: 2, sm: 3 },
-                borderRadius: 3,
-                bgcolor: '#0f172a',
-                border: '1px solid rgba(148, 163, 184, 0.12)',
-              }}
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#e2e8f0', mb: 2 }}>
+            <Card sx={{ ...estilos.cardTabela, p: { xs: 2, sm: 3 } }}>
+              <Typography variant="subtitle1" sx={{ ...estilos.titulo, mb: 2 }}>
                 Filtros
               </Typography>
               <PainelFiltrosEstoque
@@ -417,8 +393,7 @@ export function PaginaListagemEstoque() {
               onRowClick={navegarParaDetalhe}
             />
           </Stack>
-        </Box>
       </Box>
-    </ThemeProvider>
+    </Box>
   );
 }

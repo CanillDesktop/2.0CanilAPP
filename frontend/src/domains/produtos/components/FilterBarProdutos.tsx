@@ -12,9 +12,10 @@ import {
   Select,
   type SelectChangeEvent,
   TextField,
-  useTheme,
 } from '@mui/material';
 import { motion } from 'framer-motion';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { estilosCampoFiltro, estilosLabelFiltro } from '../../../shared/theme/estilosCampos';
 import { OPCOES_CATEGORIA_PRODUTO_FILTRO } from '../constants/opcoesCategoriaProduto';
 import type { ProdutoStatusEstoqueFiltro } from '../types/tiposProdutos';
 
@@ -39,49 +40,9 @@ export function FilterBarProdutos({
   onStatusChange,
   onNovoProduto,
 }: FilterBarProdutosProps) {
-  const theme = useTheme();
-
-  const inputSx = {
-    '& .MuiOutlinedInput-root': {
-      borderRadius: 2,
-      backgroundColor: '#020617',
-      transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-      '& .MuiOutlinedInput-notchedOutline': {
-        borderColor: 'rgba(148,163,184,0.5)',
-      },
-      '&:hover .MuiOutlinedInput-notchedOutline': {
-        borderColor: 'rgba(125,211,252,0.75)',
-      },
-      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-        borderColor: '#38bdf8',
-        boxShadow: `0 0 0 2px rgba(56,189,248,0.22)`,
-      },
-    },
-    '& .MuiInputBase-input': {
-      color: theme.palette.common.white,
-    },
-    '& .MuiInputLabel-root': {
-      color: '#cbd5e1',
-    },
-    '& .MuiInputLabel-root.Mui-focused': {
-      color: '#7dd3fc',
-    },
-    '& .MuiSelect-icon': {
-      color: '#cbd5e1',
-    },
-    '& .MuiSelect-select': {
-      color: '#f8fafc',
-    },
-  };
-
-  const labelSx = {
-    color: '#cbd5e1',
-    backgroundColor: '#0f172a',
-    px: 0.5,
-    '&.Mui-focused': {
-      color: '#7dd3fc',
-    },
-  };
+  const { cores } = useTemaApp();
+  const inputSx = estilosCampoFiltro(cores);
+  const labelSx = estilosLabelFiltro(cores);
 
   function handleStatusChange(e: SelectChangeEvent) {
     onStatusChange(e.target.value as ProdutoStatusEstoqueFiltro);
@@ -92,8 +53,8 @@ export function FilterBarProdutos({
       sx={{
         p: 2,
         borderRadius: 3,
-        backgroundColor: '#0f172a',
-        border: '1px solid rgba(255,255,255,0.05)',
+        backgroundColor: cores.bgCard,
+        border: `1px solid ${cores.border}`,
       }}
     >
       <Grid container spacing={2}>
@@ -157,10 +118,10 @@ export function FilterBarProdutos({
                 borderRadius: 2,
                 textTransform: 'none',
                 width: { xs: '100%', md: 'auto' },
-                backgroundColor: '#2563eb',
+                backgroundColor: cores.accent,
                 color: '#f8fafc',
                 '&:hover': {
-                  backgroundColor: '#1d4ed8',
+                  backgroundColor: cores.accentHover,
                 },
               }}
             >

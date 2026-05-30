@@ -7,14 +7,11 @@ import {
   Box,
   Button,
   Chip,
-  CssBaseline,
   Grid,
   IconButton,
   Stack,
   TextField,
-  ThemeProvider,
   Typography,
-  createTheme,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -22,6 +19,8 @@ import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
 import { mapearPapelUsuario } from '../../../shared/types/papelUsuario';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
@@ -31,26 +30,6 @@ import { BuscaCategoriaTabs } from '../components/BuscaCategoriaTabs';
 import { ResumoItensCadastrados, type ContagemPorClasse } from '../components/ResumoItensCadastrados';
 import { SidebarEstoque } from '../components/SidebarEstoque';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
-
-const temaDashboard = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#020617',
-      paper: '#0f172a',
-    },
-    text: {
-      primary: '#e2e8f0',
-      secondary: 'rgba(203, 213, 225, 0.85)',
-    },
-  },
-  shape: {
-    borderRadius: 12,
-  },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-  },
-});
 
 const MotionBox = motion(Box);
 const SPACING = {
@@ -85,6 +64,7 @@ const contagemInicial: ContagemPorClasse = { produtos: 0, medicamentos: 0, insum
 export function DashboardPage() {
   const navigate = useNavigate();
   const { usuario, sair } = useAutenticacao();
+  const { cores } = useTemaApp();
   const papelUsuario = mapearPapelUsuario(usuario?.permissao);
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
@@ -303,9 +283,7 @@ export function DashboardPage() {
   }, [paginaSeguraVencimento, pageVencimento]);
 
   return (
-    <ThemeProvider theme={temaDashboard}>
-      <CssBaseline />
-      <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: '#020617' }}>
+      <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: cores.bgShell }}>
         <SidebarEstoque
           abertoMobile={drawerAbertoMobile}
           aoFecharMobile={() => setDrawerAbertoMobile(false)}
@@ -318,36 +296,39 @@ export function DashboardPage() {
             px: { xs: SPACING.sm, sm: SPACING.md, md: SPACING.lg },
             pt: SPACING.sm,
             pb: SPACING.lg,
-            borderLeft: { md: '1px solid rgba(148, 163, 184, 0.12)' },
-            backgroundColor: '#040b1f',
+            borderLeft: { md: `1px solid ${cores.sidebarBorder}` },
+            backgroundColor: cores.bgConteudo,
           }}
         >
-          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: SPACING.md }}>
+          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: SPACING.md, gap: 1 }}>
             {ehMobileMenu ? (
-              <IconButton color="inherit" onClick={() => setDrawerAbertoMobile(true)} sx={{ color: '#e2e8f0' }}>
+              <IconButton color="inherit" onClick={() => setDrawerAbertoMobile(true)} sx={{ color: cores.textPrimary }}>
                 <MenuOutlinedIcon />
               </IconButton>
             ) : (
               <Box />
             )}
-            <Button
-              variant="outlined"
-              color="inherit"
-              sx={{ borderColor: 'rgba(148,163,184,0.35)', color: '#e2e8f0' }}
-              onClick={() => {
-                sair();
-                navigate('/login');
-              }}
-            >
-              Sair
-            </Button>
+            <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+              <BotaoAlternarTema variante="icone" />
+              <Button
+                variant="outlined"
+                color="inherit"
+                sx={{ borderColor: cores.borderForte, color: cores.textPrimary }}
+                onClick={() => {
+                  sair();
+                  navigate('/login');
+                }}
+              >
+                Sair
+              </Button>
+            </Stack>
           </Stack>
 
           <Box sx={{ mb: SPACING.md }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#e2e8f0' }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary }}>
               Ola, {usuario?.primeiroNome ?? 'equipe'}
             </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(203, 213, 225, 0.85)' }}>
+            <Typography variant="body2" sx={{ color: cores.textSecondary }}>
               {ehMobileLayoutConteudo ? 'Operação de estoque' : 'Busca guiada e visão rápida do estoque'}
             </Typography>
           </Box>
@@ -360,7 +341,7 @@ export function DashboardPage() {
           >
             <Stack spacing={SPACING.lg} sx={{ p: 0 }}>
               <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: '#e2e8f0', mb: SPACING.sm }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary, mb: SPACING.sm }}>
                   Acoes principais
                 </Typography>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={SPACING.sm}>
@@ -409,7 +390,7 @@ export function DashboardPage() {
               {!erroCarregamento && (
                 <Stack spacing={SPACING.md}>
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#e2e8f0', mb: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: cores.textPrimary, mb: 1 }}>
                       Alertas do estoque
                     </Typography>
                     <Box
@@ -434,13 +415,13 @@ export function DashboardPage() {
                           maxWidth: { sm: 360 },
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
-                            color: '#e2e8f0',
-                            backgroundColor: 'rgba(2, 6, 23, 0.45)',
-                            '& fieldset': { borderColor: 'rgba(148, 163, 184, 0.35)' },
-                            '&:hover fieldset': { borderColor: 'rgba(148, 163, 184, 0.55)' },
-                            '&.Mui-focused fieldset': { borderColor: 'rgba(96, 165, 250, 0.8)' },
+                            color: cores.textPrimary,
+                            backgroundColor: cores.bgInput,
+                            '& fieldset': { borderColor: cores.borderForte },
+                            '&:hover fieldset': { borderColor: cores.focus },
+                            '&.Mui-focused fieldset': { borderColor: cores.focus },
                           },
-                          '& .MuiInputBase-input::placeholder': { color: 'rgba(148, 163, 184, 0.85)', opacity: 1 },
+                          '& .MuiInputBase-input::placeholder': { color: cores.textMuted, opacity: 1 },
                         }}
                       />
                       <Box
@@ -464,16 +445,16 @@ export function DashboardPage() {
                             sx={{
                               fontWeight: 600,
                               ...(categoria !== valor && {
-                                color: '#e2e8f0',
-                                borderColor: 'rgba(148, 163, 184, 0.4)',
-                                bgcolor: 'rgba(15, 23, 42, 0.5)',
+                                color: cores.textPrimary,
+                                borderColor: cores.borderForte,
+                                bgcolor: cores.chipBg,
                               }),
                             }}
                           />
                         ))}
                       </Box>
                     </Box>
-                    <Typography variant="caption" sx={{ color: 'rgba(148, 163, 184, 0.9)', display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block' }}>
                       {listaFiltradaMinimo.length} abaixo do mínimo · {listaFiltradaVencimento.length} próx. do
                       vencimento
                     </Typography>
@@ -518,6 +499,5 @@ export function DashboardPage() {
           </MotionBox>
         </Box>
       </Box>
-    </ThemeProvider>
   );
 }

@@ -34,7 +34,10 @@ import {
 import { alpha, useTheme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
+import { estilosCampoFiltro } from '../../../shared/theme/estilosCampos';
+import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { HistoricoRetiradasDetalheDrawer } from '../components/historicoRetiradas/HistoricoRetiradasDetalheDrawer';
 import { HistoricoRetiradasStatusChip } from '../components/historicoRetiradas/HistoricoRetiradasStatusChip';
 import { exportarRetiradasPaginaComoCsv } from '../components/historicoRetiradas/historicoRetiradasExport';
@@ -53,23 +56,6 @@ import {
 } from '../../../shared/utils/fusoBrasilia';
 import { HistoricoRetiradasCelulaData } from '../utils/historicoRetiradasDataFormat';
 
-const sxCampoFiltro = {
-  '& .MuiOutlinedInput-root': {
-    borderRadius: 2,
-    bgcolor: 'rgba(2, 6, 23, 0.55)',
-    color: '#e2e8f0',
-    '& fieldset': { borderColor: 'rgba(148,163,184,0.25)' },
-  },
-  '& .MuiInputLabel-root': { color: '#94a3b8' },
-  '& .MuiInputBase-input': { color: '#e2e8f0' },
-  '& .MuiFormHelperText-root': { color: 'rgba(148,163,184,0.85)' },
-};
-
-const sxPaperFiltro = {
-  bgcolor: '#0f172a',
-  border: '1px solid rgba(148, 163, 184, 0.12)',
-};
-
 /** Cartão KPI compacto mantendo valores do backend intactos */
 function KpiResumoAudit({
   titulo,
@@ -80,6 +66,7 @@ function KpiResumoAudit({
   valor: ReactNode;
   destaque?: 'primary';
 }) {
+  const { cores } = useTemaApp();
   return (
     <Paper
       variant="outlined"
@@ -88,14 +75,14 @@ function KpiResumoAudit({
         minWidth: 160,
         p: 1.6,
         borderRadius: 2,
-        ...sxPaperFiltro,
-        borderColor: destaque === 'primary' ? 'primary.main' : 'rgba(148, 163, 184, 0.12)',
+        bgcolor: cores.metricCardBg,
+        border: `1px solid ${destaque === 'primary' ? cores.accent : cores.metricCardBorder}`,
       }}
     >
-      <Typography variant="caption" sx={{ fontWeight: 650, letterSpacing: 0.05, color: 'rgba(203, 213, 225, 0.85)' }}>
+      <Typography variant="caption" sx={{ fontWeight: 650, letterSpacing: 0.05, color: cores.textSecondary }}>
         {titulo}
       </Typography>
-      <Typography variant="h6" sx={{ mt: 0.65, fontWeight: 750, color: '#e2e8f0' }}>
+      <Typography variant="h6" sx={{ mt: 0.65, fontWeight: 750, color: cores.textPrimary }}>
         {valor}
       </Typography>
     </Paper>
@@ -104,6 +91,13 @@ function KpiResumoAudit({
 
 export function PaginaHistoricoRetiradasEstoque() {
   const tema = useTheme();
+  const { cores } = useTemaApp();
+  const estilos = useEstilosListagem();
+  const sxCampoFiltro = estilosCampoFiltro(cores);
+  const sxPaperFiltro = {
+    bgcolor: cores.bgCard,
+    border: `1px solid ${cores.border}`,
+  };
   const { estado, carregar } = useHistoricoRetiradasPaginado();
   const [usuariosResumo, setUsuariosResumo] = useState<UsuarioResumoFiltroDto[]>([]);
 
@@ -205,7 +199,7 @@ export function PaginaHistoricoRetiradasEstoque() {
   const exibirEmpty = listaVazia;
   const exibirTabela = dados != null && !listaVazia;
 
-  const fundoSticky = alpha('#020617', 0.94);
+  const fundoSticky = alpha(cores.bgShell, 0.94);
 
   const exportarRecorteCompleto = useCallback(
     async (formato: 'xlsx' | 'csv') => {
@@ -251,7 +245,7 @@ export function PaginaHistoricoRetiradasEstoque() {
           backdropFilter: 'blur(12px)',
           backgroundColor: fundoSticky,
           borderBottom: 1,
-          borderColor: 'divider',
+          borderColor: cores.border,
           mx: -0.75,
           px: 0.75,
           pt: 0.75,
@@ -298,7 +292,7 @@ export function PaginaHistoricoRetiradasEstoque() {
                   />
                 }
                 label={`Intervalo livre (${rotuloFusoBrasilia})`}
-                sx={{ color: '#e2e8f0', '& .MuiFormControlLabel-label': { color: '#e2e8f0' } }}
+                sx={{ color: cores.textPrimary, '& .MuiFormControlLabel-label': { color: cores.textPrimary } }}
               />
               {!usarIntervaloLivre && (
                 <ToggleButtonGroup
@@ -309,11 +303,12 @@ export function PaginaHistoricoRetiradasEstoque() {
                   sx={{
                     flexWrap: 'wrap',
                     '& .MuiToggleButton-root': {
-                      color: '#94a3b8',
-                      borderColor: 'rgba(148,163,184,0.25)',
+                      color: cores.textMuted,
+                      borderColor: cores.borderForte,
                       '&.Mui-selected': {
-                        color: '#e2e8f0',
-                        bgcolor: 'rgba(59,130,246,0.2)',
+                        color: cores.textPrimary,
+                        bgcolor: cores.hoverSurface,
+                        borderColor: cores.focus,
                       },
                     },
                   }}
@@ -326,7 +321,7 @@ export function PaginaHistoricoRetiradasEstoque() {
             </Stack>
 
             {faixaTituloHumano && (
-              <Typography variant="caption" sx={{ color: 'rgba(203, 213, 225, 0.85)' }}>
+              <Typography variant="caption" sx={{ color: cores.textSecondary }}>
                 Período amostrado nesta consulta ({rotuloFusoBrasilia}): <strong>{faixaTituloHumano}</strong>. Os
                 atalhos «Hoje» e «Últimos N dias» também seguem o calendário de Brasília.
               </Typography>
@@ -366,6 +361,9 @@ export function PaginaHistoricoRetiradasEstoque() {
                 renderInput={(params) => (
                   <TextField {...params} label="Quem retirou" size="small" sx={sxCampoFiltro} />
                 )}
+                slotProps={{
+                  paper: { sx: { bgcolor: cores.bgCard, border: `1px solid ${cores.border}` } },
+                }}
                 sx={{ flex: 1, minWidth: 200 }}
               />
               <Autocomplete
@@ -376,6 +374,9 @@ export function PaginaHistoricoRetiradasEstoque() {
                 renderInput={(params) => (
                   <TextField {...params} label="Destinatário (quem recebeu)" size="small" sx={sxCampoFiltro} />
                 )}
+                slotProps={{
+                  paper: { sx: { bgcolor: cores.bgCard, border: `1px solid ${cores.border}` } },
+                }}
                 sx={{ flex: 1, minWidth: 200 }}
               />
             </Stack>
@@ -387,12 +388,15 @@ export function PaginaHistoricoRetiradasEstoque() {
               value={termoBusca}
               onChange={(e) => setTermoBusca(e.target.value)}
               fullWidth
-              sx={sxCampoFiltro}
+              sx={{
+                ...sxCampoFiltro,
+                '& .MuiFormHelperText-root': { color: cores.textMuted },
+              }}
               slotProps={{
                 input: {
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ opacity: 0.65 }} />
+                      <SearchIcon sx={{ color: cores.textMuted, opacity: 0.85 }} />
                     </InputAdornment>
                   ),
                   endAdornment: estado.carregando ? (
@@ -413,7 +417,7 @@ export function PaginaHistoricoRetiradasEstoque() {
 
         {metricas && (
           <Stack spacing={2}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, px: 0.25, color: '#e2e8f0' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, px: 0.25, color: cores.textPrimary }}>
               Resumo (mesmos filtros da listagem abaixo)
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -460,6 +464,7 @@ export function PaginaHistoricoRetiradasEstoque() {
                         startIcon={<DownloadOutlinedIcon />}
                         disabled={listaVazia || exportando}
                         onClick={() => void exportarRecorteCompleto('csv')}
+                        sx={{ borderColor: cores.borderForte, color: cores.textPrimary }}
                       >
                         CSV (recorte completo)
                       </Button>
@@ -472,6 +477,7 @@ export function PaginaHistoricoRetiradasEstoque() {
                         variant="text"
                         disabled={itensPagina.length === 0 || exportando}
                         onClick={() => exportarRetiradasPaginaComoCsv(itensPagina)}
+                        sx={{ color: cores.focus }}
                       >
                         CSV (página atual)
                       </Button>
@@ -498,7 +504,7 @@ export function PaginaHistoricoRetiradasEstoque() {
       {aguardandoPrimeiraResposta && (
         <Paper sx={{ borderRadius: 2, p: 6, textAlign: 'center', ...sxPaperFiltro }}>
           <CircularProgress />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          <Typography variant="body2" sx={{ mt: 2, color: cores.textSecondary }}>
             Carregando retiradas do servidor…
           </Typography>
         </Paper>
@@ -512,14 +518,14 @@ export function PaginaHistoricoRetiradasEstoque() {
             py: 10,
             px: 2,
             ...sxPaperFiltro,
-            bgcolor: alpha(tema.palette.primary.main, 0.08),
+            bgcolor: cores.metricCardBg,
           }}
         >
-          <InboxOutlinedIcon sx={{ fontSize: 64, mb: 1.75, opacity: 0.5 }} />
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          <InboxOutlinedIcon sx={{ fontSize: 64, mb: 1.75, opacity: 0.5, color: cores.textMuted }} />
+          <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary }}>
             Nenhuma retirada encontrada para os filtros aplicados.
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          <Typography variant="body2" sx={{ mt: 1, color: cores.textSecondary }}>
             Amplie o intervalo ou ajuste filtros como destinatários e texto de busca.
           </Typography>
         </Paper>
@@ -539,7 +545,7 @@ export function PaginaHistoricoRetiradasEstoque() {
           <TableContainer component={Paper} sx={{ borderRadius: 2, ...sxPaperFiltro }}>
             <Table size="medium" stickyHeader>
               <TableHead>
-                <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: tema.palette.background.paper } }}>
+                <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: cores.bgCabecalhoTabela, color: cores.textMuted } }}>
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, width: 72 }}>
                     ID
                   </TableCell>
@@ -589,7 +595,9 @@ export function PaginaHistoricoRetiradasEstoque() {
                       transition: tema.transitions.create(['background-color', 'transform'], {
                         duration: tema.transitions.duration.shortest,
                       }),
-                      '&:hover': { bgcolor: alpha(tema.palette.primary.main, 0.065) },
+                      '&:hover': { bgcolor: cores.hoverSurface },
+                      '&.Mui-selected': { bgcolor: cores.hoverSurfaceStrong },
+                      '& .MuiTableCell-root': { color: cores.textPrimary, borderColor: cores.borderSuave },
                     }}
                   >
                     <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{r.id}</TableCell>
@@ -597,13 +605,13 @@ export function PaginaHistoricoRetiradasEstoque() {
                       <HistoricoRetiradasCelulaData iso={r.dataHoraRetirada} />
                     </TableCell>
                     <TableCell>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 750 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 750, color: cores.textPrimary }}>
                         {r.nomeProduto}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{ color: cores.textMuted }}>
                         Cód. {r.codigo}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', sm: 'none' } }}>
+                      <Typography variant="caption" sx={{ color: cores.textMuted, display: { xs: 'block', sm: 'none' } }}>
                         Ref. #{r.id}
                       </Typography>
                     </TableCell>
@@ -614,22 +622,22 @@ export function PaginaHistoricoRetiradasEstoque() {
                       <Typography sx={{ fontWeight: 820, fontSize: '1rem', letterSpacing: 0.2 }} component="span">
                         {r.quantidade}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', lg: 'none' } }}>
+                      <Typography variant="caption" sx={{ color: cores.textMuted, display: { xs: 'block', lg: 'none' } }}>
                         unid.
                       </Typography>
                     </TableCell>
                     <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                      <Typography variant="body2">{r.usuarioRetiranteExibicao}</Typography>
+                      <Typography variant="body2" sx={{ color: cores.textPrimary }}>{r.usuarioRetiranteExibicao}</Typography>
                       {r.idUsuarioRetirante != null && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block' }}>
                           ID usuário {r.idUsuarioRetirante}
                         </Typography>
                       )}
                     </TableCell>
                     <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                      <Typography variant="body2">{r.usuarioRecebedorExibicao}</Typography>
+                      <Typography variant="body2" sx={{ color: cores.textPrimary }}>{r.usuarioRecebedorExibicao}</Typography>
                       {r.idUsuarioRecebedor != null && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block' }}>
                           ID usuário {r.idUsuarioRecebedor}
                         </Typography>
                       )}
@@ -688,11 +696,17 @@ export function PaginaHistoricoRetiradasEstoque() {
             labelDisplayedRows={({ from, to, count }) =>
               `${from}-${to} de ${count !== -1 ? count : 'mais de ' + to}`
             }
-            sx={{ borderTopLeftRadius: 2, borderTopRightRadius: 2 }}
+            sx={{
+              ...estilos.paginacao,
+              borderTopLeftRadius: 2,
+              borderTopRightRadius: 2,
+              bgcolor: cores.bgCard,
+              border: `1px solid ${cores.border}`,
+            }}
           />
 
           {/* Em telas pequenas, use o drawer para todas as informações */}
-          <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', lg: 'none' }, mt: 1 }}>
+          <Typography variant="caption" sx={{ color: cores.textMuted, display: { xs: 'block', lg: 'none' }, mt: 1 }}>
             Algumas colunas ficam apenas em telas maiores para manter margem útil ao operador. Toque uma linha para ver
             tudo no painel de detalhes.
           </Typography>

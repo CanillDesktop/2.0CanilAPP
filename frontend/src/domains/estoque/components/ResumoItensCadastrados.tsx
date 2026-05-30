@@ -2,8 +2,9 @@ import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
-import { Card, CardContent, Grid, Skeleton, Stack, Typography, alpha, useTheme } from '@mui/material';
+import { Card, CardContent, Grid, Skeleton, Stack, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 
 const MotionCard = motion(Card);
 
@@ -20,8 +21,7 @@ type Props = {
 };
 
 export function ResumoItensCadastrados({ carregando = false, totalItens, contagemPorOrigem }: Props) {
-  const theme = useTheme();
-  const corBase = theme.palette.primary.main;
+  const { cores } = useTemaApp();
   const metricas = [
     { id: 'total', label: 'Total', valor: totalItens, icone: <WarehouseOutlinedIcon /> },
     { id: 'produtos', label: 'Produtos', valor: contagemPorOrigem.produtos, icone: <Inventory2OutlinedIcon /> },
@@ -38,22 +38,22 @@ export function ResumoItensCadastrados({ carregando = false, totalItens, contage
             transition={{ type: 'spring', stiffness: 320, damping: 24 }}
             sx={{
               borderRadius: 3,
-              border: `1px solid ${alpha(corBase, 0.28)}`,
-              bgcolor: alpha(corBase, 0.08),
-              boxShadow: '0 8px 24px rgba(0,0,0,0.22)',
+              border: `1px solid ${cores.metricCardBorder}`,
+              bgcolor: cores.metricCardBg,
+              boxShadow: cores.sombraCard,
               height: '100%',
             }}
           >
             <CardContent sx={{ py: 2.25, px: 2.25 }}>
               <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <Stack spacing={1.25} sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: cores.textMuted }}>
                     {metrica.label}
                   </Typography>
                   {carregando ? (
                     <Skeleton variant="rounded" width={90} height={36} />
                   ) : (
-                    <Typography variant="h4" sx={{ fontWeight: 800, color: '#e2e8f0' }}>
+                    <Typography variant="h4" sx={{ fontWeight: 800, color: cores.textPrimary }}>
                       {metrica.valor}
                     </Typography>
                   )}
@@ -62,8 +62,9 @@ export function ResumoItensCadastrados({ carregando = false, totalItens, contage
                   sx={{
                     p: 1.2,
                     borderRadius: 2,
-                    color: corBase,
-                    bgcolor: alpha(corBase, 0.14),
+                    color: cores.accent,
+                    bgcolor: cores.chipBg,
+                    border: `1px solid ${cores.chipBorder}`,
                   }}
                 >
                   {metrica.icone}

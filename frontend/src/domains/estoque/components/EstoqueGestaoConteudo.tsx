@@ -16,22 +16,10 @@ import {
   Typography,
   Chip,
 } from '@mui/material';
+import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 import type { CampoOrdenacaoEstoque } from '../hooks/useListaEstoqueProcessada';
 import { corChipStatus, rotuloStatusEstoque } from '../utils/estoqueStatusUi';
-
-const sxCelula = {
-  color: '#e2e8f0',
-  borderColor: 'rgba(148, 163, 184, 0.12)',
-};
-
-const sxPaginacao = {
-  color: '#e2e8f0',
-  borderTop: '1px solid rgba(255,255,255,0.06)',
-  '& .MuiTablePagination-toolbar': { minHeight: 52, flexWrap: 'wrap', gap: 1 },
-  '& .MuiTablePagination-selectIcon, & .MuiTablePagination-actions': { color: '#94a3b8' },
-  '& .MuiInputBase-root': { color: '#e2e8f0' },
-};
 
 type Props = {
   isMobile: boolean;
@@ -61,29 +49,30 @@ function CabecalhoOrdenavel({
   orderDirection: 'asc' | 'desc';
   onSort: (field: CampoOrdenacaoEstoque) => void;
 }) {
+  const { cores, celulaCabecalho } = useEstilosListagem();
   const ativo = orderBy === field;
   return (
     <TableCell
       onClick={() => onSort(field)}
       sx={{
-        ...sxCelula,
-        fontWeight: 700,
+        ...celulaCabecalho,
+        borderColor: cores.borderSuave,
         cursor: 'pointer',
         userSelect: 'none',
         whiteSpace: 'nowrap',
-        '&:hover': { bgcolor: 'rgba(51, 65, 85, 0.35)' },
+        '&:hover': { bgcolor: cores.hoverSurface },
       }}
     >
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
         <span>{label}</span>
         {ativo ? (
           orderDirection === 'asc' ? (
-            <ArrowUpwardIcon sx={{ fontSize: 18, color: '#93c5fd' }} />
+            <ArrowUpwardIcon sx={{ fontSize: 18, color: cores.focus }} />
           ) : (
-            <ArrowDownwardIcon sx={{ fontSize: 18, color: '#93c5fd' }} />
+            <ArrowDownwardIcon sx={{ fontSize: 18, color: cores.focus }} />
           )
         ) : (
-          <UnfoldMoreIcon sx={{ fontSize: 18, color: 'rgba(148,163,184,0.5)' }} />
+          <UnfoldMoreIcon sx={{ fontSize: 18, color: cores.textMuted, opacity: 0.6 }} />
         )}
       </Stack>
     </TableCell>
@@ -103,10 +92,11 @@ function BarraPaginacao({
   onPageChange: (page: number) => void;
   onRowsPerPageChange: (rows: number) => void;
 }) {
+  const { paginacao } = useEstilosListagem();
   return (
     <TablePagination
       component="div"
-      sx={sxPaginacao}
+      sx={paginacao}
       rowsPerPageOptions={[5, 10, 25, 50]}
       count={totalFiltrado}
       rowsPerPage={rowsPerPage}
@@ -133,12 +123,14 @@ export function EstoqueGestaoConteudo({
   onSort,
   onRowClick,
 }: Props) {
+  const estilos = useEstilosListagem();
+  const { cores, celulaTexto, cardTabela, cardMobile, cabecalhoTabela, titulo, legenda } = estilos;
 
   if (carregando) {
     return (
       <Stack spacing={1.2}>
         {[1, 2, 3, 4, 5].map((i) => (
-          <Box key={i} sx={{ height: 56, borderRadius: 2, bgcolor: 'rgba(148,163,184,0.12)' }} />
+          <Box key={i} sx={{ height: 56, borderRadius: 2, bgcolor: cores.hoverSurface }} />
         ))}
       </Stack>
     );
@@ -146,12 +138,12 @@ export function EstoqueGestaoConteudo({
 
   if (totalFiltrado === 0) {
     return (
-      <Card sx={{ borderRadius: 3, bgcolor: '#0f172a', border: '1px solid rgba(148, 163, 184, 0.12)' }}>
+      <Card sx={cardTabela}>
         <CardContent>
-          <Typography variant="h6" sx={{ color: '#e2e8f0' }}>
+          <Typography variant="h6" sx={titulo}>
             Nenhum item encontrado
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(203, 213, 225, 0.85)' }}>
+          <Typography variant="body2" sx={legenda}>
             Ajuste os filtros ou a aba para ver outros registros.
           </Typography>
         </CardContent>
@@ -159,42 +151,32 @@ export function EstoqueGestaoConteudo({
     );
   }
 
+  const sxCelula = {
+    ...celulaTexto,
+    borderColor: cores.borderSuave,
+  };
+
   if (isMobile) {
     return (
       <Stack spacing={2}>
-        <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+        <Typography variant="caption" sx={{ color: cores.textMuted }}>
           {totalFiltrado} {totalFiltrado === 1 ? 'item' : 'itens'}
         </Typography>
         <Stack spacing={2}>
           {dadosPaginados.map((item) => (
-            <Card
-              key={`${item.origem}-${item.id}`}
-              onClick={() => onRowClick(item)}
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                bgcolor: '#0f172a',
-                border: '1px solid rgba(148, 163, 184, 0.12)',
-                cursor: 'pointer',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 10px 24px rgba(0,0,0,0.28)',
-                },
-              }}
-            >
+            <Card key={`${item.origem}-${item.id}`} onClick={() => onRowClick(item)} sx={{ ...cardMobile, p: 2, cursor: 'pointer' }}>
               <Stack spacing={1.25}>
-                <Typography sx={{ fontWeight: 700, color: '#f8fafc' }}>{item.nome}</Typography>
+                <Typography sx={{ fontWeight: 700, color: cores.textPrimary }}>{item.nome}</Typography>
                 <Stack direction="row" sx={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                  <Typography variant="body2" sx={{ color: '#cbd5e1' }}>
-                    Qtd: <strong style={{ color: '#e2e8f0' }}>{item.quantidade}</strong>
+                  <Typography variant="body2" sx={{ color: cores.textSecondary }}>
+                    Qtd: <strong style={{ color: cores.textPrimary }}>{item.quantidade}</strong>
                   </Typography>
                   <Chip label={rotuloStatusEstoque(item.status)} color={corChipStatus(item.status)} size="small" />
                 </Stack>
-                <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                <Typography variant="body2" sx={{ color: cores.textMuted }}>
                   Validade: {item.validade}
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#94a3b8' }}>
+                <Typography variant="body2" sx={{ color: cores.textMuted }}>
                   Última mov.: {item.ultimaMovimentacao}
                 </Typography>
               </Stack>
@@ -214,21 +196,14 @@ export function EstoqueGestaoConteudo({
 
   return (
     <Stack spacing={2}>
-      <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+      <Typography variant="caption" sx={{ color: cores.textMuted }}>
         {totalFiltrado} {totalFiltrado === 1 ? 'item' : 'itens'} (filtrados)
       </Typography>
-      <Card
-        sx={{
-          borderRadius: 3,
-          bgcolor: '#0f172a',
-          border: '1px solid rgba(148, 163, 184, 0.12)',
-          overflow: 'hidden',
-        }}
-      >
+      <Card sx={{ ...cardTabela, overflow: 'hidden' }}>
         <TableContainer sx={{ overflowX: 'auto' }}>
           <Table size="small" sx={{ minWidth: 720 }}>
             <TableHead>
-              <TableRow sx={{ bgcolor: 'rgba(15, 23, 42, 0.95)' }}>
+              <TableRow sx={cabecalhoTabela}>
                 <CabecalhoOrdenavel
                   label="Nome"
                   field="nome"
@@ -274,7 +249,7 @@ export function EstoqueGestaoConteudo({
                   onClick={() => onRowClick(linha)}
                   sx={{
                     cursor: 'pointer',
-                    '&:hover': { bgcolor: 'rgba(30, 41, 59, 0.65)' },
+                    '&:hover': { bgcolor: cores.hoverSurfaceStrong },
                   }}
                 >
                   <TableCell sx={sxCelula}>{linha.nome}</TableCell>

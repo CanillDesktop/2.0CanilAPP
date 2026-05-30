@@ -14,6 +14,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { estilosCampoFiltro } from '../../../shared/theme/estilosCampos';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 
 type Props = {
@@ -38,18 +40,8 @@ type Props = {
   filtrosAtivos: boolean;
 };
 
-const sxField = {
-  '& .MuiOutlinedInput-root': {
-    borderRadius: 2,
-    bgcolor: 'rgba(2, 6, 23, 0.55)',
-    color: '#e2e8f0',
-    '& fieldset': { borderColor: 'rgba(148,163,184,0.25)' },
-  },
-  '& .MuiInputLabel-root': { color: '#94a3b8' },
-  '& .MuiInputBase-input': { color: '#e2e8f0' },
-};
-
 type CamposFiltrosProps = {
+  sxField: ReturnType<typeof estilosCampoFiltro>;
   statusFiltro: '' | LinhaOperacionalEstoque['status'];
   onStatusChange: (value: '' | LinhaOperacionalEstoque['status']) => void;
   qtdMin: string;
@@ -67,6 +59,7 @@ type CamposFiltrosProps = {
 };
 
 function CamposFiltros({
+  sxField,
   statusFiltro,
   onStatusChange,
   qtdMin,
@@ -198,8 +191,12 @@ export function PainelFiltrosEstoque({
   onLimpar,
   filtrosAtivos,
 }: Props) {
+  const { cores } = useTemaApp();
+  const sxField = estilosCampoFiltro(cores);
+
   const camposAvancados = (
     <CamposFiltros
+      sxField={sxField}
       statusFiltro={statusFiltro}
       onStatusChange={onStatusChange}
       qtdMin={qtdMin}
@@ -228,14 +225,13 @@ export function PainelFiltrosEstoque({
         placeholder="Digite para filtrar..."
         sx={{
           ...sxField,
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 2,
-            bgcolor: 'rgba(2, 6, 23, 0.55)',
-            color: '#e2e8f0',
-            '& fieldset': {
-              borderColor: filtrosAtivos ? 'rgba(59,130,246,0.55)' : 'rgba(148,163,184,0.25)',
-            },
-          },
+          ...(filtrosAtivos
+            ? {
+                '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: cores.focus,
+                },
+              }
+            : {}),
         }}
       />
 
@@ -243,14 +239,14 @@ export function PainelFiltrosEstoque({
         <Accordion
           defaultExpanded={false}
           sx={{
-            bgcolor: '#0f172a',
-            border: '1px solid rgba(148,163,184,0.16)',
+            bgcolor: cores.bgCard,
+            border: `1px solid ${cores.border}`,
             borderRadius: '12px !important',
             '&:before': { display: 'none' },
           }}
         >
-          <AccordionSummary expandIcon={<FilterListIcon sx={{ color: '#94a3b8' }} />}>
-            <Typography sx={{ color: '#e2e8f0', fontWeight: 600 }}>Filtros avançados</Typography>
+          <AccordionSummary expandIcon={<FilterListIcon sx={{ color: cores.textMuted }} />}>
+            <Typography sx={{ color: cores.textPrimary, fontWeight: 600 }}>Filtros avançados</Typography>
           </AccordionSummary>
           <AccordionDetails>{camposAvancados}</AccordionDetails>
         </Accordion>
@@ -259,7 +255,7 @@ export function PainelFiltrosEstoque({
       )}
 
       <Box>
-        <Button variant="text" onClick={onLimpar} sx={{ color: '#93c5fd', fontWeight: 600 }}>
+        <Button variant="text" onClick={onLimpar} sx={{ color: cores.focus, fontWeight: 600 }}>
           Limpar filtros
         </Button>
       </Box>

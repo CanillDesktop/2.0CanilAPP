@@ -330,3 +330,26 @@ code {
 .secao-informativa {
   margin: 8px 0 12px;
 }
+
+/* Tema claro para telas legadas (detalhe, cadastro simples) */
+html[data-theme='light'] {
+  --text: #475569;
+  --text-h: #0f172a;
+  --bg: #f8fbff;
+  --border: rgba(148, 163, 184, 0.35);
+  --code-bg: #eef5ff;
+  --accent: #2563eb;
+  --accent-bg: rgba(37, 99, 235, 0.1);
+  --accent-border: rgba(37, 99, 235, 0.45);
+  --shadow: 0 18px 48px rgba(37, 99, 235, 0.12);
+}
+
+html[data-theme='light'] .cartao,
+html[data-theme='light'] .pagina-centrada {
+  background: #ffffff;
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+html[data-theme='light'] .tabela-dados thead {
+  background: #e8f2ff;
+}
