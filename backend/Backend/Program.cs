@@ -88,7 +88,7 @@ public class Program
                                 return uri.Host is "localhost" or "127.0.0.1" or "::1"
                                     || uri.Host.StartsWith("192.168.", StringComparison.Ordinal)
                                     || uri.Host.StartsWith("10.", StringComparison.Ordinal)
-                                    || uri.Host.Contains("canil-frontend.pages.dev", StringComparison.Ordinal);
+                                    || uri.Host.Contains("canilapp.pages.dev", StringComparison.Ordinal);
                             })
                             .AllowAnyHeader()
                             .AllowAnyMethod()
