@@ -142,13 +142,13 @@ export function FormularioLogin({ aoAutenticar }: Props) {
             fontWeight: 800,
             textTransform: 'none',
             backgroundColor: cores.accent,
-            color: '#f8fafc',
+            color: cores.textOnAccent,
             '&:hover': {
               backgroundColor: cores.accentHover,
             },
             '&:disabled': {
               backgroundColor: `${cores.accent}6b`,
-              color: 'rgba(248, 250, 252, 0.72)',
+              color: `${cores.textOnAccent}b8`,
             },
           }}
         >

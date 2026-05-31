@@ -21,7 +21,7 @@ import {
 import { motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
+import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { FilterBarProdutos } from '../components/FilterBarProdutos';
 import { KpiSectionProdutos } from '../components/KpiSectionProdutos';
@@ -43,7 +43,7 @@ export function PaginaListagemProdutos() {
   const [categoria, setCategoria] = useState<'todas' | string>('todas');
   const [status, setStatus] = useState<ProdutoStatusEstoqueFiltro>('todos');
   const [idExclusao, setIdExclusao] = useState<number | null>(null);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; mensagem: string; tipo: 'success' | 'error' }>({
+  const { snackbar, setSnackbar } = useSnackbarRetornoListagem({
     open: false,
     mensagem: '',
     tipo: 'success',
@@ -110,10 +110,10 @@ export function PaginaListagemProdutos() {
     if (idExclusao == null) return;
     const ok = await excluir(idExclusao);
     if (ok) {
-      setSnackbar({ open: true, mensagem: 'Produto excluido com sucesso.', tipo: 'success' });
+      setSnackbar({ open: true, mensagem: 'Produto excluído com sucesso.', tipo: 'success' });
       await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
     } else {
-      setSnackbar({ open: true, mensagem: 'Nao foi possivel excluir o produto.', tipo: 'error' });
+      setSnackbar({ open: true, mensagem: 'Não foi possível excluir o produto.', tipo: 'error' });
     }
     setIdExclusao(null);
   }
@@ -135,9 +135,8 @@ export function PaginaListagemProdutos() {
                   color: estilos.cores.textPrimary,
                 }}
               >
-                Voltar ao inicio
+                Voltar ao início
               </Button>
-              <BotaoAlternarTema variante="icone" />
             </Stack>
             <Typography variant="h5" sx={estilos.titulo}>
               Produtos
@@ -177,7 +176,7 @@ export function PaginaListagemProdutos() {
                   cor: 'warning.main',
                 },
                 {
-                  titulo: 'Proximo vencimento',
+                  titulo: 'Próximo vencimento',
                   valor: kpis.aVencer,
                   icon: <EventOutlinedIcon />,
                   cor: 'info.main',
@@ -192,7 +191,7 @@ export function PaginaListagemProdutos() {
             />
             <Typography variant="caption" sx={estilos.legenda}>
               Indicadores refletem todos os produtos que obedecem a busca e categoria (sem o filtro de status). O
-              filtro de status restringe apenas a tabela e a paginacao.
+              filtro de status restringe apenas a tabela e a paginação.
             </Typography>
           </Stack>
 
@@ -220,7 +219,7 @@ export function PaginaListagemProdutos() {
                         produtoNome: produto.nomeOuDescricaoSimples,
                         codItem: produto.codigo,
                         loteId: `${produto.id}-${lote.lote ?? ''}`,
-                        loteCodigo: lote.lote ?? 'Sem codigo',
+                        loteCodigo: lote.lote ?? 'Sem código',
                         quantidadeDisponivel: lote.quantidade,
                         retornoRota: '/produtos',
                       },
@@ -258,7 +257,7 @@ export function PaginaListagemProdutos() {
       </MotionBox>
 
       <Dialog open={idExclusao != null} onClose={() => setIdExclusao(null)}>
-        <DialogTitle>Confirmar exclusao</DialogTitle>
+        <DialogTitle>Confirmar exclusão</DialogTitle>
         <DialogContent>
           <Typography variant="body2">Deseja realmente excluir este produto?</Typography>
         </DialogContent>

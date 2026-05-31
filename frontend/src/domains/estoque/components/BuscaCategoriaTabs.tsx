@@ -30,6 +30,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { estilosCampoFiltro } from '../../../shared/theme/estilosCampos';
+import { MARCA } from '../../../shared/theme/tokensTema';
 import { useBuscaCategoria, type CategoriaBusca } from '../hooks/useBuscaCategoria';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 import { corChipStatus, rotuloStatusEstoque } from '../utils/estoqueStatusUi';
@@ -231,17 +232,41 @@ function PainelPreviewItem({
       </Grid>
 
       {item.status === 'baixo' ? (
-        <Alert severity="warning" sx={{ bgcolor: 'rgba(113, 63, 18, 0.2)', color: '#fde68a', '& .MuiAlert-icon': { color: '#fbbf24' } }}>
+        <Alert
+          severity="warning"
+          sx={{
+            bgcolor: cores.alertMinimoBg,
+            color: cores.textPrimary,
+            border: `1px solid ${cores.alertMinimoBorder}`,
+            '& .MuiAlert-icon': { color: MARCA.salmao },
+          }}
+        >
           Estoque abaixo do mínimo
         </Alert>
       ) : null}
       {item.status === 'proximo_vencimento' ? (
-        <Alert severity="error" sx={{ bgcolor: 'rgba(127, 29, 29, 0.2)', color: '#fecaca', '& .MuiAlert-icon': { color: '#f87171' } }}>
+        <Alert
+          severity="warning"
+          sx={{
+            bgcolor: cores.alertVencimentoBg,
+            color: cores.textPrimary,
+            border: `1px solid ${cores.alertVencimentoBorder}`,
+            '& .MuiAlert-icon': { color: cores.brandHighlight },
+          }}
+        >
           Item próximo do vencimento
         </Alert>
       ) : null}
       {item.status === 'critico' ? (
-        <Alert severity="error" sx={{ bgcolor: 'rgba(127, 29, 29, 0.25)', color: '#fecaca', '& .MuiAlert-icon': { color: '#f87171' } }}>
+        <Alert
+          severity="error"
+          sx={{
+            bgcolor: cores.alertMinimoBg,
+            color: cores.textPrimary,
+            border: `1px solid ${cores.alertMinimoBorder}`,
+            '& .MuiAlert-icon': { color: MARCA.salmaoEscuro },
+          }}
+        >
           Estoque crítico ou zerado
         </Alert>
       ) : null}

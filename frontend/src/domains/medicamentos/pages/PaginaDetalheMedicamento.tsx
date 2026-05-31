@@ -1,76 +1,141 @@
-import { useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Box, useMediaQuery, useTheme } from '@mui/material';
+import { useEffect, useMemo } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { CabecalhoDetalheItem } from '../../../shared/components/detalheItem/CabecalhoDetalheItem';
+import { InfoCardDetalheItem } from '../../../shared/components/detalheItem/InfoCardDetalheItem';
+import { KpiCardsDetalheItem } from '../../../shared/components/detalheItem/KpiCardsDetalheItem';
+import { ListaLotesDetalheItem } from '../../../shared/components/detalheItem/ListaLotesDetalheItem';
 import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarregamento';
 import { PainelErro } from '../../../shared/components/PainelErro';
+import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
+import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
 import { useMedicamentoDetalhe, useMutacaoMedicamento } from '../hooks/useMedicamentos';
+
+const OPCOES_PRIORIDADE: Record<number, string> = {
+  0: 'Baixa',
+  1: 'Média',
+  2: 'Alta',
+};
+
+const OPCOES_PUBLICO_ALVO: Record<number, string> = {
+  0: 'Animal',
+  1: 'Humano e animal',
+};
+
+function rotuloPrioridade(prioridade: number) {
+  return OPCOES_PRIORIDADE[prioridade] ?? String(prioridade);
+}
+
+function rotuloPublicoAlvo(publicoAlvo: number) {
+  return OPCOES_PUBLICO_ALVO[publicoAlvo] ?? String(publicoAlvo);
+}
 
 export function PaginaDetalheMedicamento() {
   const params = useParams();
+  const location = useLocation();
   const id = Number(params.id);
-  const navegar = useNavigate();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { cores } = useTemaApp();
+
   const { estado, carregar } = useMedicamentoDetalhe(Number.isFinite(id) ? id : undefined);
   const { excluir, carregando, erro, errosValidacao } = useMutacaoMedicamento();
 
   useEffect(() => {
     void carregar();
-  }, [carregar]);
+  }, [carregar, location.search]);
+
+  const m = estado.dados;
+
+  const lotes = useMemo(
+    () => (m ? mapearItensEstoqueParaLotes(m.id, m.itensEstoque) : []),
+    [m],
+  );
+
+  const totalEstoque = useMemo(() => lotes.reduce((acc, l) => acc + l.quantidade, 0), [lotes]);
+  const lotesAtivos = useMemo(() => lotes.filter((l) => l.quantidade > 0).length, [lotes]);
+  const proximoVencimentoTexto = useMemo(() => textoProximoVencimento(lotes), [lotes]);
 
   async function aoExcluir() {
     if (!Number.isFinite(id)) return;
     if (!window.confirm('Confirma excluir este medicamento?')) return;
     const ok = await excluir(id);
-    if (ok) navegar('/medicamentos');
+    if (ok) navigate('/medicamentos');
   }
 
-  const m = estado.dados;
+  function handleRetirada(lote: LoteDetalhe) {
+    if (!m) return;
+    navigate('/estoque/retirada', {
+      state: {
+        produtoId: m.id,
+        produtoNome: m.nomeOuDescricaoSimples,
+        codItem: m.codigo,
+        loteId: lote.id,
+        loteCodigo: lote.codigo,
+        quantidadeDisponivel: lote.quantidade,
+        retornoRota: `/medicamentos/${m.id}`,
+      },
+    });
+  }
 
   return (
-    <section>
-      <header className="cabecalho-secao">
-        <h1>Medicamento</h1>
-        <Link className="botao-secundario" to="/medicamentos">
-          Voltar
-        </Link>
-      </header>
+    <Box
+      component="main"
+      sx={{
+        p: { xs: 2, sm: 3 },
+        bgcolor: cores.bgConteudo,
+        minHeight: '100%',
+      }}
+    >
+      {m ? (
+        <CabecalhoDetalheItem
+          rotuloLista="Voltar para medicamentos"
+          rotaLista="/medicamentos"
+          titulo={m.nomeOuDescricaoSimples}
+        />
+      ) : (
+        <CabecalhoDetalheItem rotuloLista="Voltar para medicamentos" rotaLista="/medicamentos" titulo="Medicamento" />
+      )}
+
       <PainelErro mensagem={estado.erro ?? erro} errosValidacao={errosValidacao} />
       <IndicadorCarregamento visivel={estado.carregando || carregando} />
+
       {m && (
         <>
-          <dl className="lista-detalhe">
-            <dt>Código</dt>
-            <dd>{m.id}</dd>
-            <dt>Nome comercial</dt>
-            <dd>{m.nomeOuDescricaoSimples}</dd>
-            <dt>Fórmula</dt>
-            <dd>{m.formula}</dd>
-            <dt>Descrição</dt>
-            <dd>{m.descricao}</dd>
-            <dt>Prioridade / Público-alvo</dt>
-            <dd>
-              {m.prioridade} / {m.publicoAlvo}
-            </dd>
-          </dl>
-          <h2>Lotes</h2>
-          <ul>
-            {m.itensEstoque.map((l) => (
-              <li key={`${l.lote}-${l.codigo}`}>
-                Lote {l.lote}: {l.quantidade} un.
-              </li>
-            ))}
-          </ul>
-          <div className="linha-botoes">
-            <button type="button" onClick={aoExcluir}>
-              Excluir
-            </button>
-            <Link
-              className="botao-secundario"
-              to={`/estoque/lotes/novo?idItem=${m.id}&codItem=${encodeURIComponent(m.codigo)}`}
-            >
-              Adicionar lote
-            </Link>
-          </div>
+          <KpiCardsDetalheItem
+            totalEstoque={totalEstoque}
+            lotesAtivos={lotesAtivos}
+            proximoVencimentoTexto={proximoVencimentoTexto}
+            carregando={estado.carregando}
+          />
+
+          <InfoCardDetalheItem
+            tituloSecao="Informações do medicamento"
+            campos={[
+              { rotulo: 'Código', valor: m.codigo },
+              { rotulo: 'Nome comercial', valor: m.nomeOuDescricaoSimples },
+              { rotulo: 'Fórmula', valor: m.formula },
+              { rotulo: 'Descrição', valor: m.descricao },
+              { rotulo: 'Prioridade', valor: rotuloPrioridade(m.prioridade) },
+              { rotulo: 'Público-alvo', valor: rotuloPublicoAlvo(m.publicoAlvo) },
+              { rotulo: 'Nível mínimo', valor: m.itemNivelEstoque.nivelMinimoEstoque },
+            ]}
+          />
+
+          <ListaLotesDetalheItem
+            idItem={m.id}
+            codItem={m.codigo}
+            lotes={lotes}
+            isMobile={isMobile}
+            rotuloEntidade="medicamento"
+            mensagemVazio="Nenhum lote cadastrado para este medicamento."
+            onRetirar={handleRetirada}
+            onExcluir={aoExcluir}
+          />
         </>
       )}
-    </section>
+    </Box>
   );
 }

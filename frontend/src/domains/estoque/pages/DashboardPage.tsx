@@ -1,6 +1,6 @@
+import { alpha } from '@mui/material/styles';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined';
-import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {
   Alert,
@@ -8,7 +8,6 @@ import {
   Button,
   Chip,
   Grid,
-  IconButton,
   Stack,
   TextField,
   Typography,
@@ -20,15 +19,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
-import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
-import { mapearPapelUsuario } from '../../../shared/types/papelUsuario';
+import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
 import { listarProdutosPaginadosApi } from '../../produtos/api/produtosApi';
 import { AlertaCard } from '../components/AlertaCard';
 import { BuscaCategoriaTabs } from '../components/BuscaCategoriaTabs';
 import { ResumoItensCadastrados, type ContagemPorClasse } from '../components/ResumoItensCadastrados';
-import { SidebarEstoque } from '../components/SidebarEstoque';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 
 const MotionBox = motion(Box);
@@ -45,33 +42,18 @@ const CHIPS_CATEGORIA_ALERTAS: { valor: '' | LinhaOperacionalEstoque['origem']; 
   { valor: 'insumo', rotulo: 'Insumos' },
 ];
 
-const sxBotaoCadastro = {
-  textTransform: 'none' as const,
-  fontWeight: 700,
-  color: '#f8fafc',
-  backgroundColor: '#2563eb',
-  transition: 'transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease',
-  '&:hover': {
-    backgroundColor: '#1d4ed8',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 12px 20px rgba(29, 78, 216, 0.35)',
-  },
-  '& .MuiButton-startIcon': { color: '#e2e8f0' },
-};
-
 const contagemInicial: ContagemPorClasse = { produtos: 0, medicamentos: 0, insumos: 0 };
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { usuario, sair } = useAutenticacao();
+  const { usuario } = useAutenticacao();
   const { cores } = useTemaApp();
-  const papelUsuario = mapearPapelUsuario(usuario?.permissao);
+  const estilos = useEstilosListagem();
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
   const [contagemPorOrigem, setContagemPorOrigem] = useState<ContagemPorClasse>(contagemInicial);
   const [totalItens, setTotalItens] = useState(0);
   const [linhasOperacionais, setLinhasOperacionais] = useState<LinhaOperacionalEstoque[]>([]);
-  const [drawerAbertoMobile, setDrawerAbertoMobile] = useState(false);
   const [emTransicao, setEmTransicao] = useState(false);
   const [categoria, setCategoria] = useState<'' | LinhaOperacionalEstoque['origem']>('');
   const [busca, setBusca] = useState('');
@@ -80,7 +62,6 @@ export function DashboardPage() {
   const [pageVencimento, setPageVencimento] = useState(1);
   const theme = useTheme();
   const ehMobileLayoutConteudo = useMediaQuery(theme.breakpoints.down('sm'));
-  const ehMobileMenu = useMediaQuery(theme.breakpoints.down('md'));
   const itensPorPaginaAlertas = ehMobileLayoutConteudo ? 3 : 5;
 
   useEffect(() => {
@@ -283,62 +264,30 @@ export function DashboardPage() {
   }, [paginaSeguraVencimento, pageVencimento]);
 
   return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: cores.bgShell }}>
-        <SidebarEstoque
-          abertoMobile={drawerAbertoMobile}
-          aoFecharMobile={() => setDrawerAbertoMobile(false)}
-          ehMobile={ehMobileMenu}
-          papelUsuario={papelUsuario}
-        />
-        <Box
-          sx={{
-            flex: 1,
-            px: { xs: SPACING.sm, sm: SPACING.md, md: SPACING.lg },
-            pt: SPACING.sm,
-            pb: SPACING.lg,
-            borderLeft: { md: `1px solid ${cores.sidebarBorder}` },
-            backgroundColor: cores.bgConteudo,
-          }}
-        >
-          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: SPACING.md, gap: 1 }}>
-            {ehMobileMenu ? (
-              <IconButton color="inherit" onClick={() => setDrawerAbertoMobile(true)} sx={{ color: cores.textPrimary }}>
-                <MenuOutlinedIcon />
-              </IconButton>
-            ) : (
-              <Box />
-            )}
-            <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
-              <BotaoAlternarTema variante="icone" />
-              <Button
-                variant="outlined"
-                color="inherit"
-                sx={{ borderColor: cores.borderForte, color: cores.textPrimary }}
-                onClick={() => {
-                  sair();
-                  navigate('/login');
-                }}
-              >
-                Sair
-              </Button>
-            </Stack>
-          </Stack>
+    <Box
+      sx={{
+        px: { xs: SPACING.sm, sm: SPACING.md, md: SPACING.lg },
+        pt: SPACING.sm,
+        pb: SPACING.lg,
+        backgroundColor: cores.bgConteudo,
+        minHeight: '100%',
+      }}
+    >
+      <Box sx={{ mb: SPACING.md }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary }}>
+          Olá, {usuario?.primeiroNome ?? 'equipe'}
+        </Typography>
+        <Typography variant="body2" sx={{ color: cores.textSecondary }}>
+          {ehMobileLayoutConteudo ? 'Operação de estoque' : 'Busca guiada e visão rápida do estoque'}
+        </Typography>
+      </Box>
 
-          <Box sx={{ mb: SPACING.md }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary }}>
-              Ola, {usuario?.primeiroNome ?? 'equipe'}
-            </Typography>
-            <Typography variant="body2" sx={{ color: cores.textSecondary }}>
-              {ehMobileLayoutConteudo ? 'Operação de estoque' : 'Busca guiada e visão rápida do estoque'}
-            </Typography>
-          </Box>
-
-          <MotionBox
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: emTransicao ? 0.7 : 1, y: 0 }}
-            transition={{ duration: 0.32 }}
-            sx={{ mt: SPACING.sm }}
-          >
+      <MotionBox
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: emTransicao ? 0.7 : 1, y: 0 }}
+        transition={{ duration: 0.32 }}
+        sx={{ mt: SPACING.sm }}
+      >
             <Stack spacing={SPACING.lg} sx={{ p: 0 }}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary, mb: SPACING.sm }}>
@@ -350,7 +299,15 @@ export function DashboardPage() {
                     startIcon={<Inventory2OutlinedIcon />}
                     onClick={() => navegarComTransicao('/produtos/novo')}
                     fullWidth
-                    sx={sxBotaoCadastro}
+                    sx={{
+                      ...estilos.botaoPrimario,
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      '&:hover': {
+                        ...estilos.botaoPrimario['&:hover'],
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 10px 18px ${alpha(cores.accent, 0.28)}`,
+                      },
+                    }}
                   >
                     Cadastrar Produtos
                   </Button>
@@ -359,7 +316,15 @@ export function DashboardPage() {
                     startIcon={<MedicalServicesOutlinedIcon />}
                     onClick={() => navegarComTransicao('/medicamentos/novo')}
                     fullWidth
-                    sx={sxBotaoCadastro}
+                    sx={{
+                      ...estilos.botaoPrimario,
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      '&:hover': {
+                        ...estilos.botaoPrimario['&:hover'],
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 10px 18px ${alpha(cores.accent, 0.28)}`,
+                      },
+                    }}
                   >
                     Cadastrar Medicamentos
                   </Button>
@@ -368,7 +333,15 @@ export function DashboardPage() {
                     startIcon={<ScienceOutlinedIcon />}
                     onClick={() => navegarComTransicao('/insumos/novo')}
                     fullWidth
-                    sx={sxBotaoCadastro}
+                    sx={{
+                      ...estilos.botaoPrimario,
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      '&:hover': {
+                        ...estilos.botaoPrimario['&:hover'],
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 10px 18px ${alpha(cores.accent, 0.28)}`,
+                      },
+                    }}
                   >
                     Cadastrar Insumos
                   </Button>
@@ -497,7 +470,6 @@ export function DashboardPage() {
               )}
             </Stack>
           </MotionBox>
-        </Box>
-      </Box>
+    </Box>
   );
 }

@@ -1,6 +1,9 @@
 import SearchIcon from '@mui/icons-material/Search';
 import { Autocomplete, Box, InputAdornment, TextField, Typography } from '@mui/material';
 import { useMemo, useState } from 'react';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { estilosCampoFiltro } from '../../../shared/theme/estilosCampos';
+import { MARCA } from '../../../shared/theme/tokensTema';
 import { useBuscaGlobal } from '../hooks/useBuscaGlobal';
 import type { BuscaGlobalItem } from '../services/buscaService';
 
@@ -15,6 +18,8 @@ function labelTipo(tipo: BuscaGlobalItem['tipo']) {
 }
 
 export function SearchGlobal({ onSelecionar }: Props) {
+  const { cores } = useTemaApp();
+  const inputSx = estilosCampoFiltro(cores);
   const [valorInput, setValorInput] = useState('');
   const [selecionado, setSelecionado] = useState<BuscaGlobalItem | null>(null);
   const { resultados, carregando, erro } = useBuscaGlobal(valorInput);
@@ -40,8 +45,8 @@ export function SearchGlobal({ onSelecionar }: Props) {
         renderOption={(props, option) => (
           <Box component="li" {...props} key={`${option.tipo}-${option.id}`}>
             <Box sx={{ display: 'flex', width: '100%', justifyContent: 'space-between', gap: 1 }}>
-              <Typography sx={{ color: '#e2e8f0' }}>{option.nome}</Typography>
-              <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+              <Typography sx={{ color: cores.textPrimary }}>{option.nome}</Typography>
+              <Typography variant="caption" sx={{ color: cores.textMuted }}>
                 {labelTipo(option.tipo)}
               </Typography>
             </Box>
@@ -57,24 +62,17 @@ export function SearchGlobal({ onSelecionar }: Props) {
               }
             }}
             sx={{
+              ...inputSx,
               '& .MuiOutlinedInput-root': {
+                ...inputSx['& .MuiOutlinedInput-root'],
                 minHeight: 56,
-                backgroundColor: '#0f172a',
-                color: '#e2e8f0',
-                '& fieldset': { borderColor: 'rgba(255,255,255,0.08)' },
-                '&:hover fieldset': { borderColor: '#3b82f6' },
-                '&.Mui-focused fieldset': { borderColor: '#3b82f6' },
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: '#94a3b8',
-                opacity: 1,
               },
             }}
             slotProps={{
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: '#94a3b8' }} />
+                    <SearchIcon sx={{ color: cores.chipIcon }} />
                   </InputAdornment>
                 ),
               },
@@ -83,12 +81,12 @@ export function SearchGlobal({ onSelecionar }: Props) {
         )}
       />
       {erro && (
-        <Typography variant="caption" sx={{ color: '#fca5a5', mt: 1, display: 'block' }}>
+        <Typography variant="caption" sx={{ color: MARCA.salmao, mt: 1, display: 'block' }}>
           {erro}
         </Typography>
       )}
       {semResultado && !erro && (
-        <Typography variant="caption" sx={{ color: '#94a3b8', mt: 1, display: 'block' }}>
+        <Typography variant="caption" sx={{ color: cores.textMuted, mt: 1, display: 'block' }}>
           Nenhum resultado encontrado
         </Typography>
       )}

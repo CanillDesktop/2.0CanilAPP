@@ -2,16 +2,11 @@ import { Outlet, useLocation } from 'react-router-dom';
 
 export function LeiautePrincipal() {
   const location = useLocation();
-  const ehTelaComLayoutCheio =
-    location.pathname.startsWith('/login') ||
-    location.pathname.startsWith('/estoque') ||
-    location.pathname.startsWith('/dashboard') ||
-    location.pathname.startsWith('/usuarios') ||
-    location.pathname.startsWith('/perfil');
+  const ehLogin = location.pathname.startsWith('/login');
 
   return (
     <div className="app-shell">
-      <main className={ehTelaComLayoutCheio ? '' : 'app-conteudo'}>
+      <main className={ehLogin ? '' : 'app-conteudo'}>
         <Outlet />
       </main>
     </div>

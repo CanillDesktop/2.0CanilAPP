@@ -12,6 +12,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 
 function obterCorStatus(status: LinhaOperacionalEstoque['status']): 'success' | 'warning' | 'error' {
@@ -27,11 +28,6 @@ function labelStatus(status: LinhaOperacionalEstoque['status']) {
   return 'Critico';
 }
 
-const sxCelula = {
-  color: '#e2e8f0',
-  borderColor: 'rgba(148, 163, 184, 0.12)',
-};
-
 export function DataTableEstoque({
   linhas,
   carregando = false,
@@ -41,24 +37,26 @@ export function DataTableEstoque({
   carregando?: boolean;
   aoClicarItem?: (linha: LinhaOperacionalEstoque) => void;
 }) {
+  const { cores } = useTemaApp();
+
   if (carregando) {
     return (
       <Stack spacing={1.2}>
-        <Skeleton variant="rounded" height={58} sx={{ bgcolor: 'rgba(148,163,184,0.12)' }} />
-        <Skeleton variant="rounded" height={58} sx={{ bgcolor: 'rgba(148,163,184,0.12)' }} />
-        <Skeleton variant="rounded" height={58} sx={{ bgcolor: 'rgba(148,163,184,0.12)' }} />
+        <Skeleton variant="rounded" height={58} sx={{ bgcolor: cores.hoverSurface }} />
+        <Skeleton variant="rounded" height={58} sx={{ bgcolor: cores.hoverSurface }} />
+        <Skeleton variant="rounded" height={58} sx={{ bgcolor: cores.hoverSurface }} />
       </Stack>
     );
   }
 
   if (!linhas.length) {
     return (
-      <Card sx={{ borderRadius: 3, bgcolor: '#0f172a', border: '1px solid rgba(148, 163, 184, 0.12)' }}>
+      <Card sx={{ borderRadius: 3, bgcolor: cores.bgCard, border: `1px solid ${cores.border}`, boxShadow: cores.sombraCard }}>
         <CardContent>
-          <Typography variant="h6" sx={{ color: '#e2e8f0' }}>
+          <Typography variant="h6" sx={{ color: cores.textPrimary }}>
             Sem dados neste filtro
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(203, 213, 225, 0.85)' }}>
+          <Typography variant="body2" sx={{ color: cores.textSecondary }}>
             Ajuste a aba ou o nome consultado para ver outros itens.
           </Typography>
         </CardContent>
@@ -70,20 +68,21 @@ export function DataTableEstoque({
     <Card
       sx={{
         borderRadius: 3,
-        bgcolor: '#0f172a',
-        border: '1px solid rgba(148, 163, 184, 0.12)',
+        bgcolor: cores.bgCard,
+        border: `1px solid ${cores.border}`,
+        boxShadow: cores.sombraCard,
         overflow: 'hidden',
       }}
     >
       <TableContainer sx={{ overflowX: 'auto' }}>
         <Table size="small" sx={{ minWidth: 720 }}>
           <TableHead>
-            <TableRow sx={{ bgcolor: 'rgba(15, 23, 42, 0.95)' }}>
-              <TableCell sx={{ ...sxCelula, fontWeight: 700 }}>Nome</TableCell>
-              <TableCell sx={{ ...sxCelula, fontWeight: 700 }}>Quantidade</TableCell>
-              <TableCell sx={{ ...sxCelula, fontWeight: 700 }}>Data de validade</TableCell>
-              <TableCell sx={{ ...sxCelula, fontWeight: 700 }}>Status</TableCell>
-              <TableCell sx={{ ...sxCelula, fontWeight: 700 }}>Última movimentação</TableCell>
+            <TableRow sx={{ bgcolor: cores.bgCabecalhoTabela }}>
+              <TableCell sx={{ color: cores.textMuted, fontWeight: 700, borderColor: cores.borderSuave }}>Nome</TableCell>
+              <TableCell sx={{ color: cores.textMuted, fontWeight: 700, borderColor: cores.borderSuave }}>Quantidade</TableCell>
+              <TableCell sx={{ color: cores.textMuted, fontWeight: 700, borderColor: cores.borderSuave }}>Data de validade</TableCell>
+              <TableCell sx={{ color: cores.textMuted, fontWeight: 700, borderColor: cores.borderSuave }}>Status</TableCell>
+              <TableCell sx={{ color: cores.textMuted, fontWeight: 700, borderColor: cores.borderSuave }}>Última movimentação</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -94,16 +93,16 @@ export function DataTableEstoque({
                 onClick={() => aoClicarItem?.(linha)}
                 sx={{
                   cursor: aoClicarItem ? 'pointer' : 'default',
-                  '&:hover': { bgcolor: 'rgba(30, 41, 59, 0.65)' },
+                  '&:hover': { bgcolor: cores.hoverSurface },
                 }}
               >
-                <TableCell sx={sxCelula}>{linha.nome}</TableCell>
-                <TableCell sx={sxCelula}>{linha.quantidade}</TableCell>
-                <TableCell sx={sxCelula}>{linha.validade}</TableCell>
-                <TableCell sx={sxCelula}>
+                <TableCell sx={{ color: cores.textPrimary, borderColor: cores.borderSuave }}>{linha.nome}</TableCell>
+                <TableCell sx={{ color: cores.textPrimary, borderColor: cores.borderSuave }}>{linha.quantidade}</TableCell>
+                <TableCell sx={{ color: cores.textPrimary, borderColor: cores.borderSuave }}>{linha.validade}</TableCell>
+                <TableCell sx={{ color: cores.textPrimary, borderColor: cores.borderSuave }}>
                   <Chip label={labelStatus(linha.status)} color={obterCorStatus(linha.status)} size="small" />
                 </TableCell>
-                <TableCell sx={sxCelula}>{linha.ultimaMovimentacao}</TableCell>
+                <TableCell sx={{ color: cores.textPrimary, borderColor: cores.borderSuave }}>{linha.ultimaMovimentacao}</TableCell>
               </TableRow>
             ))}
           </TableBody>

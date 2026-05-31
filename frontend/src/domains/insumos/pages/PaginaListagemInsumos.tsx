@@ -20,8 +20,8 @@ import {
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
-import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { FilterBarInsumos } from '../components/FilterBarInsumos';
 import { KpiSectionInsumos } from '../components/KpiSectionInsumos';
@@ -60,7 +60,7 @@ export function PaginaListagemInsumos() {
   const [unidade, setUnidade] = useState<'todas' | string>('todas');
   const [status, setStatus] = useState<'todos' | StatusInsumo>('todos');
   const [idExclusao, setIdExclusao] = useState<number | null>(null);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; mensagem: string; tipo: 'success' | 'error' }>({
+  const { snackbar, setSnackbar } = useSnackbarRetornoListagem({
     open: false,
     mensagem: '',
     tipo: 'success',
@@ -112,10 +112,10 @@ export function PaginaListagemInsumos() {
     if (idExclusao == null) return;
     const ok = await excluir(idExclusao);
     if (ok) {
-      setSnackbar({ open: true, mensagem: 'Insumo excluido com sucesso.', tipo: 'success' });
+      setSnackbar({ open: true, mensagem: 'Insumo excluído com sucesso.', tipo: 'success' });
       await carregar();
     } else {
-      setSnackbar({ open: true, mensagem: 'Nao foi possivel excluir o insumo.', tipo: 'error' });
+      setSnackbar({ open: true, mensagem: 'Não foi possível excluir o insumo.', tipo: 'error' });
     }
     setIdExclusao(null);
   }
@@ -137,9 +137,8 @@ export function PaginaListagemInsumos() {
                   color: estilos.cores.textPrimary,
                 }}
               >
-                Voltar ao inicio
+                Voltar ao início
               </Button>
-              <BotaoAlternarTema variante="icone" />
             </Stack>
             <Typography variant="h5" sx={estilos.titulo}>
               Insumos
@@ -196,7 +195,7 @@ export function PaginaListagemInsumos() {
                         produtoNome: insumo.nomeOuDescricaoSimples,
                         codItem: insumo.codigo,
                         loteId: `${insumo.id}-${lote.lote ?? ''}`,
-                        loteCodigo: lote.lote ?? 'Sem codigo',
+                        loteCodigo: lote.lote ?? 'Sem código',
                         quantidadeDisponivel: lote.quantidade,
                         retornoRota: '/insumos',
                       },
@@ -232,7 +231,7 @@ export function PaginaListagemInsumos() {
       </MotionBox>
 
       <Dialog open={idExclusao != null} onClose={() => setIdExclusao(null)}>
-        <DialogTitle>Confirmar exclusao</DialogTitle>
+        <DialogTitle>Confirmar exclusão</DialogTitle>
         <DialogContent>
           <Typography variant="body2">Deseja realmente excluir este insumo?</Typography>
         </DialogContent>

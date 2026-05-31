@@ -17,7 +17,6 @@ import {
   Typography,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import type { PapelUsuarioApp } from '../../../shared/types/papelUsuario';
 
@@ -45,9 +44,8 @@ function itensVisiveisParaPapel(papel: PapelUsuarioApp): ItemNavegacao[] {
 }
 
 type SidebarEstoqueProps = {
-  abertoMobile: boolean;
-  aoFecharMobile: () => void;
-  ehMobile: boolean;
+  aberto: boolean;
+  aoFechar: () => void;
   papelUsuario: PapelUsuarioApp;
 };
 
@@ -66,22 +64,39 @@ function ConteudoSidebar({
   const itemAtivoMaisEspecifico = [...itens]
     .filter((i) => location.pathname === i.rota || location.pathname.startsWith(`${i.rota}/`))
     .reduce<(typeof itens)[number] | undefined>(
-      (melhor, atual) =>
-        !melhor || atual.rota.length > melhor.rota.length ? atual : melhor,
+      (melhor, atual) => (!melhor || atual.rota.length > melhor.rota.length ? atual : melhor),
       undefined,
     );
 
   return (
-    <Box sx={{ width: larguraSidebar, bgcolor: 'background.paper', height: '100%' }}>
+    <Box
+      sx={{
+        width: larguraSidebar,
+        bgcolor: cores.bgCard,
+        height: '100%',
+        borderRight: `1px solid ${cores.border}`,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <Toolbar sx={{ minHeight: 72, px: 2.5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          Canip Stock
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 800,
+            background: `linear-gradient(135deg, ${cores.accent} 0%, ${cores.brandHighlight} 100%)`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
+          Canil Stock
         </Typography>
       </Toolbar>
-      <List sx={{ px: 1.2 }}>
+      <List sx={{ px: 1.2, flex: 1, overflow: 'hidden' }}>
         {itens.map((item) => {
-          const ativo =
-            !!itemAtivoMaisEspecifico && itemAtivoMaisEspecifico.titulo === item.titulo;
+          const ativo = !!itemAtivoMaisEspecifico && itemAtivoMaisEspecifico.titulo === item.titulo;
 
           return (
             <ListItemButton
@@ -91,46 +106,46 @@ function ConteudoSidebar({
                 aoClicarItem?.();
               }}
               selected={ativo}
-              sx={{ mb: 0.6, borderRadius: 2 }}
+              sx={{
+                mb: 0.6,
+                borderRadius: 2,
+                color: cores.textPrimary,
+                borderLeft: '3px solid transparent',
+                '&.Mui-selected': {
+                  bgcolor: cores.hoverSurface,
+                  borderLeftColor: cores.accent,
+                  '&:hover': { bgcolor: cores.hoverSurfaceStrong },
+                },
+              }}
             >
-              <ListItemIcon sx={{ minWidth: 36 }}>{item.icone}</ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 36, color: ativo ? cores.accent : cores.textMuted }}>
+                {item.icone}
+              </ListItemIcon>
               <ListItemText primary={item.titulo} />
             </ListItemButton>
           );
         })}
       </List>
-      <Box sx={{ px: 1.2, pb: 2, borderTop: `1px solid ${cores.sidebarBorder}`, pt: 1 }}>
-        <BotaoAlternarTema />
-      </Box>
     </Box>
   );
 }
 
-export function SidebarEstoque({ abertoMobile, aoFecharMobile, ehMobile, papelUsuario }: SidebarEstoqueProps) {
-  return ehMobile ? (
-    <Drawer open={abertoMobile} onClose={aoFecharMobile} variant="temporary">
-      <ConteudoSidebar aoClicarItem={aoFecharMobile} papelUsuario={papelUsuario} />
-    </Drawer>
-  ) : (
+export function SidebarEstoque({ aberto, aoFechar, papelUsuario }: SidebarEstoqueProps) {
+  return (
     <Drawer
-      open
-      variant="permanent"
+      open={aberto}
+      onClose={aoFechar}
+      variant="temporary"
+      ModalProps={{ keepMounted: true }}
       sx={{
-        width: larguraSidebar,
-        flexShrink: 0,
-        '& .MuiDrawer-docked': {
-          width: larguraSidebar,
-        },
         '& .MuiDrawer-paper': {
           width: larguraSidebar,
           boxSizing: 'border-box',
-          borderRight: (theme) => `1px solid ${theme.palette.divider}`,
-          top: 0,
-          height: '100vh',
+          overflow: 'hidden',
         },
       }}
     >
-      <ConteudoSidebar papelUsuario={papelUsuario} />
+      <ConteudoSidebar aoClicarItem={aoFechar} papelUsuario={papelUsuario} />
     </Drawer>
   );
 }
