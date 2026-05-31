@@ -23,41 +23,58 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequest? request, CancellationToken cancellationToken)
     {
+        if (request is null || string.IsNullOrWhiteSpace(request.Login) || string.IsNullOrWhiteSpace(request.Senha))
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Dados inválidos",
+                Status = StatusCodes.Status400BadRequest,
+                Details = "Login e senha são obrigatórios."
+            });
+        }
+
         try
         {
-            if (request is null || string.IsNullOrWhiteSpace(request.Login) || string.IsNullOrWhiteSpace(request.Senha))
-            {
-                throw new ArgumentNullException(null, "Login e senha são obrigatórios");
-            }
-
             _logger.LogInformation("Solicitação de login recebida para {Login}.", request.Login);
 
             var result = await _authService.AuthenticateAsync(request.Login, request.Senha, cancellationToken);
 
-            SetRefreshCookie(result.TokenResponse!.RefreshToken);
+            if (result?.TokenResponse == null)
+            {
+                return Unauthorized(new ErrorResponse
+                {
+                    Title = "Acesso não autorizado",
+                    Status = StatusCodes.Status401Unauthorized,
+                    Details = "Usuário ou senha inválidos."
+                });
+            }
+
+            SetRefreshCookie(result.TokenResponse.RefreshToken);
 
             return Ok(new
             {
-                result.TokenResponse!.AccessToken,
+                result.TokenResponse.AccessToken,
                 result.Usuario
-            });
-        }
-        catch (ArgumentNullException ex)
-        {
-            return BadRequest(new ErrorResponse
-            {
-                Title = "Acesso não autorizado",
-                Status = StatusCodes.Status400BadRequest,
-                Details = ex.Message
             });
         }
         catch (UnauthorizedAccessException ex)
         {
-            return BadRequest(new ErrorResponse
+            return Unauthorized(new ErrorResponse
             {
                 Title = "Acesso não autorizado",
-                Status = StatusCodes.Status400BadRequest,
-                Details = ex.Message ?? "Usuário inativo. Favor contatar o suporte/administradores"
+                Status = StatusCodes.Status401Unauthorized,
+                Details = ex.Message ?? "Usuário inativo. Favor contatar o suporte/administradores."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro interno ao processar login para {Login}.", request.Login);
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                Title = "Erro interno no servidor",
+                Status = StatusCodes.Status500InternalServerError,
+                Details = "Ocorreu um erro inesperado. Tente novamente mais tarde."
             });
         }
     }
@@ -123,9 +140,9 @@ public class AuthController : ControllerBase
     {
         var cookieOptions = new CookieOptions
         {
-            HttpOnly = true, // javascript não pode acessar
-            Secure = true, // só envia em HTTPS
-            SameSite = SameSiteMode.Lax,
+            HttpOnly = true, 
+            Secure = true, 
+            SameSite = SameSiteMode.None,
             Expires = refreshToken.ExpiresAt
         };
         Response.Cookies.Append("refreshToken", refreshToken.TokenHash, cookieOptions);

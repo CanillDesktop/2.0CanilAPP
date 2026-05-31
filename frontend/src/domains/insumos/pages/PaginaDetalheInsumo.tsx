@@ -1,5 +1,5 @@
 import { Box, useMediaQuery, useTheme } from '@mui/material';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { CabecalhoDetalheItem } from '../../../shared/components/detalheItem/CabecalhoDetalheItem';
@@ -10,6 +10,7 @@ import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarre
 import { PainelErro } from '../../../shared/components/PainelErro';
 import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
 import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
+import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
 import { useInsumoDetalhe, useMutacaoInsumo } from '../hooks/useInsumos';
 
 const OPCOES_UNIDADE: Record<number, string> = {
@@ -33,6 +34,7 @@ export function PaginaDetalheInsumo() {
 
   const { estado, carregar } = useInsumoDetalhe(Number.isFinite(id) ? id : undefined);
   const { excluir, carregando, erro, errosValidacao } = useMutacaoInsumo();
+  const [erroRetirada, setErroRetirada] = useState<string | null>(null);
 
   useEffect(() => {
     void carregar();
@@ -58,16 +60,24 @@ export function PaginaDetalheInsumo() {
 
   function handleRetirada(lote: LoteDetalhe) {
     if (!i) return;
+    const state = montarRetiradaNavegacaoState({
+      produto: { ...i, descricaoSimples: i.descricaoSimples ?? i.descricaoSimplificada },
+      produtoId: i.id,
+      codItem: i.codigo,
+      loteId: lote.id,
+      loteCodigo: lote.codigo,
+      quantidadeDisponivel: lote.quantidade,
+      retornoRota: `/insumos/${i.id}`,
+    });
+
+    if (!state) {
+      setErroRetirada(MENSAGEM_PRODUTO_SEM_NOME_RETIRADA);
+      return;
+    }
+
+    setErroRetirada(null);
     navigate('/estoque/retirada', {
-      state: {
-        produtoId: i.id,
-        produtoNome: i.nomeOuDescricaoSimples,
-        codItem: i.codigo,
-        loteId: lote.id,
-        loteCodigo: lote.codigo,
-        quantidadeDisponivel: lote.quantidade,
-        retornoRota: `/insumos/${i.id}`,
-      },
+      state,
     });
   }
 
@@ -84,13 +94,13 @@ export function PaginaDetalheInsumo() {
         <CabecalhoDetalheItem
           rotuloLista="Voltar para insumos"
           rotaLista="/insumos"
-          titulo={i.nomeOuDescricaoSimples}
+          titulo={i.nomeOuDescricaoSimples ?? i.descricaoSimples ?? i.descricaoSimplificada ?? i.descricaoDetalhada ?? 'Insumo'}
         />
       ) : (
         <CabecalhoDetalheItem rotuloLista="Voltar para insumos" rotaLista="/insumos" titulo="Insumo" />
       )}
 
-      <PainelErro mensagem={estado.erro ?? erro} errosValidacao={errosValidacao} />
+      <PainelErro mensagem={erroRetirada ?? estado.erro ?? erro} errosValidacao={errosValidacao} />
       <IndicadorCarregamento visivel={estado.carregando || carregando} />
 
       {i && (
@@ -106,7 +116,7 @@ export function PaginaDetalheInsumo() {
             tituloSecao="Informações do insumo"
             campos={[
               { rotulo: 'Código', valor: i.codigo },
-              { rotulo: 'Descrição simplificada', valor: i.nomeOuDescricaoSimples },
+              { rotulo: 'Descrição simplificada', valor: i.nomeOuDescricaoSimples ?? i.descricaoSimples ?? i.descricaoSimplificada },
               { rotulo: 'Descrição detalhada', valor: i.descricaoDetalhada },
               { rotulo: 'Unidade', valor: rotuloUnidade(i.unidade) },
               { rotulo: 'Nível mínimo', valor: i.itemNivelEstoque.nivelMinimoEstoque },
