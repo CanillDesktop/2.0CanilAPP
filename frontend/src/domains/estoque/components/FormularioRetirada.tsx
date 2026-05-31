@@ -67,6 +67,7 @@ export function FormularioRetirada() {
   });
 
   const quantidadeDisponivel = data?.quantidadeDisponivel ?? 0;
+  const produtoNome = data?.produtoNome.trim() ?? '';
   const destinatarioSelecionado =
     idUsuarioRecebedor != null ? usuariosResumo.find((u) => u.id === idUsuarioRecebedor) ?? null : null;
 
@@ -77,11 +78,12 @@ export function FormularioRetirada() {
   }, []);
 
   const retiradaValida = useMemo(() => {
-    return Boolean(data) && de.trim().length > 0 && para.trim().length > 0 && quantidade > 0 && quantidade <= quantidadeDisponivel;
-  }, [data, de, para, quantidade, quantidadeDisponivel]);
+    return Boolean(data) && produtoNome.length > 0 && de.trim().length > 0 && para.trim().length > 0 && quantidade > 0 && quantidade <= quantidadeDisponivel;
+  }, [data, de, para, produtoNome, quantidade, quantidadeDisponivel]);
 
   function validarFormulario() {
     if (!data) return 'A retirada deve ser iniciada a partir de um lote na tela de produto.';
+    if (!produtoNome) return 'A retirada deve ser iniciada com um produto valido.';
     if (!de.trim()) return 'Informe quem esta retirando.';
     if (!para.trim()) return 'Informe para quem o item sera destinado.';
     if (!Number.isFinite(quantidade) || quantidade <= 0) return 'A quantidade deve ser maior que zero.';
@@ -113,16 +115,15 @@ export function FormularioRetirada() {
 
     const dto: RetiradaEstoqueDto = {
       codigo: data!.codItem,
-      nomeOuDescricaoSimples: data!.produtoNome,
+      nomeOuDescricaoSimples: produtoNome,
       lote: data!.loteCodigo,
       de: payloadRetirada.origem,
       para: payloadRetirada.destino,
       quantidade: payloadRetirada.quantidade,
       dataHoraRetirada: new Date().toISOString(),
       observacao: observacao.trim() || undefined,
-      idUsuarioRecebedor: idUsuarioRecebedor,
+      idUsuarioRecebedor,
     };
-
     const ok = await registrarRetirada(dto);
     setConfirmarAberto(false);
     if (ok) {
@@ -148,11 +149,11 @@ export function FormularioRetirada() {
     });
   }
 
-  if (!data) {
+  if (!data || !produtoNome) {
     return (
       <Box sx={{ width: '100%', maxWidth: 600, p: 2 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
-          Dados da retirada nao foram informados.
+          {!data ? 'Dados da retirada nao foram informados.' : 'Dados da retirada estao incompletos: produto sem nome.'}
         </Alert>
         <Button variant="contained" onClick={() => navegar('/produtos')} sx={estilos.botaoPrimario}>
           Voltar para produtos
@@ -186,7 +187,7 @@ export function FormularioRetirada() {
 
           {(erro || erroValidacao) && <Alert severity="error">{erroValidacao ?? erro}</Alert>}
 
-          <TextField label="Produto" value={data.produtoNome} disabled fullWidth sx={sxCampo} />
+          <TextField label="Produto" value={produtoNome} disabled fullWidth sx={sxCampo} />
           <TextField label="Lote" value={data.loteCodigo} disabled fullWidth sx={sxCampo} />
           <TextField label="Quantidade disponivel" value={String(quantidadeDisponivel)} disabled fullWidth sx={sxCampo} />
 

@@ -3,7 +3,10 @@ import type { ItemEstoqueDto, ItemNivelEstoqueDto } from '../../../shared/types/
 export type InsumoLeituraDto = {
   id: number;
   codigo: string;
+  nomeInformado?: string | null;
   nomeOuDescricaoSimples: string;
+  descricaoSimplificada?: string | null;
+  descricaoSimples?: string | null;
   descricaoDetalhada: string;
   unidade: number;
   itemNivelEstoque: ItemNivelEstoqueDto;
