@@ -22,21 +22,24 @@ public static class RetiradaEstoqueHistoricoCsvExportador
         "observacao",
         "status",
     ];
+    private static TimeZoneInfo FusoOperacional => _fusoOperacional ??= ResolverFusoBrasil();
+    private static TimeZoneInfo? _fusoOperacional;
 
-    public static ArquivoExportadoDTO Gerar(
-        IReadOnlyList<RetiradaEstoqueHistoricoItemDTO> itens,
-        RetiradaEstoqueExportacaoContextoDTO contexto)
+    public static ArquivoExportadoDTO Gerar(IReadOnlyList<RetiradaEstoqueHistoricoItemDTO> itens, RetiradaEstoqueExportacaoContextoDTO contexto)
     {
         var sb = new StringBuilder();
-        sb.Append('\uFEFF');
+        sb.Append('\uFEFF'); 
         sb.AppendLine(string.Join(';', Cabecalhos));
 
         foreach (var item in itens)
         {
+            var utc = DateTime.SpecifyKind(item.DataHoraRetirada, DateTimeKind.Utc);
+            var local = TimeZoneInfo.ConvertTimeFromUtc(utc, FusoOperacional);
+
             sb.AppendLine(string.Join(';', new[]
             {
                 item.Id.ToString(CultureInfo.InvariantCulture),
-                Cel(RetiradaEstoqueHistoricoExcelExportador.FormatarDataHoraLocal(item.DataHoraRetirada)),
+               Cel("\u200B" + local.ToString("dd/MM/yyyy HH:mm", CultureInfo.GetCultureInfo("pt-BR"))),
                 Cel(item.Codigo),
                 Cel(item.NomeProduto),
                 Cel(item.Lote),
@@ -65,5 +68,24 @@ public static class RetiradaEstoqueHistoricoCsvExportador
         if (s.Contains(';') || s.Contains('"') || s.Contains('\r') || s.Contains('\n'))
             return $"\"{s.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
         return s;
+    }
+
+    private static TimeZoneInfo ResolverFusoBrasil()
+    {
+        var fusosParaTentar = new[] { "America/Sao_Paulo", "E. South America Standard Time" };
+
+        foreach (var id in fusosParaTentar)
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(id);
+            }
+            catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
+            {
+             
+            }
+        }
+
+        return TimeZoneInfo.Utc;
     }
 }
