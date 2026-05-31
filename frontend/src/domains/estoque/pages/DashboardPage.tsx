@@ -291,7 +291,7 @@ export function DashboardPage() {
             <Stack spacing={SPACING.lg} sx={{ p: 0 }}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary, mb: SPACING.sm }}>
-                  Acoes principais
+                  Ações principais
                 </Typography>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={SPACING.sm}>
                   <Button

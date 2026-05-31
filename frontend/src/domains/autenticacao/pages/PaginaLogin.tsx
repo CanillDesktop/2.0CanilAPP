@@ -57,7 +57,7 @@ export function PaginaLogin() {
               variant="h3"
               sx={{ maxWidth: 560, mt: 1, fontWeight: 800, lineHeight: 1.05, letterSpacing: -1.2, color: cores.textPrimary }}
             >
-              Gestao de estoque com controle profissional e seguro.
+              Gestão de estoque com controle profissional e seguro.
             </Typography>
             <Typography variant="body1" sx={{ maxWidth: 560, mt: 2, color: cores.textSecondary }}>
               Acesse produtos, medicamentos, insumos e o dashboard usando o mesmo ambiente visual padronizado.
