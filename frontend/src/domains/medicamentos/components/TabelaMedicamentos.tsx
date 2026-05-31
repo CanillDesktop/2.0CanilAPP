@@ -220,6 +220,8 @@ function AcoesLinha({
   onExcluir: (id: number) => void;
   onMovimentar: (id: number) => void;
 }) {
+  const { iconeAcao } = useEstilosListagem();
+
   return (
     <Stack direction="row" sx={{ alignItems: 'center', gap: 0.5 }}>
       <MotionAction whileTap={{ scale: 0.92 }}>
@@ -229,7 +231,7 @@ function AcoesLinha({
             e.stopPropagation();
             onVisualizar(id);
           }}
-          sx={{ color: '#93c5fd', '&:hover': { backgroundColor: 'rgba(56,189,248,0.15)', color: '#bae6fd' } }}
+          sx={iconeAcao.visualizar}
         >
           <VisibilityOutlinedIcon fontSize="small" />
         </IconButton>
@@ -241,7 +243,7 @@ function AcoesLinha({
             e.stopPropagation();
             onEditar(id);
           }}
-          sx={{ color: '#a5b4fc', '&:hover': { backgroundColor: 'rgba(99,102,241,0.16)', color: '#c7d2fe' } }}
+          sx={iconeAcao.editar}
         >
           <EditOutlinedIcon fontSize="small" />
         </IconButton>
@@ -253,7 +255,7 @@ function AcoesLinha({
             e.stopPropagation();
             onExcluir(id);
           }}
-          sx={{ color: '#fca5a5', '&:hover': { backgroundColor: 'rgba(239,68,68,0.16)', color: '#fecaca' } }}
+          sx={iconeAcao.excluir}
         >
           <DeleteOutlineOutlinedIcon fontSize="small" />
         </IconButton>
@@ -265,7 +267,7 @@ function AcoesLinha({
             e.stopPropagation();
             onMovimentar(id);
           }}
-          sx={{ color: '#67e8f9', '&:hover': { backgroundColor: 'rgba(34,211,238,0.16)', color: '#a5f3fc' } }}
+          sx={iconeAcao.movimentar}
         >
           <LocalShippingOutlinedIcon fontSize="small" />
         </IconButton>
@@ -359,7 +361,7 @@ export function TabelaMedicamentos({
                     '&:hover': { backgroundColor: cores.hoverSurface },
                   }}
                 >
-                  <TableCell sx={{ color: '#93c5fd' }}>
+                  <TableCell sx={{ color: cores.chipIcon }}>
                     {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
                   </TableCell>
                   <TableCell sx={estilos.celulaTexto}>{linha.codigo}</TableCell>

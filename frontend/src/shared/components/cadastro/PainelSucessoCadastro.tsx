@@ -42,7 +42,7 @@ export function PainelSucessoCadastro({
         boxShadow: cores.sombraCard,
       }}
     >
-      <CheckCircleOutlinedIcon sx={{ fontSize: 56, color: cores.accent, mb: 1.5 }} />
+      <CheckCircleOutlinedIcon sx={{ fontSize: 56, color: cores.brandHighlight, mb: 1.5 }} />
       <Typography variant="h5" sx={{ fontWeight: 800, color: cores.textPrimary, mb: 0.75 }}>
         {tituloItem}
       </Typography>

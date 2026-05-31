@@ -1,6 +1,8 @@
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import { Box, Button, Chip, LinearProgress, Pagination, Paper, Stack, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { MARCA } from '../../../shared/theme/tokensTema';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 import { rotuloTipoItem } from '../utils/rotulosEstoque';
 
@@ -50,14 +52,17 @@ export function AlertaCard({
   const cardBorder = ehMinimo ? cores.alertMinimoBorder : cores.alertVencimentoBorder;
   const bordaHover = ehMinimo ? cores.alertMinimoBorder : cores.alertVencimentoBorder;
 
-  const chipOutline =
-    modo === 'light'
-      ? { borderColor: cardBorder, color: cores.accent }
-      : ehMinimo
-        ? { borderColor: 'rgba(248, 113, 113, 0.55)', color: '#fecaca' }
-        : { borderColor: 'rgba(251, 191, 36, 0.55)', color: '#fde68a' };
+  const chipOutline = ehMinimo
+    ? { borderColor: cores.alertMinimoBorder, color: modo === 'light' ? MARCA.salmaoEscuro : MARCA.salmao }
+    : { borderColor: cores.alertVencimentoBorder, color: modo === 'light' ? cores.brandHighlight : cores.acaoMovimentar };
 
-  const corDestaqueQtd = modo === 'light' ? cores.accent : ehMinimo ? '#fca5a5' : '#fde68a';
+  const corDestaqueQtd = ehMinimo
+    ? modo === 'light'
+      ? MARCA.salmaoEscuro
+      : MARCA.salmao
+    : modo === 'light'
+      ? cores.brandHighlight
+      : cores.acaoMovimentar;
 
   const lista = itens;
 
@@ -209,7 +214,7 @@ export function AlertaCard({
                         mt: 1.5,
                         height: 6,
                         borderRadius: 999,
-                        bgcolor: modo === 'light' ? 'rgba(148, 163, 184, 0.25)' : 'rgba(30, 41, 59, 0.9)',
+                        bgcolor: alpha(cores.textMuted, 0.2),
                         '& .MuiLinearProgress-bar': { borderRadius: 999 },
                       }}
                     />
@@ -221,7 +226,7 @@ export function AlertaCard({
         ) : (
           <Typography
             variant="body2"
-            sx={{ color: modo === 'light' ? cores.accent : ehMinimo ? 'rgba(52, 211, 153, 0.95)' : cores.textMuted }}
+            sx={{ color: cores.textMuted }}
           >
             {vazioLabel}
           </Typography>
@@ -286,7 +291,9 @@ export function AlertaCard({
                     sx={{
                       '& .MuiPaginationItem-root': { color: cores.textPrimary },
                       '& .Mui-selected': {
-                        bgcolor: modo === 'light' ? 'rgba(37, 99, 235, 0.2)' : ehMinimo ? 'rgba(248, 113, 113, 0.35)' : 'rgba(251, 191, 36, 0.35)',
+                        bgcolor: ehMinimo ? alpha(MARCA.salmao, 0.22) : alpha(cores.brandHighlight, 0.22),
+                        color: cores.textPrimary,
+                        fontWeight: 700,
                       },
                     }}
                   />

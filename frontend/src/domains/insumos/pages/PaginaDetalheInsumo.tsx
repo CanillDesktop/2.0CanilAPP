@@ -1,72 +1,130 @@
-import { useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Box, useMediaQuery, useTheme } from '@mui/material';
+import { useEffect, useMemo } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { CabecalhoDetalheItem } from '../../../shared/components/detalheItem/CabecalhoDetalheItem';
+import { InfoCardDetalheItem } from '../../../shared/components/detalheItem/InfoCardDetalheItem';
+import { KpiCardsDetalheItem } from '../../../shared/components/detalheItem/KpiCardsDetalheItem';
+import { ListaLotesDetalheItem } from '../../../shared/components/detalheItem/ListaLotesDetalheItem';
 import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarregamento';
 import { PainelErro } from '../../../shared/components/PainelErro';
+import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
+import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
 import { useInsumoDetalhe, useMutacaoInsumo } from '../hooks/useInsumos';
+
+const OPCOES_UNIDADE: Record<number, string> = {
+  1: 'Unidade',
+  2: 'Kg',
+  3: 'Litro',
+};
+
+function rotuloUnidade(unidade: number) {
+  return OPCOES_UNIDADE[unidade] ?? String(unidade);
+}
 
 export function PaginaDetalheInsumo() {
   const params = useParams();
+  const location = useLocation();
   const id = Number(params.id);
-  const navegar = useNavigate();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { cores } = useTemaApp();
+
   const { estado, carregar } = useInsumoDetalhe(Number.isFinite(id) ? id : undefined);
   const { excluir, carregando, erro, errosValidacao } = useMutacaoInsumo();
 
   useEffect(() => {
     void carregar();
-  }, [carregar]);
+  }, [carregar, location.search]);
+
+  const i = estado.dados;
+
+  const lotes = useMemo(
+    () => (i ? mapearItensEstoqueParaLotes(i.id, i.itensEstoque) : []),
+    [i],
+  );
+
+  const totalEstoque = useMemo(() => lotes.reduce((acc, l) => acc + l.quantidade, 0), [lotes]);
+  const lotesAtivos = useMemo(() => lotes.filter((l) => l.quantidade > 0).length, [lotes]);
+  const proximoVencimentoTexto = useMemo(() => textoProximoVencimento(lotes), [lotes]);
 
   async function aoExcluir() {
     if (!Number.isFinite(id)) return;
     if (!window.confirm('Confirma excluir este insumo?')) return;
     const ok = await excluir(id);
-    if (ok) navegar('/insumos');
+    if (ok) navigate('/insumos');
   }
 
-  const i = estado.dados;
+  function handleRetirada(lote: LoteDetalhe) {
+    if (!i) return;
+    navigate('/estoque/retirada', {
+      state: {
+        produtoId: i.id,
+        produtoNome: i.nomeOuDescricaoSimples,
+        codItem: i.codigo,
+        loteId: lote.id,
+        loteCodigo: lote.codigo,
+        quantidadeDisponivel: lote.quantidade,
+        retornoRota: `/insumos/${i.id}`,
+      },
+    });
+  }
 
   return (
-    <section>
-      <header className="cabecalho-secao">
-        <h1>Insumo</h1>
-        <Link className="botao-secundario" to="/insumos">
-          Voltar
-        </Link>
-      </header>
+    <Box
+      component="main"
+      sx={{
+        p: { xs: 2, sm: 3 },
+        bgcolor: cores.bgConteudo,
+        minHeight: '100%',
+      }}
+    >
+      {i ? (
+        <CabecalhoDetalheItem
+          rotuloLista="Voltar para insumos"
+          rotaLista="/insumos"
+          titulo={i.nomeOuDescricaoSimples}
+        />
+      ) : (
+        <CabecalhoDetalheItem rotuloLista="Voltar para insumos" rotaLista="/insumos" titulo="Insumo" />
+      )}
+
       <PainelErro mensagem={estado.erro ?? erro} errosValidacao={errosValidacao} />
       <IndicadorCarregamento visivel={estado.carregando || carregando} />
+
       {i && (
         <>
-          <dl className="lista-detalhe">
-            <dt>Código</dt>
-            <dd>{i.codigo}</dd>
-            <dt>Descrição</dt>
-            <dd>{i.nomeOuDescricaoSimples}</dd>
-            <dt>Detalhada</dt>
-            <dd>{i.descricaoDetalhada}</dd>
-            <dt>Unidade</dt>
-            <dd>{i.unidade}</dd>
-          </dl>
-          <h2>Lotes</h2>
-          <ul>
-            {i.itensEstoque.map((l) => (
-              <li key={`${l.lote}-${l.codigo}`}>
-                Lote {l.lote}: {l.quantidade} un.
-              </li>
-            ))}
-          </ul>
-          <div className="linha-botoes">
-            <button type="button" onClick={aoExcluir}>
-              Excluir
-            </button>
-            <Link
-              className="botao-secundario"
-              to={`/estoque/lotes/novo?idItem=${i.id}&codItem=${encodeURIComponent(i.codigo)}`}
-            >
-              Adicionar lote
-            </Link>
-          </div>
+          <KpiCardsDetalheItem
+            totalEstoque={totalEstoque}
+            lotesAtivos={lotesAtivos}
+            proximoVencimentoTexto={proximoVencimentoTexto}
+            carregando={estado.carregando}
+          />
+
+          <InfoCardDetalheItem
+            tituloSecao="Informações do insumo"
+            campos={[
+              { rotulo: 'Código', valor: i.codigo },
+              { rotulo: 'Descrição simplificada', valor: i.nomeOuDescricaoSimples },
+              { rotulo: 'Descrição detalhada', valor: i.descricaoDetalhada },
+              { rotulo: 'Unidade', valor: rotuloUnidade(i.unidade) },
+              { rotulo: 'Nível mínimo', valor: i.itemNivelEstoque.nivelMinimoEstoque },
+            ]}
+          />
+
+          <ListaLotesDetalheItem
+            idItem={i.id}
+            codItem={i.codigo}
+            lotes={lotes}
+            isMobile={isMobile}
+            rotuloEntidade="insumo"
+            mensagemVazio="Nenhum lote cadastrado para este insumo."
+            onRetirar={handleRetirada}
+            onExcluir={aoExcluir}
+          />
         </>
       )}
-    </section>
+    </Box>
   );
 }

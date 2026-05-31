@@ -1,39 +1,31 @@
-import { Box, Button, CssBaseline, Stack, ThemeProvider, createTheme, useMediaQuery, useTheme } from '@mui/material';
+import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { CabecalhoDetalheItem } from '../../../shared/components/detalheItem/CabecalhoDetalheItem';
+import { InfoCardDetalheItem } from '../../../shared/components/detalheItem/InfoCardDetalheItem';
+import { KpiCardsDetalheItem } from '../../../shared/components/detalheItem/KpiCardsDetalheItem';
+import { ListaLotesDetalheItem } from '../../../shared/components/detalheItem/ListaLotesDetalheItem';
 import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarregamento';
 import { PainelErro } from '../../../shared/components/PainelErro';
-import { LoteList } from '../components/LoteList';
-import { ProductHeader } from '../components/ProductHeader';
-import { ProductInfoCard } from '../components/ProductInfoCard';
-import { ProductKpiCards } from '../components/ProductKpiCards';
+import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
+import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
+import { OPCOES_CATEGORIA_PRODUTO_FILTRO } from '../constants/opcoesCategoriaProduto';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
 import { useProdutoDetalhe } from '../hooks/useProdutos';
-import type { LoteProduto } from '../types/loteProduto';
-import { mapearItensEstoqueParaLotes } from '../utils/mapearLotesDoProduto';
 
-const temaDetalheProduto = createTheme({
-  palette: {
-    mode: 'dark',
-    background: {
-      default: '#020617',
-      paper: '#0f172a',
-    },
-    text: {
-      primary: '#e2e8f0',
-      secondary: 'rgba(203, 213, 225, 0.85)',
-    },
-  },
-  shape: { borderRadius: 12 },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-  },
-});
+const OPCOES_UNIDADE: Record<number, string> = {
+  1: 'Unidade',
+  2: 'Kg',
+  3: 'Litro',
+};
 
-function textoProximoVencimento(lotes: LoteProduto[]): string {
-  if (!lotes.length) return '—';
-  const ordenados = [...lotes].sort((a, b) => new Date(a.validade).getTime() - new Date(b.validade).getTime());
-  return new Date(ordenados[0].validade).toLocaleDateString('pt-BR');
+function rotuloCategoria(categoria: number) {
+  return OPCOES_CATEGORIA_PRODUTO_FILTRO.find((o) => o.valor === categoria)?.rotulo ?? `Categoria ${categoria}`;
+}
+
+function rotuloUnidade(unidade: number) {
+  return OPCOES_UNIDADE[unidade] ?? String(unidade);
 }
 
 export function PaginaDetalheProduto() {
@@ -41,8 +33,9 @@ export function PaginaDetalheProduto() {
   const location = useLocation();
   const id = Number(params.id);
   const navigate = useNavigate();
-  const themeExterno = useTheme();
-  const isMobile = useMediaQuery(themeExterno.breakpoints.down('sm'));
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { cores } = useTemaApp();
 
   const { estado, carregar } = useProdutoDetalhe(Number.isFinite(id) ? id : undefined);
   const { excluir, carregando, erro, errosValidacao } = useMutacaoProduto();
@@ -69,7 +62,7 @@ export function PaginaDetalheProduto() {
     if (ok) navigate('/produtos');
   }
 
-  function handleRetirada(lote: LoteProduto) {
+  function handleRetirada(lote: LoteDetalhe) {
     if (!p) return;
     navigate('/estoque/retirada', {
       state: {
@@ -85,62 +78,58 @@ export function PaginaDetalheProduto() {
   }
 
   return (
-    <ThemeProvider theme={temaDetalheProduto}>
-      <CssBaseline />
-      <Box
-        component="main"
-        sx={{
-          p: { xs: 2, sm: 3 },
-          color: '#e2e8f0',
-          minHeight: '100%',
-        }}
-      >
-        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'flex-end', mb: 1 }}>
-          <Button
-            variant="text"
-            onClick={() => navigate('/produtos')}
-            sx={{ color: 'rgba(203, 213, 225, 0.9)' }}
-          >
-            Lista de produtos
-          </Button>
-        </Stack>
+    <Box
+      component="main"
+      sx={{
+        p: { xs: 2, sm: 3 },
+        bgcolor: cores.bgConteudo,
+        minHeight: '100%',
+      }}
+    >
+      {p ? (
+        <CabecalhoDetalheItem
+          rotuloLista="Voltar para produtos"
+          rotaLista="/produtos"
+          titulo={p.nomeOuDescricaoSimples}
+        />
+      ) : (
+        <CabecalhoDetalheItem rotuloLista="Voltar para produtos" rotaLista="/produtos" titulo="Produto" />
+      )}
 
-          <PainelErro mensagem={estado.erro ?? erro} errosValidacao={errosValidacao} />
-          <IndicadorCarregamento visivel={estado.carregando || carregando} />
+      <PainelErro mensagem={estado.erro ?? erro} errosValidacao={errosValidacao} />
+      <IndicadorCarregamento visivel={estado.carregando || carregando} />
 
-          {p && (
-            <>
-              <ProductHeader
-                titulo={p.nomeOuDescricaoSimples}
-                onVoltar={() => navigate('/dashboard')}
-                onVoltarInicio={() => navigate('/dashboard')}
-              />
+      {p && (
+        <>
+          <KpiCardsDetalheItem
+            totalEstoque={totalEstoque}
+            lotesAtivos={lotesAtivos}
+            proximoVencimentoTexto={proximoVencimentoTexto}
+            carregando={estado.carregando}
+          />
 
-              <ProductKpiCards
-                totalEstoque={totalEstoque}
-                lotesAtivos={lotesAtivos}
-                proximoVencimentoTexto={proximoVencimentoTexto}
-                carregando={estado.carregando}
-              />
+          <InfoCardDetalheItem
+            tituloSecao="Informações do produto"
+            campos={[
+              { rotulo: 'Código', valor: p.codigo },
+              { rotulo: 'Categoria', valor: rotuloCategoria(p.categoria) },
+              { rotulo: 'Unidade', valor: rotuloUnidade(p.unidade) },
+              { rotulo: 'Nível mínimo', valor: p.itemNivelEstoque.nivelMinimoEstoque },
+            ]}
+          />
 
-              <ProductInfoCard
-                codigo={p.codigo}
-                categoria={p.categoria}
-                unidade={p.unidade}
-                nivelMinimo={p.itemNivelEstoque.nivelMinimoEstoque}
-              />
-
-              <LoteList
-                idItem={p.id}
-                codItem={p.codigo}
-                lotes={lotes}
-                isMobile={isMobile}
-                onRetirar={handleRetirada}
-                onExcluirProduto={aoExcluir}
-              />
-            </>
-          )}
-      </Box>
-    </ThemeProvider>
+          <ListaLotesDetalheItem
+            idItem={p.id}
+            codItem={p.codigo}
+            lotes={lotes}
+            isMobile={isMobile}
+            rotuloEntidade="produto"
+            mensagemVazio="Nenhum lote cadastrado para este produto."
+            onRetirar={handleRetirada}
+            onExcluir={aoExcluir}
+          />
+        </>
+      )}
+    </Box>
   );
 }

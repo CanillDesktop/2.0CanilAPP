@@ -81,7 +81,16 @@ function ConteudoSidebar({
       }}
     >
       <Toolbar sx={{ minHeight: 72, px: 2.5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary }}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 800,
+            background: `linear-gradient(135deg, ${cores.accent} 0%, ${cores.brandHighlight} 100%)`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
           Canil Stock
         </Typography>
       </Toolbar>
@@ -101,8 +110,10 @@ function ConteudoSidebar({
                 mb: 0.6,
                 borderRadius: 2,
                 color: cores.textPrimary,
+                borderLeft: '3px solid transparent',
                 '&.Mui-selected': {
                   bgcolor: cores.hoverSurface,
+                  borderLeftColor: cores.accent,
                   '&:hover': { bgcolor: cores.hoverSurfaceStrong },
                 },
               }}

@@ -15,44 +15,17 @@ import { LoadingButton } from '@mui/lab';
 import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { PainelErro } from '../../../shared/components/PainelErro';
+import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
 import type { ItemEstoqueDto } from '../types/tiposEstoque';
-
-const COLORS = {
-  background: '#020617',
-  card: '#0f172a',
-  textPrimary: '#e2e8f0',
-  textSecondary: '#94a3b8',
-  border: 'rgba(255,255,255,0.08)',
-} as const;
-
-const textFieldSx = {
-  '& .MuiInputLabel-root': {
-    color: COLORS.textSecondary,
-  },
-  '& .MuiInputLabel-root.Mui-focused': {
-    color: '#3b82f6',
-  },
-  '& .MuiOutlinedInput-input': {
-    color: COLORS.textPrimary,
-  },
-  '& .MuiOutlinedInput-root': {
-    '& fieldset': {
-      borderColor: COLORS.border,
-    },
-    '&:hover fieldset': {
-      borderColor: '#3b82f6',
-    },
-    '&.Mui-focused fieldset': {
-      borderColor: '#3b82f6',
-    },
-  },
-} as const;
 
 export function FormularioNovoLote() {
   const [params] = useSearchParams();
   const navegar = useNavigate();
+  const { cores } = useTemaApp();
+  const campoSx = estilosCampoFormulario(cores);
   const { criarLote, carregando, erro, errosValidacao } = useMutacaoEstoque();
 
   const inicialIdItem = useMemo(() => Number(params.get('idItem')) || 0, [params]);
@@ -126,7 +99,7 @@ export function FormularioNovoLote() {
   return (
     <Box
       sx={{
-        backgroundColor: COLORS.background,
+        backgroundColor: cores.bgConteudo,
         width: '100%',
         minHeight: '100%',
         py: { xs: 2, sm: 3 },
@@ -138,20 +111,21 @@ export function FormularioNovoLote() {
           width: '100%',
           maxWidth: 780,
           mx: 'auto',
-          backgroundColor: COLORS.card,
-          border: '1px solid rgba(255,255,255,0.05)',
+          backgroundColor: cores.bgCard,
+          border: `1px solid ${cores.border}`,
           borderRadius: 3,
           p: 3,
+          boxShadow: cores.sombraCard,
         }}
       >
         <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
           <Box component="form" onSubmit={aoEnviar}>
             <Stack spacing={2}>
               <Box>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: COLORS.textPrimary }}>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: cores.textPrimary }}>
                   Novo lote no estoque
                 </Typography>
-                <Typography variant="caption" sx={{ color: COLORS.textSecondary, display: 'block', mt: 0.5 }}>
+                <Typography variant="caption" sx={{ color: cores.textSecondary, display: 'block', mt: 0.5 }}>
                   Campos obrigatórios: item, lote, quantidade e data de entrega.
                 </Typography>
               </Box>
@@ -166,7 +140,7 @@ export function FormularioNovoLote() {
                     value={idItem}
                     onChange={(e) => setIdItem(Number(e.target.value))}
                     slotProps={{ htmlInput: { min: 1 } }}
-                    sx={textFieldSx}
+                    sx={campoSx}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -176,7 +150,7 @@ export function FormularioNovoLote() {
                     label="Código do item"
                     value={codItem}
                     onChange={(e) => setCodItem(e.target.value)}
-                    sx={textFieldSx}
+                    sx={campoSx}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -186,7 +160,7 @@ export function FormularioNovoLote() {
                     label="Lote"
                     value={lote}
                     onChange={(e) => setLote(e.target.value)}
-                    sx={textFieldSx}
+                    sx={campoSx}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -198,7 +172,7 @@ export function FormularioNovoLote() {
                     value={quantidade}
                     onChange={(e) => setQuantidade(Number(e.target.value))}
                     slotProps={{ htmlInput: { min: 1 } }}
-                    sx={textFieldSx}
+                    sx={campoSx}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -210,7 +184,7 @@ export function FormularioNovoLote() {
                     value={dataEntrega}
                     onChange={(e) => setDataEntrega(e.target.value)}
                     slotProps={{ inputLabel: { shrink: true } }}
-                    sx={textFieldSx}
+                    sx={campoSx}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
@@ -222,7 +196,7 @@ export function FormularioNovoLote() {
                     value={dataValidade}
                     onChange={(e) => setDataValidade(e.target.value)}
                     slotProps={{ inputLabel: { shrink: true } }}
-                    sx={textFieldSx}
+                    sx={campoSx}
                   />
                 </Grid>
                 <Grid size={12}>
@@ -232,7 +206,7 @@ export function FormularioNovoLote() {
                     label="Documento (NF-e)"
                     value={nfe}
                     onChange={(e) => setNfe(e.target.value)}
-                    sx={textFieldSx}
+                    sx={campoSx}
                   />
                 </Grid>
               </Grid>
@@ -251,9 +225,10 @@ export function FormularioNovoLote() {
                   borderRadius: 2,
                   transition: '0.2s',
                   ...(botaoPrimario && {
-                    backgroundColor: '#2563eb',
+                    backgroundColor: cores.accent,
+                    color: cores.textOnAccent,
                     '&:hover': {
-                      backgroundColor: '#1d4ed8',
+                      backgroundColor: cores.accentHover,
                       transform: 'scale(1.02)',
                     },
                   }),

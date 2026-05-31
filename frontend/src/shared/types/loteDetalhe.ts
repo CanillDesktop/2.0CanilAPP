@@ -1,4 +1,4 @@
-export type LoteProduto = {
+export type LoteDetalhe = {
   id: string;
   codigo: string;
   quantidade: number;

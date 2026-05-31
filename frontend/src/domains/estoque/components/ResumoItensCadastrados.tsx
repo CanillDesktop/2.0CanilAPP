@@ -62,7 +62,7 @@ export function ResumoItensCadastrados({ carregando = false, totalItens, contage
                   sx={{
                     p: 1.2,
                     borderRadius: 2,
-                    color: cores.accent,
+                    color: cores.chipIcon,
                     bgcolor: cores.chipBg,
                     border: `1px solid ${cores.chipBorder}`,
                   }}

@@ -121,7 +121,7 @@ export function FilterBarInsumos({
                 textTransform: 'none',
                 width: { xs: '100%', md: 'auto' },
                 backgroundColor: cores.accent,
-                color: '#f8fafc',
+                color: cores.textOnAccent,
                 '&:hover': {
                   backgroundColor: cores.accentHover,
                 },

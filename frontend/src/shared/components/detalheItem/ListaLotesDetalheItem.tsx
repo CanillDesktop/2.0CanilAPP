@@ -1,18 +1,32 @@
 import { Box, Button, Card, CardContent, Grid, Stack, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
-import type { LoteProduto } from '../types/loteProduto';
-import { LoteRow } from './LoteRow';
+import type { LoteDetalhe } from '../../types/loteDetalhe';
+import { useEstilosListagem } from '../../theme/useEstilosListagem';
+import { LinhaLoteDetalheItem } from './LinhaLoteDetalheItem';
 
-type LoteListProps = {
+type Props = {
   idItem: number;
   codItem: string;
-  lotes: LoteProduto[];
+  lotes: LoteDetalhe[];
   isMobile: boolean;
-  onRetirar: (lote: LoteProduto) => void;
-  onExcluirProduto: () => void;
+  rotuloEntidade: string;
+  mensagemVazio: string;
+  onRetirar: (lote: LoteDetalhe) => void;
+  onExcluir: () => void;
 };
 
-export function LoteList({ idItem, codItem, lotes, isMobile, onRetirar, onExcluirProduto }: LoteListProps) {
+export function ListaLotesDetalheItem({
+  idItem,
+  codItem,
+  lotes,
+  isMobile,
+  rotuloEntidade,
+  mensagemVazio,
+  onRetirar,
+  onExcluir,
+}: Props) {
+  const { cores } = useEstilosListagem();
+  const estilos = useEstilosListagem();
   const total = lotes.length;
 
   return (
@@ -21,13 +35,13 @@ export function LoteList({ idItem, codItem, lotes, isMobile, onRetirar, onExclui
         mt: { xs: 2, md: 3 },
         p: { xs: 2, sm: 2.5 },
         borderRadius: 3,
-        bgcolor: '#0f172a',
-        border: '1px solid rgba(148, 163, 184, 0.12)',
-        boxShadow: 'none',
+        bgcolor: cores.bgCard,
+        border: `1px solid ${cores.border}`,
+        boxShadow: cores.sombraCard,
       }}
     >
       <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, color: '#f1f5f9', mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, color: cores.textPrimary, mb: 2 }}>
           Lotes ({total})
         </Typography>
 
@@ -40,32 +54,32 @@ export function LoteList({ idItem, codItem, lotes, isMobile, onRetirar, onExclui
                 alignItems: 'center',
                 pb: 1.5,
                 px: 0.5,
-                borderBottom: '1px solid rgba(148, 163, 184, 0.12)',
+                borderBottom: `1px solid ${cores.border}`,
                 mb: 1.5,
               }}
             >
               <Grid size={{ sm: 3 }}>
-                <Typography variant="caption" sx={{ color: 'rgba(148, 163, 184, 0.95)', fontWeight: 700 }}>
+                <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 700 }}>
                   Lote
                 </Typography>
               </Grid>
               <Grid size={{ sm: 2 }}>
-                <Typography variant="caption" sx={{ color: 'rgba(148, 163, 184, 0.95)', fontWeight: 700 }}>
+                <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 700 }}>
                   Qtd
                 </Typography>
               </Grid>
               <Grid size={{ sm: 3 }}>
-                <Typography variant="caption" sx={{ color: 'rgba(148, 163, 184, 0.95)', fontWeight: 700 }}>
+                <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 700 }}>
                   Validade
                 </Typography>
               </Grid>
               <Grid size={{ sm: 2 }}>
-                <Typography variant="caption" sx={{ color: 'rgba(148, 163, 184, 0.95)', fontWeight: 700 }}>
+                <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 700 }}>
                   Status
                 </Typography>
               </Grid>
               <Grid size={{ sm: 2 }} sx={{ textAlign: 'right' }}>
-                <Typography variant="caption" sx={{ color: 'rgba(148, 163, 184, 0.95)', fontWeight: 700 }}>
+                <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 700 }}>
                   Ação
                 </Typography>
               </Grid>
@@ -75,11 +89,13 @@ export function LoteList({ idItem, codItem, lotes, isMobile, onRetirar, onExclui
 
         <Stack spacing={1.25}>
           {lotes.length === 0 ? (
-            <Typography variant="body2" sx={{ color: 'rgba(203, 213, 225, 0.85)', py: 1 }}>
-              Nenhum lote cadastrado para este produto.
+            <Typography variant="body2" sx={{ color: cores.textSecondary, py: 1 }}>
+              {mensagemVazio}
             </Typography>
           ) : (
-            lotes.map((lote) => <LoteRow key={lote.id} lote={lote} isMobile={isMobile} onRetirar={onRetirar} />)
+            lotes.map((lote) => (
+              <LinhaLoteDetalheItem key={lote.id} lote={lote} isMobile={isMobile} onRetirar={onRetirar} />
+            ))
           )}
         </Stack>
 
@@ -93,19 +109,12 @@ export function LoteList({ idItem, codItem, lotes, isMobile, onRetirar, onExclui
             to={`/estoque/lotes/novo?idItem=${idItem}&codItem=${encodeURIComponent(codItem)}`}
             variant="contained"
             size="large"
-            sx={{
-              fontWeight: 700,
-              color: '#e2e8f0',
-              backgroundColor: '#2563eb',
-              '&:hover': {
-                backgroundColor: '#1d4ed8',
-              },
-            }}
+            sx={estilos.botaoPrimario}
           >
             Adicionar lote
           </Button>
-          <Button variant="outlined" color="error" size="large" onClick={onExcluirProduto} sx={{ fontWeight: 700 }}>
-            Excluir produto
+          <Button variant="outlined" color="error" size="large" onClick={onExcluir} sx={{ fontWeight: 700 }}>
+            Excluir {rotuloEntidade}
           </Button>
         </Stack>
       </CardContent>

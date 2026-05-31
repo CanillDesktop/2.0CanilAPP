@@ -1,3 +1,4 @@
+import { alpha } from '@mui/material/styles';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
@@ -18,6 +19,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
 import { listarProdutosPaginadosApi } from '../../produtos/api/produtosApi';
@@ -40,26 +42,13 @@ const CHIPS_CATEGORIA_ALERTAS: { valor: '' | LinhaOperacionalEstoque['origem']; 
   { valor: 'insumo', rotulo: 'Insumos' },
 ];
 
-const sxBotaoCadastro = {
-  textTransform: 'none' as const,
-  fontWeight: 700,
-  color: '#f8fafc',
-  backgroundColor: '#2563eb',
-  transition: 'transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease',
-  '&:hover': {
-    backgroundColor: '#1d4ed8',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 12px 20px rgba(29, 78, 216, 0.35)',
-  },
-  '& .MuiButton-startIcon': { color: '#e2e8f0' },
-};
-
 const contagemInicial: ContagemPorClasse = { produtos: 0, medicamentos: 0, insumos: 0 };
 
 export function DashboardPage() {
   const navigate = useNavigate();
   const { usuario } = useAutenticacao();
   const { cores } = useTemaApp();
+  const estilos = useEstilosListagem();
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
   const [contagemPorOrigem, setContagemPorOrigem] = useState<ContagemPorClasse>(contagemInicial);
@@ -310,7 +299,15 @@ export function DashboardPage() {
                     startIcon={<Inventory2OutlinedIcon />}
                     onClick={() => navegarComTransicao('/produtos/novo')}
                     fullWidth
-                    sx={sxBotaoCadastro}
+                    sx={{
+                      ...estilos.botaoPrimario,
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      '&:hover': {
+                        ...estilos.botaoPrimario['&:hover'],
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 10px 18px ${alpha(cores.accent, 0.28)}`,
+                      },
+                    }}
                   >
                     Cadastrar Produtos
                   </Button>
@@ -319,7 +316,15 @@ export function DashboardPage() {
                     startIcon={<MedicalServicesOutlinedIcon />}
                     onClick={() => navegarComTransicao('/medicamentos/novo')}
                     fullWidth
-                    sx={sxBotaoCadastro}
+                    sx={{
+                      ...estilos.botaoPrimario,
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      '&:hover': {
+                        ...estilos.botaoPrimario['&:hover'],
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 10px 18px ${alpha(cores.accent, 0.28)}`,
+                      },
+                    }}
                   >
                     Cadastrar Medicamentos
                   </Button>
@@ -328,7 +333,15 @@ export function DashboardPage() {
                     startIcon={<ScienceOutlinedIcon />}
                     onClick={() => navegarComTransicao('/insumos/novo')}
                     fullWidth
-                    sx={sxBotaoCadastro}
+                    sx={{
+                      ...estilos.botaoPrimario,
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      '&:hover': {
+                        ...estilos.botaoPrimario['&:hover'],
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 10px 18px ${alpha(cores.accent, 0.28)}`,
+                      },
+                    }}
                   >
                     Cadastrar Insumos
                   </Button>
