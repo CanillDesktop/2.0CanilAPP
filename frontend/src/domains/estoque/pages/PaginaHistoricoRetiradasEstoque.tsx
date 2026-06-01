@@ -1,26 +1,15 @@
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined';
 import TableViewOutlinedIcon from '@mui/icons-material/TableViewOutlined';
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
   Alert,
   Box,
   Button,
   Card,
   CircularProgress,
-  Divider,
-  IconButton,
   LinearProgress,
   Paper,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -31,11 +20,11 @@ import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { HistoricoRetiradasDetalheDrawer } from '../components/historicoRetiradas/HistoricoRetiradasDetalheDrawer';
+import { HistoricoRetiradasListaConteudo } from '../components/historicoRetiradas/HistoricoRetiradasListaConteudo';
 import {
   contarFiltrosHistoricoRetiradasAtivos,
   PainelFiltrosHistoricoRetiradas,
 } from '../components/historicoRetiradas/PainelFiltrosHistoricoRetiradas';
-import { HistoricoRetiradasStatusChip } from '../components/historicoRetiradas/HistoricoRetiradasStatusChip';
 import { exportarRetiradasPaginaComoCsv } from '../components/historicoRetiradas/historicoRetiradasExport';
 import { servicoEstoque } from '../services/servicoEstoque';
 import { ErroApi } from '../../../infrastructure/http/erroApi';
@@ -49,7 +38,6 @@ import {
   inicioDiaBrasiliaParaUtc,
   intervaloPadraoUltimosDiasBrasilia,
 } from '../../../shared/utils/fusoBrasilia';
-import { HistoricoRetiradasCelulaData } from '../utils/historicoRetiradasDataFormat';
 
 /** Cartão KPI compacto mantendo valores do backend intactos */
 function KpiResumoAudit({
@@ -262,8 +250,6 @@ export function PaginaHistoricoRetiradasEstoque() {
           backgroundColor: fundoSticky,
           borderBottom: 1,
           borderColor: cores.border,
-          mx: -0.75,
-          px: 0.75,
           pt: 0.75,
           pb: 1.75,
           mb: 2,
@@ -421,187 +407,23 @@ export function PaginaHistoricoRetiradasEstoque() {
           </Typography>
         </Paper>
       ) : exibirTabela ? (
-        <Box sx={{ position: 'relative' }}>
-          {estado.carregando && dados != null && (
-            <LinearProgress
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                zIndex: 3,
-              }}
-            />
-          )}
-          <TableContainer component={Paper} sx={{ borderRadius: 2, ...sxPaperFiltro }}>
-            <Table size="medium" stickyHeader>
-              <TableHead>
-                <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: cores.bgCabecalhoTabela, color: cores.textMuted } }}>
-                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, width: 72 }}>
-                    ID
-                  </TableCell>
-                  <TableCell sortDirection={ordenacaoDataAsc ? 'asc' : 'desc'} sx={{ minWidth: 160 }}>
-                    <TableSortLabel
-                      active
-                      direction={ordenacaoDataAsc ? 'asc' : 'desc'}
-                      onClick={() => setOrdenacaoDataAsc((v) => !v)}
-                      sx={{ '& .MuiTableSortLabel-icon': { ml: -0.5 } }}
-                    >
-                      Data e horário
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ minWidth: 180 }}>Produto</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Lote</TableCell>
-                  <TableCell align="right">Qtd</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Retirou</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Recebeu</TableCell>
-                  <TableCell
-                    sx={{ display: { xs: 'none', md: 'table-cell' }, maxWidth: 200 }}
-                  >
-                    Observação
-                  </TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                    Ações
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {itensPagina.map((r) => (
-                  <TableRow
-                    key={r.id}
-                    hover
-                    tabIndex={0}
-                    role="button"
-                    selected={detalheSelecionado?.id === r.id}
-                    onClick={() => setDetalheSelecionado(r)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setDetalheSelecionado(r);
-                      }
-                    }}
-                    sx={{
-                      cursor: 'pointer',
-                      transition: tema.transitions.create(['background-color', 'transform'], {
-                        duration: tema.transitions.duration.shortest,
-                      }),
-                      '&:hover': { bgcolor: cores.hoverSurface },
-                      '&.Mui-selected': { bgcolor: cores.hoverSurfaceStrong },
-                      '& .MuiTableCell-root': { color: cores.textPrimary, borderColor: cores.borderSuave },
-                    }}
-                  >
-                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{r.id}</TableCell>
-                    <TableCell>
-                      <HistoricoRetiradasCelulaData iso={r.dataHoraRetirada} />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 750, color: cores.textPrimary }}>
-                        {r.nomeProduto}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: cores.textMuted }}>
-                        Cód. {r.codigo}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: cores.textMuted, display: { xs: 'block', sm: 'none' } }}>
-                        Ref. #{r.id}
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }, fontVariantNumeric: 'tabular-nums' }}>
-                      {r.lote}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography sx={{ fontWeight: 820, fontSize: '1rem', letterSpacing: 0.2 }} component="span">
-                        {r.quantidade}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: cores.textMuted, display: { xs: 'block', lg: 'none' } }}>
-                        unid.
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                      <Typography variant="body2" sx={{ color: cores.textPrimary }}>{r.usuarioRetiranteExibicao}</Typography>
-                      {r.idUsuarioRetirante != null && (
-                        <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block' }}>
-                          ID usuário {r.idUsuarioRetirante}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                      <Typography variant="body2" sx={{ color: cores.textPrimary }}>{r.usuarioRecebedorExibicao}</Typography>
-                      {r.idUsuarioRecebedor != null && (
-                        <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block' }}>
-                          ID usuário {r.idUsuarioRecebedor}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }, maxWidth: 220 }}>
-                      <Tooltip title={r.observacao?.trim() ? r.observacao : '—'} placement="top-start">
-                        <Typography
-                          variant="body2"
-                          noWrap
-                          sx={{ opacity: r.observacao?.trim().length ? 1 : 0.45 }}
-                        >
-                          {r.observacao?.trim().length ? r.observacao : '—'}
-                        </Typography>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell>
-                      <HistoricoRetiradasStatusChip status={r.status} />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Detalhes">
-                        <IconButton
-                          aria-label={`Detalhes da retirada ${r.id}`}
-                          edge="end"
-                          size="small"
-                          color="primary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDetalheSelecionado(r);
-                          }}
-                        >
-                          <VisibilityOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <Divider sx={{ mb: -0.01 }} />
-
-          <TablePagination
-            component={Paper}
-            elevation={2}
-            rowsPerPageOptions={[10, 20, 50, 100]}
-            count={estado.dados?.totalCount ?? 0}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={(_, p) => setPage(p)}
-            onRowsPerPageChange={(e) => {
-              setRowsPerPage(parseInt(e.target.value, 10));
-              setPage(0);
-            }}
-            labelRowsPerPage="Linhas por página"
-            labelDisplayedRows={({ from, to, count }) =>
-              `${from}-${to} de ${count !== -1 ? count : 'mais de ' + to}`
-            }
-            sx={{
-              ...estilos.paginacao,
-              borderTopLeftRadius: 2,
-              borderTopRightRadius: 2,
-              bgcolor: cores.bgCard,
-              border: `1px solid ${cores.border}`,
-            }}
-          />
-
-          {/* Em telas pequenas, use o drawer para todas as informações */}
-          <Typography variant="caption" sx={{ color: cores.textMuted, display: { xs: 'block', lg: 'none' }, mt: 1 }}>
-            Algumas colunas ficam apenas em telas maiores para manter margem útil ao operador. Toque uma linha para ver
-            tudo no painel de detalhes.
-          </Typography>
-        </Box>
+        <HistoricoRetiradasListaConteudo
+          itens={itensPagina}
+          totalCount={estado.dados?.totalCount ?? 0}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setPage}
+          onRowsPerPageChange={(n) => {
+            setRowsPerPage(n);
+            setPage(0);
+          }}
+          ordenacaoDataAsc={ordenacaoDataAsc}
+          onToggleOrdenacaoData={() => setOrdenacaoDataAsc((v) => !v)}
+          selecionadoId={detalheSelecionado?.id ?? null}
+          onSelecionar={setDetalheSelecionado}
+          carregando={estado.carregando && dados != null}
+          sxPaper={sxPaperFiltro}
+        />
       ) : null}
 
       <HistoricoRetiradasDetalheDrawer aberto={detalheSelecionado} aoFechar={() => setDetalheSelecionado(null)} />

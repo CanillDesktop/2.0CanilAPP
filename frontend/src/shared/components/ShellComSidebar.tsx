@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import type { ReactNode } from 'react';
 import { useTemaApp } from '../../app/providers/ContextoTemaApp';
+import { larguraConteudoPagina, paddingPaginaShell } from '../theme/estilosLayoutPagina';
 
 type Props = {
   children: ReactNode;
@@ -13,7 +14,7 @@ export function ShellComSidebar({ children, titulo, subtitulo }: Props) {
   const { cores } = useTemaApp();
 
   return (
-    <Box sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: 2, pb: 4, bgcolor: cores.bgConteudo, minHeight: '100%' }}>
+    <Box sx={{ ...paddingPaginaShell, ...larguraConteudoPagina, bgcolor: cores.bgConteudo, minHeight: '100%' }}>
       <Box sx={{ mb: 2 }}>
         <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary }}>
           {titulo}

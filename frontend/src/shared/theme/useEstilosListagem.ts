@@ -10,7 +10,7 @@ export function useEstilosListagem() {
       gap: 3,
       backgroundColor: cores.bgPainel,
       borderRadius: 3,
-      p: { xs: 1.5, md: 2 },
+      p: { xs: 1, sm: 1.5, md: 2 },
     },
     titulo: {
       fontWeight: 700,
