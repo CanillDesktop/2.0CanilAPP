@@ -2,6 +2,7 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { larguraConteudoPagina, paddingPaginaDetalhe } from '../../../shared/theme/estilosLayoutPagina';
 import { CabecalhoDetalheItem } from '../../../shared/components/detalheItem/CabecalhoDetalheItem';
 import { InfoCardDetalheItem } from '../../../shared/components/detalheItem/InfoCardDetalheItem';
 import { KpiCardsDetalheItem } from '../../../shared/components/detalheItem/KpiCardsDetalheItem';
@@ -91,7 +92,8 @@ export function PaginaDetalheProduto() {
     <Box
       component="main"
       sx={{
-        p: { xs: 2, sm: 3 },
+        ...paddingPaginaDetalhe,
+        ...larguraConteudoPagina,
         bgcolor: cores.bgConteudo,
         minHeight: '100%',
       }}

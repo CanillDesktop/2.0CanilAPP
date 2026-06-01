@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import { larguraConteudoPagina, paddingPaginaShell } from '../../../shared/theme/estilosLayoutPagina';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
 import { listarTodosProdutosParaEstoqueApi } from '../../produtos/api/produtosApi';
@@ -266,9 +267,8 @@ export function PaginaListagemEstoque() {
   return (
     <Box
       sx={{
-        px: { xs: 2, sm: 3, md: 4 },
-        pt: 2,
-        pb: 4,
+        ...paddingPaginaShell,
+        ...larguraConteudoPagina,
         backgroundColor: cores.bgConteudo,
         minHeight: '100%',
       }}

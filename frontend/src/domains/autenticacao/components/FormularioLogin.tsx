@@ -25,7 +25,7 @@ type Props = {
 
 export function FormularioLogin({ aoAutenticar }: Props) {
   const { cores } = useTemaApp();
-  const campoSx = estilosCampoFormulario(cores);
+  const campoSx = estilosCampoFormulario(cores, { semAnelFoco: true });
   const { entrar, carregando, erro, errosValidacao } = useAcaoLogin();
   const [login, setLogin] = useState('');
   const [senha, setSenha] = useState('');
@@ -156,7 +156,7 @@ export function FormularioLogin({ aoAutenticar }: Props) {
         </Button>
 
         <Typography variant="body2" sx={{ color: cores.textSecondary, textAlign: 'center' }}>
-          Ainda nao tem acesso?{' '}
+          Ainda não tem acesso?{' '}
           <Box
             component={Link}
             to="/cadastro"

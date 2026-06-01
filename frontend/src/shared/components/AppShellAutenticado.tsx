@@ -71,7 +71,9 @@ export function AppShellAutenticado() {
         sx={{
           flex: 1,
           width: '100%',
+          maxWidth: '100%',
           boxSizing: 'border-box',
+          overflowX: 'hidden',
         }}
       >
         <Outlet />
