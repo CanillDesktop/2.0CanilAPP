@@ -1,22 +1,18 @@
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined';
-import SearchIcon from '@mui/icons-material/Search';
 import TableViewOutlinedIcon from '@mui/icons-material/TableViewOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
   Alert,
-  Autocomplete,
   Box,
   Button,
+  Card,
   CircularProgress,
   Divider,
-  FormControlLabel,
   IconButton,
-  InputAdornment,
   LinearProgress,
   Paper,
   Stack,
-  Switch,
   Table,
   TableBody,
   TableCell,
@@ -25,9 +21,6 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -36,9 +29,12 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
-import { estilosCampoFiltro } from '../../../shared/theme/estilosCampos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { HistoricoRetiradasDetalheDrawer } from '../components/historicoRetiradas/HistoricoRetiradasDetalheDrawer';
+import {
+  contarFiltrosHistoricoRetiradasAtivos,
+  PainelFiltrosHistoricoRetiradas,
+} from '../components/historicoRetiradas/PainelFiltrosHistoricoRetiradas';
 import { HistoricoRetiradasStatusChip } from '../components/historicoRetiradas/HistoricoRetiradasStatusChip';
 import { exportarRetiradasPaginaComoCsv } from '../components/historicoRetiradas/historicoRetiradasExport';
 import { servicoEstoque } from '../services/servicoEstoque';
@@ -52,7 +48,6 @@ import {
   formatarFaixaPeriodoBrasilia,
   inicioDiaBrasiliaParaUtc,
   intervaloPadraoUltimosDiasBrasilia,
-  rotuloFusoBrasilia,
 } from '../../../shared/utils/fusoBrasilia';
 import { HistoricoRetiradasCelulaData } from '../utils/historicoRetiradasDataFormat';
 
@@ -93,13 +88,13 @@ export function PaginaHistoricoRetiradasEstoque() {
   const tema = useTheme();
   const { cores } = useTemaApp();
   const estilos = useEstilosListagem();
-  const sxCampoFiltro = estilosCampoFiltro(cores);
   const sxPaperFiltro = {
     bgcolor: cores.bgCard,
     border: `1px solid ${cores.border}`,
   };
   const { estado, carregar } = useHistoricoRetiradasPaginado();
   const [usuariosResumo, setUsuariosResumo] = useState<UsuarioResumoFiltroDto[]>([]);
+  const [filtrosExpandidos, setFiltrosExpandidos] = useState(false);
 
   const [usarIntervaloLivre, setUsarIntervaloLivre] = useState(false);
   const [periodoRapido, setPeriodoRapido] = useState<PeriodoRapidoRetiradasDto>('ULTIMOS_30_DIAS');
@@ -170,6 +165,27 @@ export function PaginaHistoricoRetiradasEstoque() {
     if (!d) return null;
     return formatarFaixaPeriodoBrasilia(d.dataInicioUtcAplicada, d.dataFimUtcInclusiveAplicada);
   }, [estado.dados]);
+
+  const filtrosAtivos = useMemo(
+    () =>
+      contarFiltrosHistoricoRetiradasAtivos({
+        usarIntervaloLivre,
+        periodoRapido,
+        idRetirante,
+        idRecebedor,
+        termoBusca,
+      }),
+    [usarIntervaloLivre, periodoRapido, idRetirante, idRecebedor, termoBusca],
+  );
+
+  function aoAlternarIntervaloLivre(ativo: boolean) {
+    setUsarIntervaloLivre(ativo);
+    if (ativo) {
+      const { ini, fim } = intervaloPadraoUltimosDiasBrasilia(30);
+      setDataIni(ini);
+      setDataFim(fim);
+    }
+  }
 
   const recarregar = useCallback(async () => {
     const filtro = montarFiltro();
@@ -253,16 +269,7 @@ export function PaginaHistoricoRetiradasEstoque() {
           mb: 2,
         }}
       >
-        <Paper
-          sx={{
-            position: 'relative',
-            p: 2.5,
-            mb: metricas ? 2 : 0,
-            borderRadius: 2,
-            overflow: 'hidden',
-            ...sxPaperFiltro,
-          }}
-        >
+        <Card sx={{ ...estilos.cardTabela, p: { xs: 2, sm: 2.5 }, mb: metricas ? 2 : 0, position: 'relative', overflow: 'hidden' }}>
           {estado.carregando && (
             <LinearProgress
               sx={{
@@ -271,149 +278,33 @@ export function PaginaHistoricoRetiradasEstoque() {
                 left: 0,
                 right: 0,
                 height: 2,
-                borderRadius: '2px 2px 0 0',
+                borderRadius: '12px 12px 0 0',
               }}
             />
           )}
-          <Stack spacing={2.2}>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'center' } }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={usarIntervaloLivre}
-                    onChange={(_, c) => {
-                      setUsarIntervaloLivre(c);
-                      if (c) {
-                        const { ini, fim } = intervaloPadraoUltimosDiasBrasilia(30);
-                        setDataIni(ini);
-                        setDataFim(fim);
-                      }
-                    }}
-                  />
-                }
-                label={`Intervalo livre (${rotuloFusoBrasilia})`}
-                sx={{ color: cores.textPrimary, '& .MuiFormControlLabel-label': { color: cores.textPrimary } }}
-              />
-              {!usarIntervaloLivre && (
-                <ToggleButtonGroup
-                  exclusive
-                  value={periodoRapido}
-                  onChange={(_, v) => v != null && setPeriodoRapido(v)}
-                  size="small"
-                  sx={{
-                    flexWrap: 'wrap',
-                    '& .MuiToggleButton-root': {
-                      color: cores.textMuted,
-                      borderColor: cores.borderForte,
-                      '&.Mui-selected': {
-                        color: cores.textPrimary,
-                        bgcolor: cores.hoverSurface,
-                        borderColor: cores.focus,
-                      },
-                    },
-                  }}
-                >
-                  <ToggleButton value="HOJE">Hoje</ToggleButton>
-                  <ToggleButton value="ULTIMOS_7_DIAS">Últimos 7 dias</ToggleButton>
-                  <ToggleButton value="ULTIMOS_30_DIAS">Últimos 30 dias</ToggleButton>
-                </ToggleButtonGroup>
-              )}
-            </Stack>
-
-            {faixaTituloHumano && (
-              <Typography variant="caption" sx={{ color: cores.textSecondary }}>
-                Período amostrado nesta consulta ({rotuloFusoBrasilia}): <strong>{faixaTituloHumano}</strong>. Os
-                atalhos «Hoje» e «Últimos N dias» também seguem o calendário de Brasília.
-              </Typography>
-            )}
-
-            {usarIntervaloLivre && (
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <TextField
-                  label={`Data inicial (${rotuloFusoBrasilia})`}
-                  type="date"
-                  size="small"
-                  value={dataIni}
-                  onChange={(e) => setDataIni(e.target.value)}
-                  fullWidth
-                  sx={sxCampoFiltro}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                />
-                <TextField
-                  label={`Data final (${rotuloFusoBrasilia})`}
-                  type="date"
-                  size="small"
-                  value={dataFim}
-                  onChange={(e) => setDataFim(e.target.value)}
-                  fullWidth
-                  sx={sxCampoFiltro}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                />
-              </Stack>
-            )}
-
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-              <Autocomplete
-                options={usuariosResumo}
-                getOptionLabel={(o) => o.nomeExibicao}
-                value={usuariosResumo.find((u) => u.id === idRetirante) ?? null}
-                onChange={(_, v) => setIdRetirante(v?.id ?? null)}
-                renderInput={(params) => (
-                  <TextField {...params} label="Quem retirou" size="small" sx={sxCampoFiltro} />
-                )}
-                slotProps={{
-                  paper: { sx: { bgcolor: cores.bgCard, border: `1px solid ${cores.border}` } },
-                }}
-                sx={{ flex: 1, minWidth: 200 }}
-              />
-              <Autocomplete
-                options={usuariosResumo}
-                getOptionLabel={(o) => o.nomeExibicao}
-                value={usuariosResumo.find((u) => u.id === idRecebedor) ?? null}
-                onChange={(_, v) => setIdRecebedor(v?.id ?? null)}
-                renderInput={(params) => (
-                  <TextField {...params} label="Destinatário (quem recebeu)" size="small" sx={sxCampoFiltro} />
-                )}
-                slotProps={{
-                  paper: { sx: { bgcolor: cores.bgCard, border: `1px solid ${cores.border}` } },
-                }}
-                sx={{ flex: 1, minWidth: 200 }}
-              />
-            </Stack>
-
-            <TextField
-              size="small"
-              label="Busca"
-              placeholder="Buscar por ID, produto, lote, usuário ou observação..."
-              value={termoBusca}
-              onChange={(e) => setTermoBusca(e.target.value)}
-              fullWidth
-              sx={{
-                ...sxCampoFiltro,
-                '& .MuiFormHelperText-root': { color: cores.textMuted },
-              }}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: cores.textMuted, opacity: 0.85 }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: estado.carregando ? (
-                    <InputAdornment position="end">
-                      <CircularProgress size={18} />
-                    </InputAdornment>
-                  ) : undefined,
-                },
-              }}
-              helperText="A busca abrange código, nome, lote, retirante, destinatário, observações e IDs numéricos."
-            />
-
-            {usarIntervaloLivre && dataIni > dataFim && (
-              <Alert severity="warning">A data inicial não pode ser maior que a data final.</Alert>
-            )}
-          </Stack>
-        </Paper>
+          <PainelFiltrosHistoricoRetiradas
+            expandido={filtrosExpandidos}
+            onExpandidoChange={setFiltrosExpandidos}
+            carregando={estado.carregando}
+            usarIntervaloLivre={usarIntervaloLivre}
+            onUsarIntervaloLivreChange={aoAlternarIntervaloLivre}
+            periodoRapido={periodoRapido}
+            onPeriodoRapidoChange={setPeriodoRapido}
+            dataIni={dataIni}
+            onDataIniChange={setDataIni}
+            dataFim={dataFim}
+            onDataFimChange={setDataFim}
+            idRetirante={idRetirante}
+            onIdRetiranteChange={setIdRetirante}
+            idRecebedor={idRecebedor}
+            onIdRecebedorChange={setIdRecebedor}
+            termoBusca={termoBusca}
+            onTermoBuscaChange={setTermoBusca}
+            usuariosResumo={usuariosResumo}
+            faixaTituloHumano={faixaTituloHumano}
+            filtrosAtivos={filtrosAtivos}
+          />
+        </Card>
 
         {metricas && (
           <Stack spacing={2}>
