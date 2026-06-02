@@ -62,7 +62,7 @@ public class AuthService : IAuthService
 
         if (refreshToken == null || !refreshToken.IsActive)
         {
-            throw new UnauthorizedAccessException("Sua sessão expirou. Por favor, faça login novamente");
+            throw new ArgumentNullException(null, "Sua sessão expirou. Por favor, faça login novamente");
         }
 
         var usuario = await _usuariosService.BuscarPorIdAsync(refreshToken.UserId);

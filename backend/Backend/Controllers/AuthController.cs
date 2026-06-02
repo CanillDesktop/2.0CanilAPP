@@ -41,10 +41,10 @@ public class AuthController : ControllerBase
 
             if (result?.TokenResponse == null)
             {
-                return Unauthorized(new ErrorResponse
+                return BadRequest(new ErrorResponse
                 {
                     Title = "Acesso não autorizado",
-                    Status = StatusCodes.Status401Unauthorized,
+                    Status = StatusCodes.Status400BadRequest,
                     Details = "Usuário ou senha inválidos."
                 });
             }
@@ -57,24 +57,13 @@ public class AuthController : ControllerBase
                 result.Usuario
             });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (ArgumentNullException ex)
         {
-            return Unauthorized(new ErrorResponse
+            return BadRequest(new ErrorResponse
             {
                 Title = "Acesso não autorizado",
-                Status = StatusCodes.Status401Unauthorized,
-                Details = ex.Message ?? "Usuário inativo. Favor contatar o suporte/administradores."
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erro interno ao processar login para {Login}.", request.Login);
-
-            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
-            {
-                Title = "Erro interno no servidor",
-                Status = StatusCodes.Status500InternalServerError,
-                Details = "Ocorreu um erro inesperado. Tente novamente mais tarde."
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message
             });
         }
     }
@@ -88,7 +77,7 @@ public class AuthController : ControllerBase
 
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                throw new UnauthorizedAccessException();
+                throw new ArgumentNullException();
             }
 
             var result = await _authService.RefreshTokenAsync(refreshToken, cancellationToken);
@@ -97,7 +86,7 @@ public class AuthController : ControllerBase
 
             return Ok(result.AccessToken);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (ArgumentNullException ex)
         {
             return Unauthorized(new ErrorResponse
             {
@@ -118,14 +107,14 @@ public class AuthController : ControllerBase
 
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                throw new UnauthorizedAccessException();
+                throw new ArgumentNullException();
             }
 
             await _refreshTokenService.RevokeRefreshTokenAsync(refreshToken);
 
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (ArgumentNullException ex)
         {
             return Unauthorized(new ErrorResponse
             {
