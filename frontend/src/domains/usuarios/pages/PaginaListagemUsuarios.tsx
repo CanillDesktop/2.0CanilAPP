@@ -8,25 +8,36 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  MenuItem,
   Snackbar,
   Stack,
-  TextField,
+  Tab,
+  Tabs,
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
+import { AbaCodigoAtualLeitura } from '../components/AbaCodigoAtualLeitura';
+import { AbaCodigoSegurancaAdmin } from '../components/AbaCodigoSegurancaAdmin';
 import { FormularioUsuario } from '../components/FormularioUsuario';
 import { ListagemUsuariosResponsiva } from '../components/ListagemUsuariosResponsiva';
 import { ModalConfirmacaoSenha } from '../components/ModalConfirmacaoSenha';
 import { ModalTrocarSenha } from '../components/ModalTrocarSenha';
+import {
+  contarFiltrosGestaoUsuariosAtivos,
+  PainelFiltrosGestaoUsuarios,
+} from '../components/PainelFiltrosGestaoUsuarios';
 import { useUsuarios } from '../hooks/useUsuarios';
 import type { UsuarioCriadoDto } from '../types/tiposUsuarios';
 import { descreverPermissao, formatarTempoCadastro } from '../utils/exibirPerfilUsuario';
 
+type AbaAdmin = 'meus-dados' | 'gestao' | 'codigo-seguranca';
+type AbaLeitura = 'meus-dados' | 'codigo-atual';
+
 export function PaginaListagemUsuarios() {
   const { usuario, recarregarSessao } = useAutenticacao();
+  const { cores } = useTemaApp();
   const ehAdmin = (usuario?.permissao ?? 0) === 1;
   const {
     usuarios,
@@ -48,6 +59,9 @@ export function PaginaListagemUsuarios() {
   const [busca, setBusca] = useState('');
   const [status, setStatus] = useState<'todos' | 'ativos' | 'inativos'>('todos');
   const [pagina, setPagina] = useState(1);
+  const [filtrosGestaoExpandidos, setFiltrosGestaoExpandidos] = useState(false);
+  const [abaAdmin, setAbaAdmin] = useState<AbaAdmin>('meus-dados');
+  const [abaLeitura, setAbaLeitura] = useState<AbaLeitura>('meus-dados');
   const [dialogEditarAberto, setDialogEditarAberto] = useState(false);
   const [dialogTrocarSenhaAberto, setDialogTrocarSenhaAberto] = useState(false);
   const [dialogNovoAberto, setDialogNovoAberto] = useState(false);
@@ -159,6 +173,151 @@ export function PaginaListagemUsuarios() {
 
   const editandoProprioUsuario = Boolean(alvoEdicao?.id && usuario?.id === alvoEdicao.id);
 
+  const filtrosGestaoAtivos = useMemo(
+    () => contarFiltrosGestaoUsuariosAtivos(buscaInput, status),
+    [buscaInput, status],
+  );
+
+  const cardMeusDados = (
+    <Card sx={{ borderRadius: 3, bgcolor: cores.bgCard, border: `1px solid ${cores.border}`, boxShadow: cores.sombraCard }}>
+      <CardContent>
+        <Stack spacing={1.5}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: cores.textPrimary }}>
+            Meus dados
+          </Typography>
+          <Typography variant="body1" sx={{ color: cores.textPrimary }}>
+            <strong>Nome:</strong> {usuario?.primeiroNome ?? ''} {usuario?.sobrenome ?? ''}
+          </Typography>
+          <Typography variant="body1" sx={{ color: cores.textPrimary }}>
+            <strong>Email:</strong> {usuario?.email ?? 'Nao informado'}
+          </Typography>
+          <Typography variant="body1" sx={{ color: cores.textPrimary }}>
+            <strong>Tempo cadastrado:</strong> {formatarTempoCadastro(usuario?.dataHoraCriacao)}
+          </Typography>
+          <Typography variant="body1" sx={{ color: cores.textPrimary }}>
+            <strong>Permissão:</strong> {descreverPermissao(usuario?.permissao ?? -1)}
+          </Typography>
+          <Typography variant="body1" sx={{ color: cores.textPrimary }}>
+            <strong>Status:</strong> {usuario?.isDeleted ? 'Inativo' : 'Ativo'}
+          </Typography>
+          <Typography variant="body2" sx={{ color: cores.textSecondary, pt: 0.5 }}>
+            Você pode atualizar nome, sobrenome e email. A permissão só pode ser alterada por um administrador ao
+            editar outro usuário na lista (quando houver outro admin ativo no sistema).
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1, pt: 1, flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              onClick={() => {
+                if (usuarioAtual?.id != null) {
+                  setAlvoEdicao(usuarioAtual);
+                  setDialogEditarAberto(true);
+                }
+              }}
+            >
+              Editar meus dados
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                limparFeedback();
+                setDialogTrocarSenhaAberto(true);
+              }}
+            >
+              Alterar senha
+            </Button>
+            <Button variant="outlined" onClick={recarregarSessao}>
+              Atualizar sessão
+            </Button>
+          </Stack>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+
+  const gestaoUsuariosAdmin = (
+    <Card sx={{ borderRadius: 3, bgcolor: cores.bgCard, border: `1px solid ${cores.border}`, boxShadow: cores.sombraCard }}>
+      <CardContent>
+        <Stack spacing={2}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: cores.textPrimary }}>
+            Gestão de usuários
+          </Typography>
+
+          <PainelFiltrosGestaoUsuarios
+            expandido={filtrosGestaoExpandidos}
+            onExpandidoChange={setFiltrosGestaoExpandidos}
+            buscaInput={buscaInput}
+            onBuscaInputChange={(valor) => {
+              setBuscaInput(valor);
+              setPagina(1);
+            }}
+            status={status}
+            onStatusChange={(valor) => {
+              setStatus(valor);
+              setPagina(1);
+            }}
+            filtrosAtivos={filtrosGestaoAtivos}
+            carregandoLista={carregandoLista}
+            carregandoAcao={carregandoAcao}
+            onCadastrar={() => setDialogNovoAberto(true)}
+          />
+
+          {erro ? <Alert severity="error">{erro}</Alert> : null}
+
+          {carregandoLista ? (
+            <Stack direction="row" spacing={1.5} sx={{ py: 3, justifyContent: 'center', alignItems: 'center' }}>
+              <CircularProgress size={28} />
+              <Typography variant="body2" sx={{ color: cores.textSecondary }}>
+                Carregando usuários…
+              </Typography>
+            </Stack>
+          ) : null}
+
+          {listaVaziaSemFiltro ? (
+            <Alert severity="info">Nenhum usuário cadastrado no sistema ainda.</Alert>
+          ) : null}
+
+          {listaFiltradaVazia ? (
+            <Alert severity="warning">Nenhum usuário corresponde à busca ou ao filtro de status.</Alert>
+          ) : null}
+
+          {!carregandoLista && usuariosFiltrados.length > 0 ? (
+            <>
+              <ListagemUsuariosResponsiva
+                usuarios={usuariosPaginados}
+                carregando={carregandoAcao}
+                onEditar={(u) => {
+                  setAlvoEdicao(u);
+                  setDialogEditarAberto(true);
+                }}
+                onInativar={(u) => setConfirmacao({ aberto: true, acao: 'inativar', usuarioAlvo: u })}
+                onRemover={(u) => setConfirmacao({ aberto: true, acao: 'remover', usuarioAlvo: u })}
+              />
+              <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                <Button
+                  variant="outlined"
+                  disabled={paginaAtual <= 1 || usuariosFiltrados.length === 0}
+                  onClick={() => setPagina((v) => Math.max(1, v - 1))}
+                >
+                  Anterior
+                </Button>
+                <Button variant="outlined" disabled>
+                  {usuariosFiltrados.length === 0 ? '0 / 0' : `${paginaAtual} / ${totalPaginas}`}
+                </Button>
+                <Button
+                  variant="outlined"
+                  disabled={paginaAtual >= totalPaginas || usuariosFiltrados.length === 0}
+                  onClick={() => setPagina((v) => Math.min(totalPaginas, v + 1))}
+                >
+                  Próxima
+                </Button>
+              </Stack>
+            </>
+          ) : null}
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <ShellComSidebar
       titulo="Usuários"
@@ -168,160 +327,55 @@ export function PaginaListagemUsuarios() {
           : 'Seus dados e permissão da conta (apenas administradores alteram permissões de outros usuários)'
       }
     >
-      <Stack spacing={2}>
-        <Card sx={{ borderRadius: 3, bgcolor: 'background.paper', boxShadow: 3 }}>
-          <CardContent>
-            <Stack spacing={1.5}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Meus dados
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'text.primary' }}>
-                <strong>Nome:</strong> {usuario?.primeiroNome ?? ''} {usuario?.sobrenome ?? ''}
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'text.primary' }}>
-                <strong>Email:</strong> {usuario?.email ?? 'Nao informado'}
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'text.primary' }}>
-                <strong>Tempo cadastrado:</strong> {formatarTempoCadastro(usuario?.dataHoraCriacao)}
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'text.primary' }}>
-                <strong>Permissão:</strong> {descreverPermissao(usuario?.permissao ?? -1)}
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'text.primary' }}>
-                <strong>Status:</strong> {usuario?.isDeleted ? 'Inativo' : 'Ativo'}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary', pt: 0.5 }}>
-                Você pode atualizar nome, sobrenome e email. A permissão só pode ser alterada por um administrador ao
-                editar outro usuário na lista (quando houver outro admin ativo no sistema).
-              </Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1, pt: 1, flexWrap: 'wrap' }}>
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    if (usuarioAtual?.id != null) {
-                      setAlvoEdicao(usuarioAtual);
-                      setDialogEditarAberto(true);
-                    }
-                  }}
-                >
-                  Editar meus dados
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    limparFeedback();
-                    setDialogTrocarSenhaAberto(true);
-                  }}
-                >
-                  Alterar senha
-                </Button>
-                <Button variant="outlined" onClick={recarregarSessao}>
-                  Atualizar sessão
-                </Button>
-              </Stack>
-            </Stack>
-          </CardContent>
-        </Card>
+      {ehAdmin ? (
+        <>
+          <Tabs
+            value={abaAdmin}
+            onChange={(_, v) => setAbaAdmin(v as AbaAdmin)}
+            textColor="inherit"
+            indicatorColor="primary"
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              mb: 2,
+              borderBottom: `1px solid ${cores.border}`,
+              '& .MuiTab-root': { color: cores.textMuted, textTransform: 'none', fontWeight: 600 },
+              '& .Mui-selected': { color: cores.textPrimary },
+            }}
+          >
+            <Tab value="meus-dados" label="Meus dados" />
+            <Tab value="gestao" label="Gestão de usuários" />
+            <Tab value="codigo-seguranca" label="Código de segurança" />
+          </Tabs>
 
-        {ehAdmin ? (
-          <Card sx={{ borderRadius: 3, bgcolor: 'background.paper', boxShadow: 3 }}>
-            <CardContent>
-              <Stack spacing={2}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Gestão de usuários
-                </Typography>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ alignItems: { md: 'center' } }}>
-                  <TextField
-                    label="Buscar por nome/email"
-                    value={buscaInput}
-                    onChange={(e) => {
-                      setBuscaInput(e.target.value);
-                      setPagina(1);
-                    }}
-                    fullWidth
-                    disabled={carregandoLista}
-                  />
-                  <TextField
-                    label="Status"
-                    value={status}
-                    onChange={(e) => {
-                      setStatus(e.target.value as 'todos' | 'ativos' | 'inativos');
-                      setPagina(1);
-                    }}
-                    select
-                    sx={{ minWidth: { xs: '100%', md: 200 } }}
-                    disabled={carregandoLista}
-                  >
-                    <MenuItem value="todos">Todos</MenuItem>
-                    <MenuItem value="ativos">Ativos</MenuItem>
-                    <MenuItem value="inativos">Inativos</MenuItem>
-                  </TextField>
-                  <Button
-                    variant="contained"
-                    onClick={() => setDialogNovoAberto(true)}
-                    disabled={carregandoAcao || carregandoLista}
-                  >
-                    Cadastrar usuário
-                  </Button>
-                </Stack>
+          {abaAdmin === 'meus-dados' ? cardMeusDados : null}
+          {abaAdmin === 'gestao' ? gestaoUsuariosAdmin : null}
+          {abaAdmin === 'codigo-seguranca' ? <AbaCodigoSegurancaAdmin /> : null}
+        </>
+      ) : (
+        <>
+          <Tabs
+            value={abaLeitura}
+            onChange={(_, v) => setAbaLeitura(v as AbaLeitura)}
+            textColor="inherit"
+            indicatorColor="primary"
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              mb: 2,
+              borderBottom: `1px solid ${cores.border}`,
+              '& .MuiTab-root': { color: cores.textMuted, textTransform: 'none', fontWeight: 600 },
+              '& .Mui-selected': { color: cores.textPrimary },
+            }}
+          >
+            <Tab value="meus-dados" label="Meus dados" />
+            <Tab value="codigo-atual" label="Código atual" />
+          </Tabs>
 
-                {erro ? <Alert severity="error">{erro}</Alert> : null}
-
-                {carregandoLista ? (
-                  <Stack direction="row" spacing={1.5} sx={{ py: 3, justifyContent: 'center', alignItems: 'center' }}>
-                    <CircularProgress size={28} />
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                      Carregando usuários…
-                    </Typography>
-                  </Stack>
-                ) : null}
-
-                {listaVaziaSemFiltro ? (
-                  <Alert severity="info">Nenhum usuário cadastrado no sistema ainda.</Alert>
-                ) : null}
-
-                {listaFiltradaVazia ? (
-                  <Alert severity="warning">Nenhum usuário corresponde à busca ou ao filtro de status.</Alert>
-                ) : null}
-
-                {!carregandoLista && usuariosFiltrados.length > 0 ? (
-                  <>
-                    <ListagemUsuariosResponsiva
-                      usuarios={usuariosPaginados}
-                      carregando={carregandoAcao}
-                      onEditar={(u) => {
-                        setAlvoEdicao(u);
-                        setDialogEditarAberto(true);
-                      }}
-                      onInativar={(u) => setConfirmacao({ aberto: true, acao: 'inativar', usuarioAlvo: u })}
-                      onRemover={(u) => setConfirmacao({ aberto: true, acao: 'remover', usuarioAlvo: u })}
-                    />
-                    <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                      <Button
-                        variant="outlined"
-                        disabled={paginaAtual <= 1 || usuariosFiltrados.length === 0}
-                        onClick={() => setPagina((v) => Math.max(1, v - 1))}
-                      >
-                        Anterior
-                      </Button>
-                      <Button variant="outlined" disabled>
-                        {usuariosFiltrados.length === 0 ? '0 / 0' : `${paginaAtual} / ${totalPaginas}`}
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        disabled={paginaAtual >= totalPaginas || usuariosFiltrados.length === 0}
-                        onClick={() => setPagina((v) => Math.min(totalPaginas, v + 1))}
-                      >
-                        Próxima
-                      </Button>
-                    </Stack>
-                  </>
-                ) : null}
-              </Stack>
-            </CardContent>
-          </Card>
-        ) : null}
-      </Stack>
+          {abaLeitura === 'meus-dados' ? cardMeusDados : null}
+          {abaLeitura === 'codigo-atual' ? <AbaCodigoAtualLeitura /> : null}
+        </>
+      )}
 
       {!ehAdmin && erro && !dialogTrocarSenhaAberto ? (
         <Alert severity="error" sx={{ mt: 2 }}>
