@@ -1,5 +1,5 @@
 import { Box, useMediaQuery, useTheme } from '@mui/material';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { larguraConteudoPagina, paddingPaginaDetalhe } from '../../../shared/theme/estilosLayoutPagina';
@@ -11,6 +11,7 @@ import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarre
 import { PainelErro } from '../../../shared/components/PainelErro';
 import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
 import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
+import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
 import { OPCOES_CATEGORIA_PRODUTO_FILTRO } from '../constants/opcoesCategoriaProduto';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
 import { useProdutoDetalhe } from '../hooks/useProdutos';
@@ -40,6 +41,7 @@ export function PaginaDetalheProduto() {
 
   const { estado, carregar } = useProdutoDetalhe(Number.isFinite(id) ? id : undefined);
   const { excluir, carregando, erro, errosValidacao } = useMutacaoProduto();
+  const [erroRetirada, setErroRetirada] = useState<string | null>(null);
 
   useEffect(() => {
     void carregar();
@@ -65,16 +67,24 @@ export function PaginaDetalheProduto() {
 
   function handleRetirada(lote: LoteDetalhe) {
     if (!p) return;
+    const state = montarRetiradaNavegacaoState({
+      produto: p,
+      produtoId: p.id,
+      codItem: p.codigo,
+      loteId: lote.id,
+      loteCodigo: lote.codigo,
+      quantidadeDisponivel: lote.quantidade,
+      retornoRota: `/produtos/${p.id}`,
+    });
+
+    if (!state) {
+      setErroRetirada(MENSAGEM_PRODUTO_SEM_NOME_RETIRADA);
+      return;
+    }
+
+    setErroRetirada(null);
     navigate('/estoque/retirada', {
-      state: {
-        produtoId: p.id,
-        produtoNome: p.nomeOuDescricaoSimples,
-        codItem: p.codigo,
-        loteId: lote.id,
-        loteCodigo: lote.codigo,
-        quantidadeDisponivel: lote.quantidade,
-        retornoRota: `/produtos/${p.id}`,
-      },
+      state,
     });
   }
 
@@ -92,13 +102,13 @@ export function PaginaDetalheProduto() {
         <CabecalhoDetalheItem
           rotuloLista="Voltar para produtos"
           rotaLista="/produtos"
-          titulo={p.nomeOuDescricaoSimples}
+          titulo={p.nomeInformado ?? p.nomeComercial ?? p.nomeOuDescricaoSimples ?? p.descricaoSimples ?? p.descricaoDetalhada ?? 'Produto'}
         />
       ) : (
         <CabecalhoDetalheItem rotuloLista="Voltar para produtos" rotaLista="/produtos" titulo="Produto" />
       )}
 
-      <PainelErro mensagem={estado.erro ?? erro} errosValidacao={errosValidacao} />
+      <PainelErro mensagem={erroRetirada ?? estado.erro ?? erro} errosValidacao={errosValidacao} />
       <IndicadorCarregamento visivel={estado.carregando || carregando} />
 
       {p && (

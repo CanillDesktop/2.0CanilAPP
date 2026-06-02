@@ -28,9 +28,7 @@ public static class RetiradaEstoqueHistoricoExcelExportador
         ("Status", 14),
     ];
 
-    public static ArquivoExportadoDTO Gerar(
-        IReadOnlyList<RetiradaEstoqueHistoricoItemDTO> itens,
-        RetiradaEstoqueExportacaoContextoDTO contexto)
+    public static ArquivoExportadoDTO Gerar( IReadOnlyList<RetiradaEstoqueHistoricoItemDTO> itens,RetiradaEstoqueExportacaoContextoDTO contexto)
     {
         using var workbook = new XLWorkbook();
         var planilhaDetalhe = workbook.Worksheets.Add("Retiradas");
@@ -40,7 +38,7 @@ public static class RetiradaEstoqueHistoricoExcelExportador
 
         var planilhaResumo = workbook.Worksheets.Add("Resumo");
         PreencherPlanilhaResumo(planilhaResumo, itens, contexto);
-        ConfigurarImpressao(planilhaResumo, repetirLinhas: "1:4");
+        ConfigurarImpressao(planilhaResumo);
 
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
@@ -58,13 +56,10 @@ public static class RetiradaEstoqueHistoricoExcelExportador
     {
         var utc = DateTime.SpecifyKind(dataHoraUtc, DateTimeKind.Utc);
         var local = TimeZoneInfo.ConvertTimeFromUtc(utc, FusoOperacional);
-        return local.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.GetCultureInfo("pt-BR"));
+        return local.ToString("dd/MM/yyyy HH:mm",CultureInfo.GetCultureInfo("pt-BR"));
     }
 
-    private static int PreencherPlanilhaDetalhe(
-        IXLWorksheet ws,
-        IReadOnlyList<RetiradaEstoqueHistoricoItemDTO> itens,
-        RetiradaEstoqueExportacaoContextoDTO contexto)
+    private static int PreencherPlanilhaDetalhe(IXLWorksheet ws, IReadOnlyList<RetiradaEstoqueHistoricoItemDTO> itens, RetiradaEstoqueExportacaoContextoDTO contexto)
     {
         ws.Cell(1, 1).Value = "Histórico de retiradas de estoque — CanilApp";
         ws.Range(1, 1, 1, ColunasDetalhe.Length).Merge();
@@ -101,14 +96,14 @@ public static class RetiradaEstoqueHistoricoExcelExportador
         return linhaAtual - 1;
     }
 
-    private static void PreencherLinhaDetalhe(
-        IXLWorksheet ws,
-        int linha,
-        RetiradaEstoqueHistoricoItemDTO item,
-        bool zebra)
+    private static void PreencherLinhaDetalhe( IXLWorksheet ws,int linha, RetiradaEstoqueHistoricoItemDTO item,bool zebra)
     {
+        var utc = DateTime.SpecifyKind(item.DataHoraRetirada, DateTimeKind.Utc);
+        var local = TimeZoneInfo.ConvertTimeFromUtc(utc, FusoOperacional);
+
         ws.Cell(linha, 1).Value = item.Id;
-        ws.Cell(linha, 2).Value = FormatarDataHoraLocal(item.DataHoraRetirada);
+        ws.Cell(linha, 2).Value = local;
+        ws.Cell(linha, 2).Style.DateFormat.Format = "dd/MM/yyyy HH:mm";
         ws.Cell(linha, 3).Value = TextoOuVazio(item.Codigo);
         ws.Cell(linha, 4).Value = TextoOuVazio(item.NomeProduto);
         ws.Cell(linha, 5).Value = TextoOuVazio(item.Lote);
@@ -168,10 +163,7 @@ public static class RetiradaEstoqueHistoricoExcelExportador
         }
     }
 
-    private static void PreencherPlanilhaResumo(
-        IXLWorksheet ws,
-        IReadOnlyList<RetiradaEstoqueHistoricoItemDTO> itens,
-        RetiradaEstoqueExportacaoContextoDTO contexto)
+    private static void PreencherPlanilhaResumo(IXLWorksheet ws,IReadOnlyList<RetiradaEstoqueHistoricoItemDTO> itens,RetiradaEstoqueExportacaoContextoDTO contexto)
     {
         ws.Cell(1, 1).Value = "Resumo — Histórico de retiradas";
         ws.Cell(1, 1).Style.Font.SetBold(true).Font.SetFontSize(14);
@@ -216,11 +208,7 @@ public static class RetiradaEstoqueHistoricoExcelExportador
         ws.Column(1).Width = Math.Max(ws.Column(1).Width, 28);
     }
 
-    private static int EscreverTabelaAgrupada(
-        IXLWorksheet ws,
-        int linhaInicio,
-        string titulo,
-        IEnumerable<(string Chave, int Total)> grupos)
+    private static int EscreverTabelaAgrupada(IXLWorksheet ws,int linhaInicio,string titulo, IEnumerable<(string Chave, int Total)> grupos)
     {
         ws.Cell(linhaInicio, 1).Value = titulo;
         ws.Cell(linhaInicio, 1).Style.Font.SetBold(true).Font.SetFontColor(CorCabecalhoFundo);
@@ -280,17 +268,21 @@ public static class RetiradaEstoqueHistoricoExcelExportador
         celula.Style.Font.SetFontColor(fonte);
     }
 
-    private static void ConfigurarImpressao(IXLWorksheet ws, string? repetirLinhas = "4")
+    private static void ConfigurarImpressao(IXLWorksheet ws, int linhaParaRepetir = 4)
     {
         ws.PageSetup.PageOrientation = XLPageOrientation.Landscape;
         ws.PageSetup.PaperSize = XLPaperSize.A4Paper;
+
         ws.PageSetup.FitToPages(1, 0);
+
         ws.PageSetup.Margins.Top = 0.5;
         ws.PageSetup.Margins.Bottom = 0.5;
         ws.PageSetup.Margins.Left = 0.4;
         ws.PageSetup.Margins.Right = 0.4;
-        if (!string.IsNullOrEmpty(repetirLinhas))
-            ws.PageSetup.SetRowsToRepeatAtTop(repetirLinhas);
+        if (linhaParaRepetir > 0 && ws.LastRowUsed()?.RowNumber() >= linhaParaRepetir)
+        {
+            ws.PageSetup.SetRowsToRepeatAtTop(linhaParaRepetir, linhaParaRepetir);
+        }
     }
 
     private static string FormatarDataCurta(DateTime utc) =>
