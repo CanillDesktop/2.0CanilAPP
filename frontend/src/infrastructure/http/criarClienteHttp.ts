@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance } from 'axios';
 import { urlBaseApi } from '../config/variaveisAmbiente';
+import { MSG_ERRO } from '../../shared/constants/mensagensErroUsuario';
 import { ErroApi } from './erroApi';
 import type { RespostaErroApi, RespostaErroValidacaoApi } from '../../shared/types/respostaErroApi';
 import { isRespostaErroApi, isRespostaErroValidacaoApi } from '../../shared/types/respostaErroApi';
@@ -34,7 +35,7 @@ export function criarClienteHttp(): AxiosInstance {
       const status = erro.response?.status ?? 0;
       let dados: unknown = erro.response?.data;
 
-      let mensagem = 'Falha na requisição';
+      let mensagem: string = MSG_ERRO.operacao;
       let erros;
 
       if (dados instanceof Blob) {
@@ -47,16 +48,27 @@ export function criarClienteHttp(): AxiosInstance {
       }
 
       if (dados && isRespostaErroValidacaoApi(dados)) {
-        mensagem = 'Ocorreram erros de validação';
+        mensagem = MSG_ERRO.validacaoResumo;
         erros = (dados as RespostaErroValidacaoApi).errors;
       } else if (dados && isRespostaErroApi(dados)) {
-        mensagem = (dados as RespostaErroApi).details;
-      } else {
+        const detalhe = (dados as RespostaErroApi).details?.trim();
+        mensagem = detalhe && detalhe.length > 0 ? detalhe : MSG_ERRO.operacao;
+      } else if (erro.message && !/^(network error|timeout|canceled|aborted)$/i.test(erro.message.trim())) {
         mensagem = erro.message;
       }
 
       if (status === 403) {
-        mensagem = 'Você não tem permissão para acessar este recurso.';
+        mensagem = MSG_ERRO.semPermissao;
+      } else if (status === 401) {
+        mensagem = MSG_ERRO.login401;
+      } else if (status === 404) {
+        mensagem = MSG_ERRO.naoEncontrado;
+      } else if (status === 408) {
+        mensagem = MSG_ERRO.timeout;
+      } else if (status >= 500) {
+        mensagem = MSG_ERRO.servidor;
+      } else if (status === 0 && /network error/i.test(erro.message ?? '')) {
+        mensagem = MSG_ERRO.rede;
       }
       return Promise.reject(new ErroApi(mensagem, status, dados, erros));
     },

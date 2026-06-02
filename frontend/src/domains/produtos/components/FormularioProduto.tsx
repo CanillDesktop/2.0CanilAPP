@@ -101,8 +101,8 @@ export function FormularioProduto() {
     e.preventDefault();
     if (!passoEstoqueValido || carregando) return;
 
-    const ok = await criar(montarDto());
-    if (!ok) return;
+    const resultado = await criar(montarDto());
+    if (!resultado.ok) return;
 
     setSucesso({ nome: form.descricaoSimples.trim() });
   }

@@ -6,6 +6,7 @@ import {
   limparSessao,
   salvarSessao,
 } from '../../../shared/services/armazenamentoSessao';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 
 /**
  * Serviço de aplicação do domínio de autenticação (orquestra API + persistência de sessão).
@@ -16,15 +17,21 @@ export const servicoAutenticacao = {
     const access = resposta.accessToken;
     const usuario = resposta.usuario;
     if (!access || !usuario) {
-      throw new Error('Resposta de login incompleta');
+      throw new Error(MSG_ERRO.loginIncompleto);
     }
     salvarSessao(access, usuario);
     return resposta;
   },
 
-  async sair(): Promise<void> {
-    await solicitarLogoutApi();
-    limparSessao();
+  async sair(): Promise<{ confirmadoNoServidor: boolean }> {
+    try {
+      await solicitarLogoutApi();
+      limparSessao();
+      return { confirmadoNoServidor: true };
+    } catch {
+      limparSessao();
+      return { confirmadoNoServidor: false };
+    }
   },
 
   async renovarSePossivel(): Promise<boolean> {

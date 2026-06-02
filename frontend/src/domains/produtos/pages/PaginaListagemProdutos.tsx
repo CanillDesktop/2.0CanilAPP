@@ -108,12 +108,12 @@ export function PaginaListagemProdutos() {
 
   async function confirmarExclusao() {
     if (idExclusao == null) return;
-    const ok = await excluir(idExclusao);
-    if (ok) {
+    const resultado = await excluir(idExclusao);
+    if (resultado.ok) {
       setSnackbar({ open: true, mensagem: 'Produto excluído com sucesso.', tipo: 'success' });
       await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
     } else {
-      setSnackbar({ open: true, mensagem: 'Não foi possível excluir o produto.', tipo: 'error' });
+      setSnackbar({ open: true, mensagem: resultado.mensagem, tipo: 'error' });
     }
     setIdExclusao(null);
   }

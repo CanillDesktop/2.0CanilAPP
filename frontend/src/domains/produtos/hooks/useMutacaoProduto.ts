@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { extrairMensagemErroApi, ErroApi } from '../../../infrastructure/http/erroApi';
+import { capturarErroMutacao, ErroApi, type ResultadoMutacao } from '../../../infrastructure/http/erroApi';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { servicoProdutos } from '../services/servicoProdutos';
 import type { ProdutoCadastroDto } from '../types/tiposProdutos';
 
@@ -8,37 +9,39 @@ export function useMutacaoProduto() {
   const [erro, setErro] = useState<string | null>(null);
   const [errosValidacao, setErrosValidacao] = useState<string[] | null>(null);
 
-  const criar = useCallback(async (dto: ProdutoCadastroDto) => {
+  const criar = useCallback(async (dto: ProdutoCadastroDto): Promise<ResultadoMutacao> => {
     setCarregando(true);
     setErro(null);
     setErrosValidacao(null);
     try {
       await servicoProdutos.criar(dto);
-      return true;
+      return { ok: true };
     } catch (e) {
-      setErro(extrairMensagemErroApi(e));
+      const falha = capturarErroMutacao(e, MSG_ERRO.operacao);
+      if (!falha.ok) setErro(falha.mensagem);
       if (e instanceof ErroApi && e.errors) {
         setErrosValidacao(e.extrairMensagemErros());
       }
-      return false;
+      return falha;
     } finally {
       setCarregando(false);
     }
   }, []);
 
-  const excluir = useCallback(async (id: number) => {
+  const excluir = useCallback(async (id: number): Promise<ResultadoMutacao> => {
     setCarregando(true);
     setErro(null);
     setErrosValidacao(null);
     try {
       await servicoProdutos.excluir(id);
-      return true;
+      return { ok: true };
     } catch (e) {
-      setErro(extrairMensagemErroApi(e));
+      const falha = capturarErroMutacao(e, MSG_ERRO.excluirProduto);
+      if (!falha.ok) setErro(falha.mensagem);
       if (e instanceof ErroApi && e.errors) {
         setErrosValidacao(e.extrairMensagemErros());
       }
-      return false;
+      return falha;
     } finally {
       setCarregando(false);
     }
