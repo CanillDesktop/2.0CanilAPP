@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Card,
   Stack,
@@ -12,7 +13,9 @@ import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import { larguraConteudoPagina, paddingPaginaShell } from '../../../shared/theme/estilosLayoutPagina';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
 import { listarTodosProdutosParaEstoqueApi } from '../../produtos/api/produtosApi';
@@ -125,7 +128,7 @@ export function PaginaListagemEstoque() {
             status,
             ultimaMovimentacao: maiorDataMovimentacao
               ? maiorDataMovimentacao.toLocaleDateString('pt-BR')
-              : 'Sem movimentacao',
+              : 'Sem movimentação',
             validadeMs: menorValidade ? menorValidade.getTime() : null,
             movimentacaoMs: maiorDataMovimentacao ? maiorDataMovimentacao.getTime() : null,
           } satisfies LinhaOperacionalEstoque;
@@ -135,7 +138,7 @@ export function PaginaListagemEstoque() {
         setLinhasOperacionais(itens);
       } catch {
         if (!ativo) return;
-        setErroCarregamento('Nao foi possivel carregar os estoques atuais do backend.');
+        setErroCarregamento(MSG_ERRO.carregarEstoque);
       } finally {
         if (ativo) setCarregando(false);
       }
@@ -266,9 +269,8 @@ export function PaginaListagemEstoque() {
   return (
     <Box
       sx={{
-        px: { xs: 2, sm: 3, md: 4 },
-        pt: 2,
-        pb: 4,
+        ...paddingPaginaShell,
+        ...larguraConteudoPagina,
         backgroundColor: cores.bgConteudo,
         minHeight: '100%',
       }}
@@ -333,9 +335,7 @@ export function PaginaListagemEstoque() {
             </Card>
 
             {erroCarregamento ? (
-              <Typography variant="body2" color="error">
-                {erroCarregamento}
-              </Typography>
+              <Alert severity="error">{erroCarregamento}</Alert>
             ) : null}
 
             <EstoqueGestaoConteudo

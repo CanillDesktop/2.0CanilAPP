@@ -1,5 +1,6 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import {
   Accordion,
@@ -339,10 +340,12 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
   const sxCampoFiltro = estilosCampoFiltro(cores);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const ehMobileColapse = useMediaQuery(theme.breakpoints.down('sm'));
   const ehMobilePaginacao = useMediaQuery(theme.breakpoints.down('sm'));
   const [selectedTab, setSelectedTab] = useState<CategoriaBusca>('produto');
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [drawerAberto, setDrawerAberto] = useState(false);
+  const [secaoBuscaExpandida, setSecaoBuscaExpandida] = useState(false);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const listaTopoRef = useRef<HTMLDivElement | null>(null);
   const { searchTerm, setSearchTerm, resultados, termoNomeDebounced } = useBuscaCategoria(itens, selectedTab);
@@ -378,6 +381,13 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
       ),
     [filtrosAvancados],
   );
+
+  const filtrosBuscaAtivos = useMemo(() => {
+    let n = 0;
+    if (searchTerm.trim()) n += 1;
+    if (temFiltroAvancadoAtivo) n += 1;
+    return n;
+  }, [searchTerm, temFiltroAvancadoAtivo]);
 
   useEffect(() => {
     if (selectedItemId == null) return;
@@ -684,6 +694,62 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
     }
   }
 
+  function renderDrawerMobile() {
+    return (
+      <Drawer
+        anchor="right"
+        open={drawerAberto && !!itemSelecionado}
+        onClose={() => setDrawerAberto(false)}
+        slotProps={{
+          paper: {
+            sx: {
+              width: '100%',
+              maxWidth: 420,
+              backgroundColor: cores.bgCard,
+              borderLeft: `1px solid ${cores.border}`,
+              p: 3,
+            },
+          },
+        }}
+      >
+        {itemSelecionado ? (
+          <PainelPreviewItem
+            item={itemSelecionado}
+            categoriaLabel={categoriaLabel}
+            onVerDetalhes={() => irParaDetalhe(itemSelecionado)}
+            onRegistrarRetirada={() => irParaDetalhe(itemSelecionado)}
+            mostrarCabecalhoDrawer
+            onFecharDrawer={() => setDrawerAberto(false)}
+          />
+        ) : null}
+      </Drawer>
+    );
+  }
+
+  function renderLayoutMobile() {
+    return (
+      <Box>
+        {renderLista()}
+        {renderDrawerMobile()}
+      </Box>
+    );
+  }
+
+  function renderCabecalhoSecao(mostrarSubtitulo: boolean) {
+    return (
+      <Box>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary, textAlign: 'center', mb: 0.5 }}>
+          Busca por categoria
+        </Typography>
+        {mostrarSubtitulo ? (
+          <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block', textAlign: 'center' }}>
+            Selecione a categoria e pesquise pelo nome.
+          </Typography>
+        ) : null}
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
@@ -694,72 +760,82 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
       }}
     >
       <Stack spacing={2}>
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary, textAlign: 'center', mb: 0.5 }}>
-            Busca por categoria
-          </Typography>
-          <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block', textAlign: 'center' }}>
-            Selecione a categoria e pesquise pelo nome.
-          </Typography>
-        </Box>
-        {isMobile ? (
-          <Box>
-            {renderLista()}
-            <Drawer
-              anchor="right"
-              open={drawerAberto && !!itemSelecionado}
-              onClose={() => setDrawerAberto(false)}
-              slotProps={{
-                paper: {
-                  sx: {
-                    width: '100%',
-                    maxWidth: 420,
-                    backgroundColor: cores.bgCard,
-                    borderLeft: `1px solid ${cores.border}`,
-                    p: 3,
-                  },
-                },
+        {ehMobileColapse ? (
+          <Accordion
+            expanded={secaoBuscaExpandida}
+            onChange={(_, aberto) => setSecaoBuscaExpandida(aberto)}
+            disableGutters
+            elevation={0}
+            sx={{
+              bgcolor: 'transparent',
+              '&:before': { display: 'none' },
+              border: `1px solid ${cores.border}`,
+              borderRadius: 2,
+              overflow: 'hidden',
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon sx={{ color: cores.textMuted }} />}
+              sx={{
+                minHeight: 52,
+                px: 1.5,
+                '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 1, my: 1, flexWrap: 'wrap' },
               }}
             >
-              {itemSelecionado ? (
-                <PainelPreviewItem
-                  item={itemSelecionado}
-                  categoriaLabel={categoriaLabel}
-                  onVerDetalhes={() => irParaDetalhe(itemSelecionado)}
-                  onRegistrarRetirada={() => irParaDetalhe(itemSelecionado)}
-                  mostrarCabecalhoDrawer
-                  onFecharDrawer={() => setDrawerAberto(false)}
+              <FilterListIcon sx={{ color: cores.focus, fontSize: 20 }} />
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontWeight: 700, color: cores.textPrimary }}>Busca por categoria</Typography>
+                <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block' }}>
+                  {categoriaAtual.label}
+                  {searchTerm.trim() ? ` · “${searchTerm.trim()}”` : ''}
+                </Typography>
+              </Box>
+              {filtrosBuscaAtivos > 0 ? (
+                <Chip
+                  size="small"
+                  label={`${filtrosBuscaAtivos} filtro${filtrosBuscaAtivos > 1 ? 's' : ''}`}
+                  sx={{ bgcolor: cores.hoverSurfaceStrong, color: cores.textPrimary, fontWeight: 600 }}
                 />
               ) : null}
-            </Drawer>
-          </Box>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: { xs: 1, sm: 1.5 }, pb: 1.5, pt: 0 }}>
+              {renderLayoutMobile()}
+            </AccordionDetails>
+          </Accordion>
         ) : (
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12, md: 5 }}>{renderLista()}</Grid>
-            <Grid size={{ xs: 12, md: 7 }}>
-              <Card
-                sx={{
-                  height: '100%',
-                  minHeight: 360,
-                  p: 3,
-                  borderRadius: 3,
-                  backgroundColor: cores.bgCard,
-                  border: `1px solid ${cores.border}`,
-                }}
-              >
-                {itemSelecionado ? (
-                  <PainelPreviewItem
-                    item={itemSelecionado}
-                    categoriaLabel={categoriaLabel}
-                    onVerDetalhes={() => irParaDetalhe(itemSelecionado)}
-                    onRegistrarRetirada={() => irParaDetalhe(itemSelecionado)}
-                  />
-                ) : (
-                  <EmptyPreview />
-                )}
-              </Card>
-            </Grid>
-          </Grid>
+          <>
+            {renderCabecalhoSecao(true)}
+            {isMobile ? (
+              renderLayoutMobile()
+            ) : (
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, md: 5 }}>{renderLista()}</Grid>
+                <Grid size={{ xs: 12, md: 7 }}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      minHeight: 360,
+                      p: 3,
+                      borderRadius: 3,
+                      backgroundColor: cores.bgCard,
+                      border: `1px solid ${cores.border}`,
+                    }}
+                  >
+                    {itemSelecionado ? (
+                      <PainelPreviewItem
+                        item={itemSelecionado}
+                        categoriaLabel={categoriaLabel}
+                        onVerDetalhes={() => irParaDetalhe(itemSelecionado)}
+                        onRegistrarRetirada={() => irParaDetalhe(itemSelecionado)}
+                      />
+                    ) : (
+                      <EmptyPreview />
+                    )}
+                  </Card>
+                </Grid>
+              </Grid>
+            )}
+          </>
         )}
       </Stack>
     </Box>

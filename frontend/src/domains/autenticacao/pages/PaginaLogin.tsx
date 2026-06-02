@@ -1,7 +1,7 @@
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
-import { Box, Chip, Stack, Typography } from '@mui/material';
+import { Alert, Box, Chip, Stack, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
@@ -16,6 +16,7 @@ export function PaginaLogin() {
   const { cores } = useTemaApp();
   const local = useLocation();
   const destino = (local.state as { de?: string } | null)?.de ?? '/';
+  const avisoLogout = (local.state as { avisoLogout?: string } | null)?.avisoLogout;
 
   if (autenticado) return <Navigate to={destino} replace />;
 
@@ -57,7 +58,7 @@ export function PaginaLogin() {
               variant="h3"
               sx={{ maxWidth: 560, mt: 1, fontWeight: 800, lineHeight: 1.05, letterSpacing: -1.2, color: cores.textPrimary }}
             >
-              Gestao de estoque com controle profissional e seguro.
+              Gestão de estoque com controle profissional e seguro.
             </Typography>
             <Typography variant="body1" sx={{ maxWidth: 560, mt: 2, color: cores.textSecondary }}>
               Acesse produtos, medicamentos, insumos e o dashboard usando o mesmo ambiente visual padronizado.
@@ -101,7 +102,14 @@ export function PaginaLogin() {
           </Stack>
         </Stack>
 
-        <FormularioLogin aoAutenticar={recarregarSessao} />
+        <Stack sx={{ gap: 2, width: '100%' }}>
+          {avisoLogout ? (
+            <Alert severity="warning" sx={{ borderRadius: 2 }}>
+              {avisoLogout}
+            </Alert>
+          ) : null}
+          <FormularioLogin aoAutenticar={recarregarSessao} />
+        </Stack>
       </MotionBox>
     </Box>
   );

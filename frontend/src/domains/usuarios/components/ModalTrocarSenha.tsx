@@ -1,5 +1,6 @@
 import {
   Alert,
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -9,16 +10,18 @@ import {
   TextField,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 
 type Props = {
   aberto: boolean;
   carregando: boolean;
   erro: string | null;
+  errosValidacao?: string[] | null;
   onFechar: () => void;
   onConfirmar: (senhaAtual: string, novaSenha: string) => void;
 };
 
-export function ModalTrocarSenha({ aberto, carregando, erro, onFechar, onConfirmar }: Props) {
+export function ModalTrocarSenha({ aberto, carregando, erro, errosValidacao, onFechar, onConfirmar }: Props) {
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmacaoNovaSenha, setConfirmacaoNovaSenha] = useState('');
@@ -37,12 +40,25 @@ export function ModalTrocarSenha({ aberto, carregando, erro, onFechar, onConfirm
     return novaSenha === confirmacaoNovaSenha;
   }, [senhaAtual, novaSenha, confirmacaoNovaSenha]);
 
+  const resumoErro = erro ?? (errosValidacao?.length ? MSG_ERRO.validacaoResumo : null);
+
   return (
     <Dialog open={aberto} onClose={carregando ? undefined : onFechar} fullWidth maxWidth="sm">
       <DialogTitle>Alterar senha</DialogTitle>
       <DialogContent>
         <Stack spacing={1.5} sx={{ pt: 0.5 }}>
-          {erro ? <Alert severity="error">{erro}</Alert> : null}
+          {resumoErro || errosValidacao?.length ? (
+            <Alert severity="error">
+              {resumoErro}
+              {errosValidacao?.length ? (
+                <Box component="ul" sx={{ pl: 2.2, my: resumoErro ? 1 : 0, mb: 0 }}>
+                  {errosValidacao.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </Box>
+              ) : null}
+            </Alert>
+          ) : null}
           <TextField
             label="Senha atual"
             type="password"

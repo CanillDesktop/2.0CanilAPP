@@ -111,12 +111,12 @@ export function PaginaListagemInsumos() {
 
   async function confirmarExclusao() {
     if (idExclusao == null) return;
-    const ok = await excluir(idExclusao);
-    if (ok) {
+    const resultado = await excluir(idExclusao);
+    if (resultado.ok) {
       setSnackbar({ open: true, mensagem: 'Insumo excluído com sucesso.', tipo: 'success' });
       await carregar();
     } else {
-      setSnackbar({ open: true, mensagem: 'Não foi possível excluir o insumo.', tipo: 'error' });
+      setSnackbar({ open: true, mensagem: resultado.mensagem, tipo: 'error' });
     }
     setIdExclusao(null);
   }

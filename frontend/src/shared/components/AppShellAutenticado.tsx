@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../app/providers/ContextoTemaApp';
+import { MSG_ERRO } from '../constants/mensagensErroUsuario';
 import { SidebarEstoque } from '../../domains/estoque/components/SidebarEstoque';
 import { mapearPapelUsuario } from '../types/papelUsuario';
 import { BotaoAlternarTema } from './BotaoAlternarTema';
@@ -57,8 +58,12 @@ export function AppShellAutenticado() {
             size="small"
             sx={{ borderColor: cores.borderForte, color: cores.textPrimary, textTransform: 'none' }}
             onClick={() => {
-              sair();
-              navigate('/login');
+              void (async () => {
+                const resultado = await sair();
+                navigate('/login', {
+                  state: resultado.confirmadoNoServidor ? undefined : { avisoLogout: MSG_ERRO.logoutParcial },
+                });
+              })();
             }}
           >
             Sair
@@ -71,7 +76,9 @@ export function AppShellAutenticado() {
         sx={{
           flex: 1,
           width: '100%',
+          maxWidth: '100%',
           boxSizing: 'border-box',
+          overflowX: 'hidden',
         }}
       >
         <Outlet />
