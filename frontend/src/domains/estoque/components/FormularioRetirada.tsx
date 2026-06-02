@@ -87,7 +87,7 @@ export function FormularioRetirada() {
     if (!de.trim()) return 'Informe quem esta retirando.';
     if (!para.trim()) return 'Informe para quem o item sera destinado.';
     if (!Number.isFinite(quantidade) || quantidade <= 0) return 'A quantidade deve ser maior que zero.';
-    if (quantidade > quantidadeDisponivel) return 'Quantidade maior que o disponivel no lote.';
+    if (quantidade > quantidadeDisponivel) return 'A quantidade informada é maior que o disponível no lote.';
     return null;
   }
 
@@ -126,7 +126,7 @@ export function FormularioRetirada() {
     };
     const ok = await registrarRetirada(dto);
     setConfirmarAberto(false);
-    if (ok) {
+    if (resultado.ok) {
       setSubmitSucesso(true);
       setSubmitErro(false);
       setSnackbar({
@@ -144,7 +144,7 @@ export function FormularioRetirada() {
     setSubmitSucesso(false);
     setSnackbar({
       open: true,
-      message: erro ?? 'Erro ao registrar retirada.',
+      message: resultado.mensagem,
       severity: 'error',
     });
   }
@@ -189,16 +189,16 @@ export function FormularioRetirada() {
 
           <TextField label="Produto" value={produtoNome} disabled fullWidth sx={sxCampo} />
           <TextField label="Lote" value={data.loteCodigo} disabled fullWidth sx={sxCampo} />
-          <TextField label="Quantidade disponivel" value={String(quantidadeDisponivel)} disabled fullWidth sx={sxCampo} />
+          <TextField label="Quantidade disponível" value={String(quantidadeDisponivel)} disabled fullWidth sx={sxCampo} />
 
           <TextField
-            label="Quem esta retirando"
+            label="Quem está retirando"
             value={de}
             onChange={(e) => setDe(e.target.value)}
             required
             fullWidth
             error={!de.trim() && Boolean(erroValidacao)}
-            helperText={!de.trim() && Boolean(erroValidacao) ? 'Campo obrigatorio' : ' '}
+            helperText={!de.trim() && Boolean(erroValidacao) ? 'Campo obrigatório' : ' '}
             sx={sxCampo}
           />
 
@@ -228,7 +228,7 @@ export function FormularioRetirada() {
             required
             fullWidth
             error={!para.trim() && Boolean(erroValidacao)}
-            helperText={!para.trim() && Boolean(erroValidacao) ? 'Campo obrigatorio' : ' '}
+            helperText={!para.trim() && Boolean(erroValidacao) ? 'Campo obrigatório' : ' '}
             sx={sxCampo}
           />
           <TextField
@@ -242,7 +242,7 @@ export function FormularioRetirada() {
             error={Boolean(erroValidacao) && (!Number.isFinite(quantidade) || quantidade <= 0 || quantidade > quantidadeDisponivel)}
             helperText={
               Boolean(erroValidacao) && quantidade > quantidadeDisponivel
-                ? 'Quantidade maior que o disponivel'
+                ? 'A quantidade informada é maior que o disponível no lote'
                 : Boolean(erroValidacao) && quantidade <= 0
                   ? 'Quantidade deve ser maior que zero'
                   : ' '

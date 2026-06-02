@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Card,
   Stack,
@@ -12,6 +13,7 @@ import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { larguraConteudoPagina, paddingPaginaShell } from '../../../shared/theme/estilosLayoutPagina';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
@@ -126,7 +128,7 @@ export function PaginaListagemEstoque() {
             status,
             ultimaMovimentacao: maiorDataMovimentacao
               ? maiorDataMovimentacao.toLocaleDateString('pt-BR')
-              : 'Sem movimentacao',
+              : 'Sem movimentação',
             validadeMs: menorValidade ? menorValidade.getTime() : null,
             movimentacaoMs: maiorDataMovimentacao ? maiorDataMovimentacao.getTime() : null,
           } satisfies LinhaOperacionalEstoque;
@@ -136,7 +138,7 @@ export function PaginaListagemEstoque() {
         setLinhasOperacionais(itens);
       } catch {
         if (!ativo) return;
-        setErroCarregamento('Nao foi possivel carregar os estoques atuais do backend.');
+        setErroCarregamento(MSG_ERRO.carregarEstoque);
       } finally {
         if (ativo) setCarregando(false);
       }
@@ -333,9 +335,7 @@ export function PaginaListagemEstoque() {
             </Card>
 
             {erroCarregamento ? (
-              <Typography variant="body2" color="error">
-                {erroCarregamento}
-              </Typography>
+              <Alert severity="error">{erroCarregamento}</Alert>
             ) : null}
 
             <EstoqueGestaoConteudo

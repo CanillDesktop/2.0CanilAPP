@@ -21,6 +21,7 @@ import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { larguraConteudoPagina, paddingPaginaShell } from '../../../shared/theme/estilosLayoutPagina';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { listarInsumosApi } from '../../insumos/api/insumosApi';
 import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
 import { listarProdutosPaginadosApi } from '../../produtos/api/produtosApi';
@@ -141,7 +142,7 @@ export function DashboardPage() {
             status,
             ultimaMovimentacao: maiorDataMovimentacao
               ? maiorDataMovimentacao.toLocaleDateString('pt-BR')
-              : 'Sem movimentacao',
+              : 'Sem movimentação',
             validadeMs: menorValidade ? menorValidade.getTime() : null,
             movimentacaoMs: maiorDataMovimentacao ? maiorDataMovimentacao.getTime() : null,
           } satisfies LinhaOperacionalEstoque;
@@ -151,7 +152,7 @@ export function DashboardPage() {
         setLinhasOperacionais(itens);
       } catch {
         if (!ativo) return;
-        setErroCarregamento('Nao foi possivel carregar os estoques atuais do backend.');
+        setErroCarregamento(MSG_ERRO.carregarEstoque);
         setContagemPorOrigem(contagemInicial);
         setTotalItens(0);
         setLinhasOperacionais([]);

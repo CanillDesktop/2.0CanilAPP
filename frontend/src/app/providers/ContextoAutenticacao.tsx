@@ -7,7 +7,7 @@ type ContextoAutenticacaoValor = {
   autenticado: boolean;
   usuario: UsuarioSessao | null;
   recarregarSessao: () => void;
-  sair: () => void;
+  sair: () => Promise<{ confirmadoNoServidor: boolean }>;
 };
 
 const ContextoAutenticacao = createContext<ContextoAutenticacaoValor | null>(null);
@@ -25,9 +25,10 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     setSessao(lerSessaoAtual());
   }, []);
 
-  const sair = useCallback(() => {
-    servicoAutenticacao.sair();
+  const sair = useCallback(async () => {
+    const resultado = await servicoAutenticacao.sair();
     setSessao({ autenticado: false, usuario: null });
+    return resultado;
   }, []);
 
   const valor = useMemo(

@@ -55,8 +55,8 @@ export function PaginaDetalheInsumo() {
   async function aoExcluir() {
     if (!Number.isFinite(id)) return;
     if (!window.confirm('Confirma excluir este insumo?')) return;
-    const ok = await excluir(id);
-    if (ok) navigate('/insumos');
+    const resultado = await excluir(id);
+    if (resultado.ok) navigate('/insumos');
   }
 
   function handleRetirada(lote: LoteDetalhe) {

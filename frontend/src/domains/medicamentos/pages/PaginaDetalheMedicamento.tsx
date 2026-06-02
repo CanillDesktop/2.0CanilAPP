@@ -64,8 +64,8 @@ export function PaginaDetalheMedicamento() {
   async function aoExcluir() {
     if (!Number.isFinite(id)) return;
     if (!window.confirm('Confirma excluir este medicamento?')) return;
-    const ok = await excluir(id);
-    if (ok) navigate('/medicamentos');
+    const resultado = await excluir(id);
+    if (resultado.ok) navigate('/medicamentos');
   }
 
   function handleRetirada(lote: LoteDetalhe) {

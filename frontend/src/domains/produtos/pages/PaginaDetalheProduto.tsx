@@ -61,8 +61,8 @@ export function PaginaDetalheProduto() {
   async function aoExcluir() {
     if (!Number.isFinite(id)) return;
     if (!window.confirm('Confirma excluir este produto?')) return;
-    const ok = await excluir(id);
-    if (ok) navigate('/produtos');
+    const resultado = await excluir(id);
+    if (resultado.ok) navigate('/produtos');
   }
 
   function handleRetirada(lote: LoteDetalhe) {

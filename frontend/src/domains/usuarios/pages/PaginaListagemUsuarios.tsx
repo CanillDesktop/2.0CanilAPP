@@ -18,6 +18,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
+import { PainelErro } from '../../../shared/components/PainelErro';
 import { AbaCodigoAtualLeitura } from '../components/AbaCodigoAtualLeitura';
 import { AbaCodigoSegurancaAdmin } from '../components/AbaCodigoSegurancaAdmin';
 import { FormularioUsuario } from '../components/FormularioUsuario';
@@ -46,6 +47,7 @@ export function PaginaListagemUsuarios() {
     carregandoAcao,
     erro,
     sucesso,
+    errosValidacao,
     limparFeedback,
     carregarUsuarios,
     atualizarUsuario,
@@ -189,7 +191,7 @@ export function PaginaListagemUsuarios() {
             <strong>Nome:</strong> {usuario?.primeiroNome ?? ''} {usuario?.sobrenome ?? ''}
           </Typography>
           <Typography variant="body1" sx={{ color: cores.textPrimary }}>
-            <strong>Email:</strong> {usuario?.email ?? 'Nao informado'}
+            <strong>Email:</strong> {usuario?.email ?? 'Não informado'}
           </Typography>
           <Typography variant="body1" sx={{ color: cores.textPrimary }}>
             <strong>Tempo cadastrado:</strong> {formatarTempoCadastro(usuario?.dataHoraCriacao)}
@@ -387,6 +389,7 @@ export function PaginaListagemUsuarios() {
         <DialogTitle>{editandoProprioUsuario ? 'Editar meus dados' : 'Editar usuário'}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 0.5 }}>
+            <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
             <FormularioUsuario
               usuario={alvoEdicao}
               incluirEmailEdicao
@@ -408,6 +411,7 @@ export function PaginaListagemUsuarios() {
         <DialogTitle>Novo usuário</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 0.5 }}>
+            <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
             <FormularioUsuario incluirEmailSenha incluirPermissao carregando={carregandoAcao} onSubmit={abrirConfirmacaoCriacao} />
           </Box>
         </DialogContent>
@@ -417,6 +421,7 @@ export function PaginaListagemUsuarios() {
         aberto={dialogTrocarSenhaAberto}
         carregando={carregandoAcao}
         erro={erro}
+        errosValidacao={errosValidacao}
         onFechar={() => {
           if (!carregandoAcao) {
             limparFeedback();
@@ -432,6 +437,7 @@ export function PaginaListagemUsuarios() {
         descricao="Informe a senha do usuário logado para concluir esta ação crítica."
         carregando={carregandoAcao}
         erro={erro}
+        errosValidacao={errosValidacao}
         onFechar={() => setConfirmacao({ aberto: false, acao: null })}
         onConfirmar={confirmarAcaoCritica}
       />

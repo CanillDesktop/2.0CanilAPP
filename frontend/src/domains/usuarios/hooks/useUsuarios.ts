@@ -61,6 +61,7 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
   const limparFeedback = useCallback(() => {
     setErro(null);
     setSucesso(null);
+    setErrosValidacao(null);
   }, []);
 
   const atualizarUsuario = useCallback(async (id: number, dto: UsuarioAtualizacaoDto) => {

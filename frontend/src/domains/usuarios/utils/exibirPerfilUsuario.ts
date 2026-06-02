@@ -1,7 +1,7 @@
 export function formatarTempoCadastro(dataHoraCriacao?: Date) {
-  if (!dataHoraCriacao) return 'Nao informado';
+  if (!dataHoraCriacao) return 'Não informado';
   const inicio = new Date(dataHoraCriacao);
-  if (Number.isNaN(inicio.getTime())) return 'Nao informado';
+  if (Number.isNaN(inicio.getTime())) return 'Não informado';
 
   const agora = new Date();
   const diffMs = agora.getTime() - inicio.getTime();

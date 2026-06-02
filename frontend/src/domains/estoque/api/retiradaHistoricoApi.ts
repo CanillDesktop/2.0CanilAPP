@@ -1,6 +1,7 @@
 import { isAxiosError } from 'axios';
 import { obterClienteHttp } from '../../../infrastructure/http/clienteHttpSingleton';
 import { ErroApi } from '../../../infrastructure/http/erroApi';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { isRespostaErroApi } from '../../../shared/types/respostaErroApi';
 import { montarQueryString } from '../../../shared/utils/montarQueryString';
 import {
@@ -103,7 +104,7 @@ async function mapearErroExportacao(erro: unknown): Promise<ErroApi> {
   if (!isAxiosError(erro) || !(erro.response?.data instanceof Blob)) {
     return erro instanceof ErroApi
       ? erro
-      : new ErroApi('Não foi possível exportar o histórico de retiradas.', 0);
+      : new ErroApi(MSG_ERRO.exportacaoHistorico, 0);
   }
 
   const status = erro.response.status ?? 0;
@@ -118,14 +119,8 @@ async function mapearErroExportacao(erro: unknown): Promise<ErroApi> {
   }
 
   if (status === 400) {
-    return new ErroApi(
-      'Não foi possível exportar com os filtros atuais. Refine o período ou reduza o volume de dados.',
-      status,
-    );
+    return new ErroApi(MSG_ERRO.exportacaoFiltros, status);
   }
 
-  return new ErroApi(
-    'Falha ao gerar o arquivo de exportação. Tente novamente em instantes.',
-    status,
-  );
+  return new ErroApi(MSG_ERRO.exportacaoArquivo, status);
 }
