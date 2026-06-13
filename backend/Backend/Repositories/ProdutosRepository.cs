@@ -1,5 +1,6 @@
 ﻿using Backend.Context;
-using Backend.DTOs.Produtos;
+using Backend.Filtro.Helpers;
+using Backend.Filtro.Produtos;
 using Backend.Models.Produtos;
 using Backend.Pagination;
 using Backend.Repositories.Interfaces;
@@ -12,15 +13,15 @@ public class ProdutosRepository : BaseCRUDEstoqueRepository<ProdutosModel>, IPro
     public ProdutosRepository(CanilAppDbContext context) : base(context) { }
 
     public async Task<ProdutosConsultaPaginada> ConsultarPaginadoAsync(
-        ProdutosFiltroDTO filtro,
+        ProdutosFiltro filtro,
         ProdutosParameters produtosParameters,
         CancellationToken cancellationToken = default)
     {
         var pageNumber = Math.Max(produtosParameters.PageNumber, 1);
         var pageSize = produtosParameters.PageSize;
 
-        var filtrada = ProdutosConsultaQueryable.AplicarFiltros(
-            ProdutosConsultaQueryable.Base(_context.Produtos.AsQueryable()),
+        var filtrada = FiltroHelper.AplicarFiltrosProdutos(
+            FiltroHelper.Base(_context.Produtos.AsQueryable()),
             filtro);
 
         var hoje = DateTime.UtcNow.Date;
@@ -50,7 +51,7 @@ public class ProdutosRepository : BaseCRUDEstoqueRepository<ProdutosModel>, IPro
                     && e.DataValidade <= limiteVencimento),
                 cancellationToken));
 
-        var comStatus = ProdutosConsultaQueryable.AplicarStatusEstoque(filtrada, filtro.StatusEstoque);
+        var comStatus = FiltroHelper.AplicarStatusEstoque<ProdutosModel>(filtrada, filtro.StatusEstoque);
         var totalCount = await comStatus.CountAsync(cancellationToken);
 
         var items = await comStatus

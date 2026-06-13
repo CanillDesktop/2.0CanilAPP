@@ -8,6 +8,7 @@ using Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using Backend.Pagination;
+using Backend.Filtro.Produtos;
 
 namespace Backend.Services
 {
@@ -142,7 +143,7 @@ namespace Backend.Services
         }
 
         public async Task<ProdutosListaPaginadaDTO> BuscarPaginadoAsync(
-            ProdutosFiltroDTO filtro,
+            ProdutosFiltro filtro,
             ProdutosParameters produtosParameters,
             CancellationToken cancellationToken = default)
         {

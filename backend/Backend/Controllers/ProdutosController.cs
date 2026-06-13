@@ -1,12 +1,12 @@
 using Backend.DTOs.Produtos;
 using Backend.Exceptions;
+using Backend.Filtro.Produtos;
 using Backend.Models;
 using Backend.Models.Produtos;
+using Backend.Pagination;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Backend.Pagination;
 
 namespace Backend.Controllers
 {
@@ -26,12 +26,12 @@ namespace Backend.Controllers
 
         [HttpGet("pagination")]
         public async Task<ActionResult<ProdutosListaPaginadaDTO>> GetPagination(
-            [FromQuery] ProdutosFiltroDTO? filtro,
+            [FromQuery] ProdutosFiltro? filtro,
             [FromQuery] ProdutosParameters? produtosParameters,
             CancellationToken cancellationToken)
         {
             var resultado = await _service.BuscarPaginadoAsync(
-                filtro ?? new ProdutosFiltroDTO(),
+                filtro ?? new ProdutosFiltro(),
                 produtosParameters ?? new ProdutosParameters(),
                 cancellationToken);
 

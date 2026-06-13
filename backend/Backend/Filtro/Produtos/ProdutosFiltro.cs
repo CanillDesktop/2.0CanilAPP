@@ -1,15 +1,11 @@
-﻿namespace Backend.DTOs.Produtos;
+﻿namespace Backend.Filtro.Produtos;
 
-public class ProdutosFiltroDTO
+public class ProdutosFiltro
 {
-    /// <summary>Opcional: busca única em código ou descrição (OR).</summary>
-    public string? TermoBusca { get; set; }
-
-    public string? CodProduto { get; set; }
-
-    public string? DescricaoSimples { get; set; }
-
-    public string? NFe { get; set; }
+    /// <summary>
+    /// Opcional: busca OR pelos campos: Codigo, DescricaoSimples, DescricaoDetalhada, nFe e Lote
+    /// </summary>
+    public string? Termo { get; set; }
 
     /// <summary>Categoria (enum int). Ausente ou null = todas.</summary>
     public int? Categoria { get; set; }
