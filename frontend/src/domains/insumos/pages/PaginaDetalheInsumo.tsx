@@ -11,7 +11,12 @@ import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarre
 import { PainelErro } from '../../../shared/components/PainelErro';
 import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
 import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
-import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
+import {
+  MENSAGEM_LOTE_INVALIDO_RETIRADA,
+  MENSAGEM_PRODUTO_SEM_NOME_RETIRADA,
+  montarRetiradaNavegacaoState,
+  montarRetiradaQueryString,
+} from '../../estoque/utils/retiradaNavegacao';
 import { useInsumoDetalhe, useMutacaoInsumo } from '../hooks/useInsumos';
 import { rotuloUnidadeInsumo } from '../constants/opcoesUnidadeInsumo';
 
@@ -52,6 +57,11 @@ export function PaginaDetalheInsumo() {
 
   function handleRetirada(lote: LoteDetalhe) {
     if (!i) return;
+    if (!lote.codigo?.trim()) {
+      setErroRetirada(MENSAGEM_LOTE_INVALIDO_RETIRADA);
+      return;
+    }
+
     const state = montarRetiradaNavegacaoState({
       produto: { ...i, descricaoSimples: i.descricaoSimples ?? i.descricaoSimplificada },
       produtoId: i.id,
@@ -68,7 +78,7 @@ export function PaginaDetalheInsumo() {
     }
 
     setErroRetirada(null);
-    navigate('/estoque/retirada', {
+    navigate(`/estoque/retirada?${montarRetiradaQueryString(state)}`, {
       state,
     });
   }

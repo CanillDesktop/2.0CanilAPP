@@ -24,7 +24,12 @@ import { useNavigate } from 'react-router-dom';
 import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
-import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
+import {
+  MENSAGEM_LOTE_INVALIDO_RETIRADA,
+  MENSAGEM_PRODUTO_SEM_NOME_RETIRADA,
+  montarRetiradaNavegacaoState,
+  montarRetiradaQueryString,
+} from '../../estoque/utils/retiradaNavegacao';
 import { FilterBarInsumos } from '../components/FilterBarInsumos';
 import { KpiSectionInsumos } from '../components/KpiSectionInsumos';
 import { TabelaInsumos } from '../components/TabelaInsumos';
@@ -232,12 +237,17 @@ export function PaginaListagemInsumos() {
                   onExcluir={(id) => setIdExclusao(id)}
                   onMovimentar={(id) => navigate(`/estoque/lotes/novo?idItem=${id}`)}
                   onRegistrarRetirada={(insumo: InsumoLeituraDto, lote: ItemEstoqueDto) => {
+                    if (!lote.lote?.trim()) {
+                      setSnackbar({ open: true, mensagem: MENSAGEM_LOTE_INVALIDO_RETIRADA, tipo: 'error' });
+                      return;
+                    }
+
                     const state = montarRetiradaNavegacaoState({
                       produto: { ...insumo, descricaoSimples: insumo.descricaoSimples ?? insumo.descricaoSimplificada },
                       produtoId: insumo.id,
                       codItem: insumo.codigo,
-                      loteId: `${insumo.id}-${lote.lote ?? ''}`,
-                      loteCodigo: lote.lote ?? 'Sem código',
+                      loteId: `${insumo.id}-${lote.lote}`,
+                      loteCodigo: lote.lote,
                       quantidadeDisponivel: lote.quantidade,
                       retornoRota: '/insumos',
                     });
@@ -247,7 +257,7 @@ export function PaginaListagemInsumos() {
                       return;
                     }
 
-                    navigate('/estoque/retirada', { state });
+                    navigate(`/estoque/retirada?${montarRetiradaQueryString(state)}`, { state });
                   }}
                 />
               ) : (

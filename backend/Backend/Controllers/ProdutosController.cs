@@ -92,6 +92,15 @@ namespace Backend.Controllers
 
                 return Ok(produtoAtualizado);
             }
+            catch (ModelIncompletaException ex)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Title = "Falha ao atualizar produto",
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message ?? "Um ou mais campos obrigatórios não foram preenchidos"
+                });
+            }
             catch (ArgumentNullException ex)
             {
                 return NotFound(new ErrorResponse

@@ -8,7 +8,7 @@ public interface IRetiradaEstoqueService
 {
     Task<IEnumerable<RetiradaEstoqueModel>> BuscarTodosAsync();
 
-    Task<RetiradaEstoqueModel?> CriarAsync(string lote, RetiradaEstoqueModel obj);
+    Task<RetiradaEstoqueModel?> CriarAsync(string lote, RetiradaEstoqueModel obj, bool confirmarLoteVencido = false);
 
     Task<RetiradaEstoqueHistoricoListaPaginadaDTO> ConsultarHistoricoPaginadoAsync(
         RetiradaEstoqueFiltroDTO filtro,

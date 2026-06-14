@@ -24,7 +24,12 @@ import { useNavigate } from 'react-router-dom';
 import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
-import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
+import {
+  MENSAGEM_LOTE_INVALIDO_RETIRADA,
+  MENSAGEM_PRODUTO_SEM_NOME_RETIRADA,
+  montarRetiradaNavegacaoState,
+  montarRetiradaQueryString,
+} from '../../estoque/utils/retiradaNavegacao';
 import { FilterBarMedicamentos } from '../components/FilterBarMedicamentos';
 import { KpiSectionMedicamentos } from '../components/KpiSectionMedicamentos';
 import { TabelaMedicamentos } from '../components/TabelaMedicamentos';
@@ -237,6 +242,11 @@ export function PaginaListagemMedicamentos() {
                   onExcluir={(id) => setIdExclusao(id)}
                   onMovimentar={(id) => navigate(`/estoque/lotes/novo?idItem=${id}`)}
                   onRegistrarRetirada={(medicamento: MedicamentoLeituraDto, lote: ItemEstoqueDto) => {
+                    if (!lote.lote?.trim()) {
+                      setSnackbar({ open: true, mensagem: MENSAGEM_LOTE_INVALIDO_RETIRADA, tipo: 'error' });
+                      return;
+                    }
+
                     const state = montarRetiradaNavegacaoState({
                       produto: {
                         ...medicamento,
@@ -244,8 +254,8 @@ export function PaginaListagemMedicamentos() {
                       },
                       produtoId: medicamento.id,
                       codItem: medicamento.codigo,
-                      loteId: `${medicamento.id}-${lote.lote ?? ''}`,
-                      loteCodigo: lote.lote ?? 'Sem código',
+                      loteId: `${medicamento.id}-${lote.lote}`,
+                      loteCodigo: lote.lote,
                       quantidadeDisponivel: lote.quantidade,
                       retornoRota: '/medicamentos',
                     });
@@ -255,7 +265,7 @@ export function PaginaListagemMedicamentos() {
                       return;
                     }
 
-                    navigate('/estoque/retirada', { state });
+                    navigate(`/estoque/retirada?${montarRetiradaQueryString(state)}`, { state });
                   }}
                 />
               ) : (

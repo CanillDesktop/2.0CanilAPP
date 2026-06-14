@@ -18,12 +18,28 @@ namespace Backend.Services
         public readonly IInsumosRepository _repository;
         public readonly IUserSessionService _userSessionService;
         private readonly IConfiguration _configuration;
+        private readonly ILoteGeradorService _loteGerador;
 
-        public InsumosService(IInsumosRepository repository, IUserSessionService userSessionService, IConfiguration configuration)
+        public InsumosService(
+            IInsumosRepository repository,
+            IUserSessionService userSessionService,
+            IConfiguration configuration,
+            ILoteGeradorService loteGerador)
         {
             _repository = repository;
             _userSessionService = userSessionService;
             _configuration = configuration;
+            _loteGerador = loteGerador;
+        }
+
+        private static void ValidarCamposObrigatorios(InsumosModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model.DescricaoSimplificada)
+                || string.IsNullOrWhiteSpace(model.DescricaoDetalhada)
+                || !Enum.IsDefined(typeof(UnidadeInsumosEnum), (int)model.Unidade))
+            {
+                throw new ModelIncompletaException("Um ou mais campos obrigatórios não foram preenchidos");
+            }
         }
 
         public async Task<IEnumerable<InsumosModel>> BuscarTodosAsync()
@@ -45,12 +61,18 @@ namespace Backend.Services
 
         public async Task<InsumosModel?> CriarAsync(InsumosModel model)
         {
-            if (string.IsNullOrWhiteSpace(model.Codigo)
-                || string.IsNullOrWhiteSpace(model.DescricaoSimplificada)
-                || !Enum.IsDefined(typeof(UnidadeInsumosEnum), (int)model.Unidade)
-                || string.IsNullOrWhiteSpace(model.ItensEstoque?.FirstOrDefault()?.Lote))
+            ValidarCamposObrigatorios(model);
+
+            var itemInicial = model.ItensEstoque?.FirstOrDefault();
+            if (itemInicial != null && itemInicial.Quantidade > 0)
             {
-                throw new ModelIncompletaException("Um ou mais campos obrigatórios não foram preenchidos");
+                itemInicial.Codigo = model.Codigo;
+                itemInicial.Lote = await _loteGerador.GerarLoteInsumoAsync(model.Unidade, model.DescricaoSimplificada);
+                model.ItensEstoque = new List<ItemEstoqueModel> { itemInicial };
+            }
+            else
+            {
+                model.ItensEstoque = new List<ItemEstoqueModel>();
             }
 
             model.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
@@ -73,66 +95,34 @@ namespace Backend.Services
                     throw new ArgumentNullException(null, $"Insumo de id {id} não encontrado");
                 }
 
+                ValidarCamposObrigatorios(model);
+
                 Debug.WriteLine($"[InsumosService] ✅ Insumo encontrado: ID={insumoExistente.Id}");
 
                 insumoExistente.DescricaoSimplificada = model.DescricaoSimplificada;
                 insumoExistente.DescricaoDetalhada = model.DescricaoDetalhada;
                 insumoExistente.Unidade = model.Unidade;
 
-                Debug.WriteLine($"[InsumosService] ✅ Campos escalares atualizados");
-
+                // Entrada de novo estoque na edição: o lote é sempre gerado pelo backend.
                 var itemEstoque = model.ItensEstoque?.FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(itemEstoque?.Lote))
+                if (itemEstoque != null && itemEstoque.Quantidade > 0)
                 {
-                    var loteExistente = insumoExistente.ItensEstoque
-                        ?.FirstOrDefault(e => e.Lote == itemEstoque.Lote);
-
-                    if (loteExistente != null)
+                    var novoLote = new ItemEstoqueModel
                     {
+                        Id = insumoExistente.Id,
+                        Codigo = insumoExistente.Codigo,
+                        Lote = await _loteGerador.GerarLoteInsumoAsync(
+                            insumoExistente.Unidade,
+                            insumoExistente.DescricaoSimplificada),
+                        Quantidade = itemEstoque.Quantidade,
+                        DataEntrega = itemEstoque.DataEntrega,
+                        DataValidade = itemEstoque.DataValidade,
+                        NFe = itemEstoque.NFe,
+                        DataHoraCriacao = DateTime.UtcNow
+                    };
 
-                        Debug.WriteLine($"[InsumosService] ♻️  Atualizando lote existente: {itemEstoque.Lote}");
-                        Debug.WriteLine($"   Quantidade: {loteExistente.Quantidade} → {itemEstoque.Quantidade}");
-
-                        loteExistente.Quantidade = itemEstoque.Quantidade;
-                        loteExistente.DataEntrega = itemEstoque.DataEntrega;
-                        loteExistente.DataValidade = itemEstoque.DataValidade;
-                        loteExistente.NFe = itemEstoque.NFe;
-
-                        loteExistente.DataHoraAtualizacao = DateTime.UtcNow;
-                        Debug.WriteLine($"   DataHoraAtualizacao: {loteExistente.DataHoraAtualizacao}");
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"[InsumosService] ➕ Adicionando novo lote: {itemEstoque.Lote}");
-                        Debug.WriteLine($"   Quantidade: {itemEstoque.Quantidade}");
-
-                        var novoLote = new ItemEstoqueModel
-                        {
-                            Id = insumoExistente.Id,
-                            Codigo = insumoExistente.Codigo,
-                            Lote = itemEstoque.Lote,
-                            Quantidade = itemEstoque.Quantidade,
-                            DataEntrega = itemEstoque.DataEntrega,
-                            DataValidade = itemEstoque.DataValidade,
-                            NFe = itemEstoque.NFe,
-                            DataHoraCriacao = DateTime.UtcNow
-                        };
-
-                        insumoExistente.ItensEstoque ??= new List<ItemEstoqueModel>();
-
-                        insumoExistente.ItensEstoque.Add(novoLote);
-
-                        Debug.WriteLine($"   DataHoraCriacao: {novoLote.DataHoraCriacao}");
-                    }
-
-                    var quantidadeTotal = insumoExistente.ItensEstoque?.Sum(x => x.Quantidade) ?? 0;
-
-                    if (quantidadeTotal <= 0)
-                    {
-                        insumoExistente.IsDeleted = true;
-                        Debug.WriteLine($"[Service] 🗑️ Estoque zerado (Total: {quantidadeTotal}). Marcando {insumoExistente.Codigo} como deletado.");
-                    }
-                    insumoExistente.IsDeleted = false;
+                    insumoExistente.ItensEstoque ??= new List<ItemEstoqueModel>();
+                    insumoExistente.ItensEstoque.Add(novoLote);
                 }
 
                 if (insumoExistente.ItemNivelEstoque != null)

@@ -88,6 +88,8 @@ internal static class RetiradaEstoqueConsultaQueryable
                    Quantidade = r.Quantidade,
                    Observacao = r.Observacao,
                    Status = r.Status,
+                   EstavaVencido = r.EstavaVencido,
+                   DataValidadeLote = r.DataValidadeLote,
                    IdUsuarioRetirante = r.IdUsuarioRetirante,
                    IdUsuarioRecebedor = r.IdUsuarioRecebedor,
                    UsuarioRetiranteExibicao = MontarNome(ur, r.De),
