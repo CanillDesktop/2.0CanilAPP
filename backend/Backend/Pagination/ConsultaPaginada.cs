@@ -1,8 +1,8 @@
-using Backend.Models.Produtos;
+using Backend.Models.Estoque;
 
-namespace Backend.Repositories;
+namespace Backend.Pagination;
 
-public sealed record ProdutosResumoConsulta(
+public sealed record ItemComEstoqueResumoConsulta(
     int TotalNoRecorte,
     int Ativos,
     int BaixoEstoque,
@@ -11,7 +11,7 @@ public sealed record ProdutosResumoConsulta(
 
 /// <param name="Items">Página materializada com includes.</param>
 /// <param name="TotalCount">Total de linhas após filtros (incl. status).</param>
-public sealed record ProdutosConsultaPaginada(
-    IReadOnlyList<ProdutosModel> Items,
+public sealed record ConsultaPaginada<T>(
+    IReadOnlyList<T> Items,
     int TotalCount,
-    ProdutosResumoConsulta Resumo);
+    ItemComEstoqueResumoConsulta Resumo) where T : ItemComEstoqueBaseModel;

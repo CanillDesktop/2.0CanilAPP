@@ -6,8 +6,9 @@ namespace Backend.Repositories.Interfaces;
 
 public interface IProdutosRepository : ICRUDEstoqueRepository<ProdutosModel>
 {
-    Task<ProdutosConsultaPaginada> ConsultarPaginadoAsync(
+    Task<ConsultaPaginada<ProdutosModel>> ConsultarPaginadoAsync(
         ProdutosFiltro filtro,
-        ProdutosParameters produtosParameters,
+        ItensPaginationParameters paginationParameters,
+        int diasDataLimiteVencimento,
         CancellationToken cancellationToken = default);
 }

@@ -40,7 +40,7 @@ namespace Backend.Controllers
             }
 
             var produtosTask = _produtosService.BuscarTodosAsync();
-            var medicamentosTask = _medicamentosService.BuscarTodosAsync(new DTOs.Medicamentos.MedicamentosFiltroDTO());
+            var medicamentosTask = _medicamentosService.BuscarTodosAsync();
             var insumosTask = _insumosService.BuscarTodosAsync(new DTOs.Insumos.InsumosFiltroDTO());
 
             await Task.WhenAll(produtosTask, medicamentosTask, insumosTask);

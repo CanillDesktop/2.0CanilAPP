@@ -1,8 +1,11 @@
-﻿using Backend.DTOs.Medicamentos;
+﻿using Backend.DTOs;
+using Backend.DTOs.Medicamentos;
 using Backend.Exceptions;
+using Backend.Filtro.Medicamentos;
 using Backend.Models.Enums;
 using Backend.Models.Estoque;
 using Backend.Models.Medicamentos;
+using Backend.Pagination;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -13,11 +16,13 @@ namespace Backend.Services
     {
         private readonly IMedicamentosRepository _repository;
         private readonly IUserSessionService _userSessionService;
+        private readonly IConfiguration _configuration;
 
-        public MedicamentosService(IMedicamentosRepository repository, IUserSessionService userSessionService)
+        public MedicamentosService(IMedicamentosRepository repository, IUserSessionService userSessionService, IConfiguration configuration)
         {
             _repository = repository;
             _userSessionService = userSessionService;
+            _configuration = configuration;
         }
 
         public async Task<IEnumerable<MedicamentosModel>> BuscarTodosAsync() => await _repository.GetAsync();
@@ -143,12 +148,38 @@ namespace Backend.Services
             return await _repository.DeleteAsync(medicamento);
         }
 
-        public async Task<IEnumerable<MedicamentosModel>> BuscarTodosAsync(MedicamentosFiltroDTO filtro) => await _repository.GetAsync(filtro);
+        public async Task<ItemComEstoqueListaPaginadaDTO<MedicamentoLeituraDTO>> BuscarPaginadoAsync(
+            MedicamentosFiltro filtro,
+            ItensPaginationParameters produtosParameters,
+            CancellationToken cancellationToken = default)
+        {
+            var diasDataLimiteVencimento = _configuration.GetValue("RegrasDeNegocio:DiasDataLimiteVencimentoItens", 30);
 
+            var consulta = await _repository.ConsultarPaginadoAsync(filtro, produtosParameters, diasDataLimiteVencimento, cancellationToken);
 
+            var pageNumber = Math.Max(produtosParameters.PageNumber, 1);
+            var pageSize = produtosParameters.PageSize;
+            var totalPages = consulta.TotalCount == 0
+                ? 0
+                : (int)Math.Ceiling(consulta.TotalCount / (double)pageSize);
 
-
-
+            return new ItemComEstoqueListaPaginadaDTO<MedicamentoLeituraDTO>
+            {
+                Items = consulta.Items.Select(p => (MedicamentoLeituraDTO)p).ToList(),
+                TotalCount = consulta.TotalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                Resumo = new ItemComEstoqueListaResumoDTO
+                {
+                    TotalNoRecorte = consulta.Resumo.TotalNoRecorte,
+                    Ativos = consulta.Resumo.Ativos,
+                    BaixoEstoque = consulta.Resumo.BaixoEstoque,
+                    SemEstoque = consulta.Resumo.SemEstoque,
+                    AVencer = consulta.Resumo.AVencer,
+                },
+            };
+        }
 
     }
 }

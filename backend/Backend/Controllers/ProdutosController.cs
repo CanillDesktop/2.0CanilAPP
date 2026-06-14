@@ -1,3 +1,4 @@
+using Backend.DTOs;
 using Backend.DTOs.Produtos;
 using Backend.Exceptions;
 using Backend.Filtro.Produtos;
@@ -24,15 +25,15 @@ namespace Backend.Controllers
             _logger = logger;
         }
 
-        [HttpGet("pagination")]
-        public async Task<ActionResult<ProdutosListaPaginadaDTO>> GetPagination(
+        [HttpGet]
+        public async Task<ActionResult<ItemComEstoqueListaPaginadaDTO<ProdutosLeituraDTO>>> Get(
             [FromQuery] ProdutosFiltro? filtro,
-            [FromQuery] ProdutosParameters? produtosParameters,
+            [FromQuery] ItensPaginationParameters? paginationParameters,
             CancellationToken cancellationToken)
         {
             var resultado = await _service.BuscarPaginadoAsync(
                 filtro ?? new ProdutosFiltro(),
-                produtosParameters ?? new ProdutosParameters(),
+                paginationParameters ?? new ItensPaginationParameters(),
                 cancellationToken);
 
             return Ok(resultado);

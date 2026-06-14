@@ -12,6 +12,6 @@ public interface IRetiradaEstoqueService
 
     Task<RetiradaEstoqueHistoricoListaPaginadaDTO> ConsultarHistoricoPaginadoAsync(
         RetiradaEstoqueFiltroDTO filtro,
-        RetiradaEstoqueParameters parameters,
+        RetiradaEstoquePaginationParameters parameters,
         CancellationToken cancellationToken = default);
 }
