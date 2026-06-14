@@ -1,10 +1,10 @@
-namespace Backend.DTOs.Produtos;
+namespace Backend.DTOs;
 
 /// <summary>
-/// Totais de estoque considerando o mesmo recorte de busca + categoria (+ NFe/datas) do filtro,
+/// Totais de estoque considerando o mesmo recorte de busca + NFe/datas do filtro,
 /// mas <b>sem</b> o filtro de status — permite ver a distribuição real do subconjunto.
 /// </summary>
-public class ProdutosListaResumoDTO
+public class ItemComEstoqueListaResumoDTO
 {
     public int TotalNoRecorte { get; set; }
 

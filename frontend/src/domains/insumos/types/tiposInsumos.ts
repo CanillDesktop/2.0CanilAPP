@@ -1,4 +1,10 @@
 import type { ItemEstoqueDto, ItemNivelEstoqueDto } from '../../../shared/types/itemEstoque';
+import type {
+  ItemComEstoqueListaPaginadaDto,
+  ItemComEstoqueListaResumoDto,
+  ItensPaginacaoDto,
+  StatusEstoqueFiltro,
+} from '../../../shared/types/itemComEstoqueLista';
 
 export type InsumoLeituraDto = {
   id: number;
@@ -25,11 +31,19 @@ export type InsumoCadastroDto = {
   nivelMinimoEstoque: number;
 };
 
-export type InsumosFiltroDto = {
-  codInsumo?: string;
-  descricaoSimplificada?: string;
-  nfe?: string;
+export type InsumoStatusEstoqueFiltro = StatusEstoqueFiltro;
+
+export type InsumoFiltro = {
+  /** Busca OR em código, descrições, NF-e e lote — server-side */
+  termo?: string;
   unidade?: number;
   dataEntrega?: string;
   dataValidade?: string;
+  statusEstoque?: InsumoStatusEstoqueFiltro;
 };
+
+export type InsumoPaginacaoDto = ItensPaginacaoDto;
+
+export type InsumosListaResumoDto = ItemComEstoqueListaResumoDto;
+
+export type InsumosListaPaginadaDto = ItemComEstoqueListaPaginadaDto<InsumoLeituraDto>;

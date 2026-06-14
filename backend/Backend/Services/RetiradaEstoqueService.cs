@@ -35,7 +35,7 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
 
     public async Task<RetiradaEstoqueHistoricoListaPaginadaDTO> ConsultarHistoricoPaginadoAsync(
         RetiradaEstoqueFiltroDTO filtro,
-        RetiradaEstoqueParameters parameters,
+        RetiradaEstoquePaginationParameters parameters,
         CancellationToken cancellationToken = default)
     {
         var janela = RetiradaEstoqueFiltrosResolver.ResolverPeriodoOuDatas(filtro);
@@ -57,7 +57,7 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
             string.IsNullOrWhiteSpace(filtro.TermoBusca) ? null : filtro.TermoBusca.Trim());
 
         var pageNumber = Math.Max(parameters.PageNumber, 1);
-        var parametrosPagina = new RetiradaEstoqueParameters
+        var parametrosPagina = new RetiradaEstoquePaginationParameters
         {
             PageNumber = pageNumber,
             PageSize = parameters.PageSize,

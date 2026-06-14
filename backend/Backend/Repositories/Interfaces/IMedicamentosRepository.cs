@@ -1,10 +1,15 @@
-﻿using Backend.DTOs.Medicamentos;
+﻿using Backend.Filtro.Medicamentos;
 using Backend.Models.Medicamentos;
+using Backend.Pagination;
 
 namespace Backend.Repositories.Interfaces
 {
     public interface IMedicamentosRepository : ICRUDEstoqueRepository<MedicamentosModel>
     {
-        Task<IEnumerable<MedicamentosModel>> GetAsync(MedicamentosFiltroDTO filtro);
+        Task<ConsultaPaginada<MedicamentosModel>> ConsultarPaginadoAsync(
+        MedicamentosFiltro filtro,
+        ItensPaginationParameters produtosParameters,
+        int diasDataLimiteVencimento,
+        CancellationToken cancellationToken = default);
     }
 }

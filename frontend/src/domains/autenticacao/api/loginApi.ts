@@ -9,11 +9,3 @@ export async function solicitarLoginApi(corpo: CredenciaisLogin): Promise<Respos
   const { data } = await cliente.post<RespostaLogin>('/api/Auth/login', corpo);
   return data;
 }
-
-export type TokenRespostaApi = RespostaLogin['accessToken'];
-
-export async function solicitarRenovacaoTokenApi(): Promise<TokenRespostaApi> {
-  const cliente = obterClienteHttp();
-  const { data } = await cliente.post<TokenRespostaApi>('/api/Auth/refresh');
-  return data;
-}

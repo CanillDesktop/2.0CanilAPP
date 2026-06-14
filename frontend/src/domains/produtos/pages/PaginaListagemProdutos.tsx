@@ -29,7 +29,7 @@ import { KpiSectionProdutos } from '../components/KpiSectionProdutos';
 import { TabelaProdutos } from '../components/TabelaProdutos';
 import { useListaProdutosPaginados } from '../hooks/useProdutos';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
-import type { ProdutoFiltroDto, ProdutoLeituraDto, ProdutoStatusEstoqueFiltro } from '../types/tiposProdutos';
+import type { ProdutoFiltro, ProdutoLeituraDto, ProdutoStatusEstoqueFiltro } from '../types/tiposProdutos';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 
 const MotionBox = motion(Box);
@@ -43,6 +43,8 @@ export function PaginaListagemProdutos() {
   const [debouncedBusca, setDebouncedBusca] = useState('');
   const [categoria, setCategoria] = useState<'todas' | string>('todas');
   const [status, setStatus] = useState<ProdutoStatusEstoqueFiltro>('todos');
+  const [dataEntrega, setDataEntrega] = useState('');
+  const [dataValidade, setDataValidade] = useState('');
   const [idExclusao, setIdExclusao] = useState<number | null>(null);
   const { snackbar, setSnackbar } = useSnackbarRetornoListagem({
     open: false,
@@ -59,16 +61,28 @@ export function PaginaListagemProdutos() {
 
   useEffect(() => {
     setPage(0);
-  }, [debouncedBusca, categoria, status]);
+  }, [debouncedBusca, categoria, status, dataEntrega, dataValidade]);
 
-  const montarFiltroApi = useCallback((): ProdutoFiltroDto => {
+  function limparFiltros() {
+    setBusca('');
+    setDebouncedBusca('');
+    setCategoria('todas');
+    setStatus('todos');
+    setDataEntrega('');
+    setDataValidade('');
+    setPage(0);
+  }
+
+  const montarFiltroApi = useCallback((): ProdutoFiltro => {
     const termo = debouncedBusca.trim();
     return {
-      termoBusca: termo.length > 0 ? termo : undefined,
+      termo: termo.length > 0 ? termo : undefined,
       categoria: categoria === 'todas' ? undefined : Number(categoria),
+      dataEntrega: dataEntrega.trim().length > 0 ? dataEntrega : undefined,
+      dataValidade: dataValidade.trim().length > 0 ? dataValidade : undefined,
       statusEstoque: status,
     };
-  }, [debouncedBusca, categoria, status]);
+  }, [debouncedBusca, categoria, status, dataEntrega, dataValidade]);
 
   const recarregar = useCallback(async () => {
     await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
@@ -148,9 +162,14 @@ export function PaginaListagemProdutos() {
             busca={busca}
             categoria={categoria}
             status={status}
+            dataEntrega={dataEntrega}
+            dataValidade={dataValidade}
             onBuscaChange={setBusca}
             onCategoriaChange={setCategoria}
             onStatusChange={setStatus}
+            onDataEntregaChange={setDataEntrega}
+            onDataValidadeChange={setDataValidade}
+            onLimpar={limparFiltros}
             onNovoProduto={() => navigate('/produtos/novo')}
           />
 
@@ -191,8 +210,8 @@ export function PaginaListagemProdutos() {
               ]}
             />
             <Typography variant="caption" sx={estilos.legenda}>
-              Indicadores refletem todos os produtos que obedecem a busca e categoria (sem o filtro de status). O
-              filtro de status restringe apenas a tabela e a paginação.
+              Indicadores refletem todos os produtos que obedecem à busca, categoria e datas (sem o filtro de status).
+              O filtro de status restringe apenas a tabela e a paginação.
             </Typography>
           </Stack>
 

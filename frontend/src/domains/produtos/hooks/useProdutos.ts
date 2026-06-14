@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
 import { useEstadoAssincrono } from '../../../shared/hooks/useEstadoAssincrono';
 import { servicoProdutos } from '../services/servicoProdutos';
-import type { ProdutoFiltroDto, ProdutoLeituraDto, ProdutoPaginacaoDto, ProdutosListaPaginadaDto } from '../types/tiposProdutos';
+import type { ProdutoFiltro, ProdutoLeituraDto, ProdutoPaginacaoDto, ProdutosListaPaginadaDto } from '../types/tiposProdutos';
 
 /**
  * Lista paginada com proteção contra race: respostas antigas são ignoradas.
@@ -16,7 +16,7 @@ export function useListaProdutosPaginados() {
   }>({ dados: null, carregando: false, erro: null });
   const seqRef = useRef(0);
 
-  const carregar = useCallback(async (filtro?: ProdutoFiltroDto, paginacao?: ProdutoPaginacaoDto) => {
+  const carregar = useCallback(async (filtro?: ProdutoFiltro, paginacao?: ProdutoPaginacaoDto) => {
     const id = ++seqRef.current;
     setEstado((s) => ({ ...s, carregando: true, erro: null }));
     try {

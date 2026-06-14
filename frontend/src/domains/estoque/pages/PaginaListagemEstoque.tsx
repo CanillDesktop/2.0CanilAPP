@@ -16,8 +16,8 @@ import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { larguraConteudoPagina, paddingPaginaShell } from '../../../shared/theme/estilosLayoutPagina';
-import { listarInsumosApi } from '../../insumos/api/insumosApi';
-import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
+import { listarTodosInsumosParaEstoqueApi } from '../../insumos/api/insumosApi';
+import { listarTodosMedicamentosParaEstoqueApi } from '../../medicamentos/api/medicamentosApi';
 import { listarTodosProdutosParaEstoqueApi } from '../../produtos/api/produtosApi';
 import { EstoqueGestaoConteudo } from '../components/EstoqueGestaoConteudo';
 import { PainelFiltrosEstoque } from '../components/PainelFiltrosEstoque';
@@ -81,8 +81,8 @@ export function PaginaListagemEstoque() {
       try {
         const [produtos, medicamentos, insumos] = await Promise.all([
           listarTodosProdutosParaEstoqueApi(),
-          listarMedicamentosApi(),
-          listarInsumosApi(),
+          listarTodosMedicamentosParaEstoqueApi(),
+          listarTodosInsumosParaEstoqueApi(),
         ]);
 
         const hoje = new Date();

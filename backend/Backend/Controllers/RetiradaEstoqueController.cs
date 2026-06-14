@@ -34,14 +34,14 @@ public class RetiradaEstoqueController : ControllerBase
     [HttpGet("historico")]
     public async Task<ActionResult<RetiradaEstoqueHistoricoListaPaginadaDTO>> GetHistorico(
         [FromQuery] RetiradaEstoqueFiltroDTO? filtro,
-        [FromQuery] RetiradaEstoqueParameters? parameters,
+        [FromQuery] RetiradaEstoquePaginationParameters? parameters,
         CancellationToken cancellationToken)
     {
         try
         {
             var resultado = await _service.ConsultarHistoricoPaginadoAsync(
                 filtro ?? new RetiradaEstoqueFiltroDTO(),
-                parameters ?? new RetiradaEstoqueParameters(),
+                parameters ?? new RetiradaEstoquePaginationParameters(),
                 cancellationToken);
 
             return Ok(resultado);

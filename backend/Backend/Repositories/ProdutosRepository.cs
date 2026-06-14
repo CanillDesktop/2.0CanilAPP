@@ -12,22 +12,23 @@ public class ProdutosRepository : BaseCRUDEstoqueRepository<ProdutosModel>, IPro
 {
     public ProdutosRepository(CanilAppDbContext context) : base(context) { }
 
-    public async Task<ProdutosConsultaPaginada> ConsultarPaginadoAsync(
+    public async Task<ConsultaPaginada<ProdutosModel>> ConsultarPaginadoAsync(
         ProdutosFiltro filtro,
-        ProdutosParameters produtosParameters,
+        ItensPaginationParameters paginationParameters,
+        int diasDataLimiteVencimento,
         CancellationToken cancellationToken = default)
     {
-        var pageNumber = Math.Max(produtosParameters.PageNumber, 1);
-        var pageSize = produtosParameters.PageSize;
+        var pageNumber = Math.Max(paginationParameters.PageNumber, 1);
+        var pageSize = paginationParameters.PageSize;
 
         var filtrada = FiltroHelper.AplicarFiltrosProdutos(
             FiltroHelper.Base(_context.Produtos.AsQueryable()),
             filtro);
 
         var hoje = DateTime.UtcNow.Date;
-        var limiteVencimento = hoje.AddDays(30);
+        var limiteVencimento = hoje.AddDays(diasDataLimiteVencimento);
 
-        var resumo = new ProdutosResumoConsulta(
+        var resumo = new ItemComEstoqueResumoConsulta(
             TotalNoRecorte: await filtrada.CountAsync(cancellationToken),
             Ativos: await filtrada.CountAsync(
                 p => p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
@@ -51,15 +52,11 @@ public class ProdutosRepository : BaseCRUDEstoqueRepository<ProdutosModel>, IPro
                     && e.DataValidade <= limiteVencimento),
                 cancellationToken));
 
-        var comStatus = FiltroHelper.AplicarStatusEstoque<ProdutosModel>(filtrada, filtro.StatusEstoque);
+        var comStatus = FiltroHelper.AplicarStatusEstoque(filtrada, filtro.StatusEstoque);
         var totalCount = await comStatus.CountAsync(cancellationToken);
 
-        var items = await comStatus
-            .OrderBy(p => p.Id)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
+        var items = await PagedList<ProdutosModel>.ToPagedListAsync(comStatus, pageNumber, pageSize, p => p.Id, cancellationToken);
 
-        return new ProdutosConsultaPaginada(items, totalCount, resumo);
+        return new ConsultaPaginada<ProdutosModel>(items, totalCount, resumo);
     }
 }

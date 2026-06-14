@@ -22,6 +22,7 @@ export const MSG_ERRO = {
   exportacaoArquivo: 'Não foi possível gerar o arquivo. Tente novamente em instantes.',
   logoutParcial: 'Você saiu deste dispositivo, mas não foi possível confirmar o encerramento no servidor.',
   sessaoEncerrada: 'Sessão encerrada com sucesso.',
+  sessaoExpirada: 'Sua sessão expirou. Faça login novamente para continuar.',
 } as const;
 
 export type ResultadoMutacao<T = void> = { ok: true; dados?: T } | { ok: false; mensagem: string };

@@ -1,12 +1,55 @@
 import { obterClienteHttp } from '../../../infrastructure/http/clienteHttpSingleton';
 import { montarQueryString } from '../../../shared/utils/montarQueryString';
-import type { MedicamentoCadastroDto, MedicamentoLeituraDto, MedicamentosFiltroDto } from '../types/tiposMedicamentos';
+import {
+  carregarTodasPaginasLista,
+  montarParamsPaginacao,
+  normalizarStatusEstoqueQuery,
+} from '../../../shared/utils/listaItemComEstoqueApi';
+import type {
+  MedicamentoCadastroDto,
+  MedicamentoFiltro,
+  MedicamentoLeituraDto,
+  MedicamentoPaginacaoDto,
+  MedicamentosListaPaginadaDto,
+} from '../types/tiposMedicamentos';
 
-export async function listarMedicamentosApi(filtro?: MedicamentosFiltroDto): Promise<MedicamentoLeituraDto[]> {
+function normalizarParamsFiltro(filtro?: MedicamentoFiltro): Record<string, string | number | undefined> {
+  if (!filtro) return {};
+  const { statusEstoque, termo, prioridade, publicoAlvo, dataEntrega, dataValidade } = filtro;
+  return {
+    termo: termo?.trim() || undefined,
+    prioridade,
+    publicoAlvo,
+    dataEntrega,
+    dataValidade,
+    statusEstoque: normalizarStatusEstoqueQuery(statusEstoque),
+  };
+}
+
+/**
+ * Lista medicamentos com paginação e metadados server-side (`totalCount`, `resumo`, etc.).
+ */
+export async function listarMedicamentosPaginadosApi(
+  filtro?: MedicamentoFiltro,
+  paginacao?: MedicamentoPaginacaoDto,
+): Promise<MedicamentosListaPaginadaDto> {
   const cliente = obterClienteHttp();
-  const qs = filtro ? montarQueryString(filtro as Record<string, string | number | undefined>) : '';
-  const { data } = await cliente.get<MedicamentoLeituraDto[]>(`/api/Medicamentos${qs}`);
+  const params: Record<string, string | number | undefined> = {
+    ...montarParamsPaginacao(paginacao),
+    ...normalizarParamsFiltro(filtro),
+  };
+  const qs = montarQueryString(params);
+  const { data } = await cliente.get<MedicamentosListaPaginadaDto>(`/api/Medicamentos${qs}`);
   return data;
+}
+
+/**
+ * Carrega todos os medicamentos (várias páginas na API) para telas que agregam estoque no cliente.
+ */
+export async function listarTodosMedicamentosParaEstoqueApi(): Promise<MedicamentoLeituraDto[]> {
+  return carregarTodasPaginasLista((pageNumber, pageSize) =>
+    listarMedicamentosPaginadosApi(undefined, { pageNumber, pageSize }),
+  );
 }
 
 export async function obterMedicamentoPorIdApi(id: number): Promise<MedicamentoLeituraDto> {

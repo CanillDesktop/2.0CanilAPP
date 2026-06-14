@@ -1,6 +1,6 @@
 namespace Backend.Pagination;
 
-public class RetiradaEstoqueParameters
+public class RetiradaEstoquePaginationParameters
 {
     private const int MaxPageSize = 100;
     private const int DefaultPageSize = 20;

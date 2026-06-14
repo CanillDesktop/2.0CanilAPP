@@ -22,9 +22,9 @@ import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { larguraConteudoPagina, paddingPaginaShell } from '../../../shared/theme/estilosLayoutPagina';
 import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
-import { listarInsumosApi } from '../../insumos/api/insumosApi';
-import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
-import { listarProdutosPaginadosApi } from '../../produtos/api/produtosApi';
+import { listarTodosInsumosParaEstoqueApi } from '../../insumos/api/insumosApi';
+import { listarTodosMedicamentosParaEstoqueApi } from '../../medicamentos/api/medicamentosApi';
+import { listarTodosProdutosParaEstoqueApi } from '../../produtos/api/produtosApi';
 import { AlertaCard } from '../components/AlertaCard';
 import { BuscaCategoriaTabs } from '../components/BuscaCategoriaTabs';
 import { ResumoItensCadastrados, type ContagemPorClasse } from '../components/ResumoItensCadastrados';
@@ -85,12 +85,11 @@ export function DashboardPage() {
       setCarregando(true);
       setErroCarregamento(null);
       try {
-        const [produtosPaginado, medicamentos, insumos] = await Promise.all([
-          listarProdutosPaginadosApi(undefined, { pageNumber: 1, pageSize: 50 }),
-          listarMedicamentosApi(),
-          listarInsumosApi(),
+        const [produtos, medicamentos, insumos] = await Promise.all([
+          listarTodosProdutosParaEstoqueApi(),
+          listarTodosMedicamentosParaEstoqueApi(),
+          listarTodosInsumosParaEstoqueApi(),
         ]);
-        const produtos = produtosPaginado.items;
         if (!ativo) return;
         setContagemPorOrigem({
           produtos: produtos.length,

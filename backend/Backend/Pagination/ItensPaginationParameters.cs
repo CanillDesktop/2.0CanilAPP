@@ -1,6 +1,6 @@
 ﻿namespace Backend.Pagination;
 
-public class ProdutosParameters
+public class ItensPaginationParameters
 {
     private const int MaxPageSize = 50;
     private const int DefaultPageSize = 10;

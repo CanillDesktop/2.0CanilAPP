@@ -1,4 +1,5 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import EventOutlinedIcon from '@mui/icons-material/EventOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
 import RemoveShoppingCartOutlinedIcon from '@mui/icons-material/RemoveShoppingCartOutlined';
@@ -18,7 +19,7 @@ import {
   Typography,
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
@@ -27,39 +28,22 @@ import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from
 import { FilterBarInsumos } from '../components/FilterBarInsumos';
 import { KpiSectionInsumos } from '../components/KpiSectionInsumos';
 import { TabelaInsumos } from '../components/TabelaInsumos';
-import { useListaInsumos, useMutacaoInsumo } from '../hooks/useInsumos';
-import type { InsumoLeituraDto } from '../types/tiposInsumos';
+import { useListaInsumosPaginados, useMutacaoInsumo } from '../hooks/useInsumos';
+import type { InsumoFiltro, InsumoLeituraDto, InsumoStatusEstoqueFiltro } from '../types/tiposInsumos';
 
 const MotionBox = motion(Box);
 
-type StatusInsumo = 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
-
-function obterStatus(item: InsumoLeituraDto): StatusInsumo {
-  const quantidade = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
-  const minimo = item.itemNivelEstoque?.nivelMinimoEstoque ?? 0;
-  const hoje = new Date();
-  const limiteVencimento = new Date();
-  limiteVencimento.setDate(hoje.getDate() + 30);
-  const temLoteAVencer = item.itensEstoque.some((lote) => {
-    if (!lote.dataValidade) return false;
-    const validade = new Date(lote.dataValidade);
-    if (Number.isNaN(validade.getTime())) return false;
-    return validade >= hoje && validade <= limiteVencimento;
-  });
-  if (quantidade <= 0) return 'sem_estoque';
-  if (temLoteAVencer) return 'a_vencer';
-  if (quantidade < minimo) return 'baixo';
-  return 'ativo';
-}
-
 export function PaginaListagemInsumos() {
-  const { estado, carregar } = useListaInsumos();
+  const { estado, carregar } = useListaInsumosPaginados();
   const { excluir, carregando: carregandoExclusao } = useMutacaoInsumo();
   const navigate = useNavigate();
   const estilos = useEstilosListagem();
   const [busca, setBusca] = useState('');
+  const [debouncedBusca, setDebouncedBusca] = useState('');
   const [unidade, setUnidade] = useState<'todas' | string>('todas');
-  const [status, setStatus] = useState<'todos' | StatusInsumo>('todos');
+  const [status, setStatus] = useState<InsumoStatusEstoqueFiltro>('todos');
+  const [dataEntrega, setDataEntrega] = useState('');
+  const [dataValidade, setDataValidade] = useState('');
   const [idExclusao, setIdExclusao] = useState<number | null>(null);
   const { snackbar, setSnackbar } = useSnackbarRetornoListagem({
     open: false,
@@ -70,51 +54,78 @@ export function PaginaListagemInsumos() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
-    void carregar();
-  }, [carregar]);
+    const t = window.setTimeout(() => setDebouncedBusca(busca), 320);
+    return () => window.clearTimeout(t);
+  }, [busca]);
 
   useEffect(() => {
     setPage(0);
-  }, [busca, unidade, status]);
+  }, [debouncedBusca, unidade, status, dataEntrega, dataValidade]);
 
-  const itensBase = estado.dados ?? [];
-  const unidades = Array.from(new Set(itensBase.map((item) => String(item.unidade)))).sort((a, b) => Number(a) - Number(b));
+  function limparFiltros() {
+    setBusca('');
+    setDebouncedBusca('');
+    setUnidade('todas');
+    setStatus('todos');
+    setDataEntrega('');
+    setDataValidade('');
+    setPage(0);
+  }
 
-  const itensFiltrados = useMemo(() => {
-    return itensBase.filter((item) => {
-      const texto = `${item.codigo} ${item.nomeOuDescricaoSimples}`.toLowerCase();
-      const bateBusca = texto.includes(busca.toLowerCase());
-      const bateUnidade = unidade === 'todas' ? true : String(item.unidade) === unidade;
-      const statusItem = obterStatus(item);
-      const bateStatus = status === 'todos' ? true : statusItem === status;
-      return bateBusca && bateUnidade && bateStatus;
-    });
-  }, [busca, unidade, status, itensBase]);
+  const montarFiltroApi = useCallback((): InsumoFiltro => {
+    const termo = debouncedBusca.trim();
+    return {
+      termo: termo.length > 0 ? termo : undefined,
+      unidade: unidade === 'todas' ? undefined : Number(unidade),
+      dataEntrega: dataEntrega.trim().length > 0 ? dataEntrega : undefined,
+      dataValidade: dataValidade.trim().length > 0 ? dataValidade : undefined,
+      statusEstoque: status,
+    };
+  }, [debouncedBusca, unidade, status, dataEntrega, dataValidade]);
 
-  const itensPagina = useMemo(() => {
-    const start = page * rowsPerPage;
-    return itensFiltrados.slice(start, start + rowsPerPage);
-  }, [itensFiltrados, page, rowsPerPage]);
-
-  const kpis = useMemo(() => {
-    const total = itensPagina.length;
-    const baixo = itensPagina.filter((item) => obterStatus(item) === 'baixo').length;
-    const semEstoque = itensPagina.filter((item) => obterStatus(item) === 'sem_estoque').length;
-    const ativos = itensPagina.filter((item) => obterStatus(item) === 'ativo').length;
-    return { total, baixo, semEstoque, ativos };
-  }, [itensPagina]);
+  const recarregar = useCallback(async () => {
+    await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
+  }, [carregar, montarFiltroApi, page, rowsPerPage]);
 
   useEffect(() => {
-    const maxPage = Math.max(0, Math.ceil(itensFiltrados.length / rowsPerPage) - 1);
-    if (page > maxPage) setPage(maxPage);
-  }, [itensFiltrados.length, page, rowsPerPage]);
+    void recarregar();
+  }, [recarregar]);
+
+  useEffect(() => {
+    const d = estado.dados;
+    if (!d || d.totalPages <= 0) return;
+    if (page > d.totalPages - 1) setPage(0);
+  }, [estado.dados, page]);
+
+  const itens = estado.dados?.items ?? [];
+  const totalCount = estado.dados?.totalCount ?? 0;
+  const resumo = estado.dados?.resumo;
+
+  const kpis = useMemo(() => {
+    if (!resumo) {
+      return {
+        totalRecorte: 0,
+        baixo: 0,
+        semEstoque: 0,
+        ativos: 0,
+        aVencer: 0,
+      };
+    }
+    return {
+      totalRecorte: resumo.totalNoRecorte,
+      baixo: resumo.baixoEstoque,
+      semEstoque: resumo.semEstoque,
+      ativos: resumo.ativos,
+      aVencer: resumo.aVencer,
+    };
+  }, [resumo]);
 
   async function confirmarExclusao() {
     if (idExclusao == null) return;
     const resultado = await excluir(idExclusao);
     if (resultado.ok) {
       setSnackbar({ open: true, mensagem: 'Insumo excluído com sucesso.', tipo: 'success' });
-      await carregar();
+      await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
     } else {
       setSnackbar({ open: true, mensagem: resultado.mensagem, tipo: 'error' });
     }
@@ -150,31 +161,62 @@ export function PaginaListagemInsumos() {
             busca={busca}
             unidade={unidade}
             status={status}
-            unidades={unidades}
+            dataEntrega={dataEntrega}
+            dataValidade={dataValidade}
             onBuscaChange={setBusca}
             onUnidadeChange={setUnidade}
             onStatusChange={setStatus}
+            onDataEntregaChange={setDataEntrega}
+            onDataValidadeChange={setDataValidade}
+            onLimpar={limparFiltros}
             onNovoInsumo={() => navigate('/insumos/novo')}
           />
 
           <Stack sx={{ gap: 0.5 }}>
             <KpiSectionInsumos
-              carregando={estado.carregando}
+              carregando={estado.carregando && !estado.dados}
               kpis={[
-                { titulo: 'Total (nesta página)', valor: kpis.total, icon: <Inventory2OutlinedIcon />, cor: 'primary.main' },
-                { titulo: 'Baixo estoque', valor: kpis.baixo, icon: <ReportProblemOutlinedIcon />, cor: 'warning.main' },
-                { titulo: 'Sem estoque', valor: kpis.semEstoque, icon: <RemoveShoppingCartOutlinedIcon />, cor: 'error.main' },
-                { titulo: 'Ativos', valor: kpis.ativos, icon: <TaskAltOutlinedIcon />, cor: 'success.main' },
+                {
+                  titulo: 'Total (filtro atual)',
+                  valor: kpis.totalRecorte,
+                  icon: <Inventory2OutlinedIcon />,
+                  cor: 'primary.main',
+                },
+                {
+                  titulo: 'Ativos',
+                  valor: kpis.ativos,
+                  icon: <TaskAltOutlinedIcon />,
+                  cor: 'success.main',
+                },
+                {
+                  titulo: 'Baixo estoque',
+                  valor: kpis.baixo,
+                  icon: <ReportProblemOutlinedIcon />,
+                  cor: 'warning.main',
+                },
+                {
+                  titulo: 'Próximo vencimento',
+                  valor: kpis.aVencer,
+                  icon: <EventOutlinedIcon />,
+                  cor: 'info.main',
+                },
+                {
+                  titulo: 'Sem estoque',
+                  valor: kpis.semEstoque,
+                  icon: <RemoveShoppingCartOutlinedIcon />,
+                  cor: 'error.main',
+                },
               ]}
             />
             <Typography variant="caption" sx={estilos.legenda}>
-              Indicadores consideram só os insumos desta página da tabela; filtros aplicam sobre a lista completa carregada.
+              Indicadores refletem todos os insumos que obedecem à busca, unidade e datas (sem o filtro de status). O
+              filtro de status restringe apenas a tabela e a paginação.
             </Typography>
           </Stack>
 
           {estado.erro && <Alert severity="error">{estado.erro}</Alert>}
 
-          {estado.carregando ? (
+          {estado.carregando && !estado.dados ? (
             <Stack sx={{ gap: 1 }}>
               <Skeleton variant="rounded" height={68} />
               <Skeleton variant="rounded" height={68} />
@@ -182,9 +224,9 @@ export function PaginaListagemInsumos() {
             </Stack>
           ) : (
             <>
-              {itensPagina.length ? (
+              {itens.length ? (
                 <TabelaInsumos
-                  itens={itensPagina}
+                  itens={itens}
                   onVisualizar={(id) => navigate(`/insumos/${id}`)}
                   onEditar={(id) => navigate(`/insumos/${id}`)}
                   onExcluir={(id) => setIdExclusao(id)}
@@ -220,7 +262,7 @@ export function PaginaListagemInsumos() {
                 component="div"
                 sx={estilos.paginacao}
                 rowsPerPageOptions={[5, 10, 25, 50]}
-                count={itensFiltrados.length}
+                count={totalCount}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 onPageChange={(_, newPage) => setPage(newPage)}
@@ -229,7 +271,9 @@ export function PaginaListagemInsumos() {
                   setPage(0);
                 }}
                 labelRowsPerPage="Itens por página"
-                labelDisplayedRows={({ from, to, count }) => (count > 0 ? `${from}-${to} de ${count}` : '0-0 de 0')}
+                labelDisplayedRows={({ from, to, count }) =>
+                  count === 0 ? '0–0 de 0' : `${from}–${to} de ${count !== -1 ? count : `mais de ${to}`}`
+                }
               />
             </>
           )}

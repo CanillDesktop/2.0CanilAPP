@@ -1,6 +1,10 @@
+using Backend.Filtro.Insumos;
+using Backend.Filtro.Medicamentos;
 using Backend.Filtro.Produtos;
 using Backend.Models.Enums;
 using Backend.Models.Estoque;
+using Backend.Models.Insumos;
+using Backend.Models.Medicamentos;
 using Backend.Models.Produtos;
 using Microsoft.EntityFrameworkCore;
 
@@ -70,6 +74,72 @@ internal static class FiltroHelper
 
         if (filtro.Categoria.HasValue && Enum.IsDefined(typeof(CategoriaEnum), filtro.Categoria.Value))
             query = query.Where(p => p.Categoria == (CategoriaEnum)filtro.Categoria.Value);
+
+        if (filtro.DataEntrega.HasValue)
+            query = query.Where(p =>
+                p.ItensEstoque.Any(e => !e.IsDeleted && e.DataEntrega == filtro.DataEntrega));
+
+        if (filtro.DataValidade.HasValue)
+            query = query.Where(p =>
+                p.ItensEstoque.Any(e => !e.IsDeleted && e.DataValidade == filtro.DataValidade));
+
+        return query;
+    }
+
+    public static IQueryable<MedicamentosModel> AplicarFiltrosMedicamentos(
+        IQueryable<MedicamentosModel> query,
+        MedicamentosFiltro filtro)
+    {
+        if (!string.IsNullOrWhiteSpace(filtro.Termo))
+        {
+            var termo = filtro.Termo.Trim();
+            query = query.Where(p =>
+                (p.Codigo != null && p.Codigo.Contains(termo))
+                || (p.Descricao != null && p.Descricao.Contains(termo))
+                || (p.Formula != null && p.Formula.Contains(termo))
+                || (p.NomeComercial != null && p.NomeComercial.Contains(termo))
+                || (p.ItensEstoque.Any(e =>
+                    !e.IsDeleted && e.NFe != null && e.NFe.Contains(termo)))
+                || (p.ItensEstoque.Any(e =>
+                    !e.IsDeleted && e.Lote != null && e.Lote.Contains(termo))));
+        }
+
+        if (filtro.Prioridade.HasValue && Enum.IsDefined(typeof(PrioridadeEnum), filtro.Prioridade.Value))
+            query = query.Where(p => p.Prioridade == (PrioridadeEnum)filtro.Prioridade.Value);
+
+        if (filtro.PublicoAlvo.HasValue && Enum.IsDefined(typeof(PublicoAlvoMedicamentoEnum), filtro.PublicoAlvo.Value))
+            query = query.Where(p => p.PublicoAlvo == (PublicoAlvoMedicamentoEnum)filtro.PublicoAlvo.Value);
+
+        if (filtro.DataEntrega.HasValue)
+            query = query.Where(p =>
+                p.ItensEstoque.Any(e => !e.IsDeleted && e.DataEntrega == filtro.DataEntrega));
+
+        if (filtro.DataValidade.HasValue)
+            query = query.Where(p =>
+                p.ItensEstoque.Any(e => !e.IsDeleted && e.DataValidade == filtro.DataValidade));
+
+        return query;
+    }
+
+    public static IQueryable<InsumosModel> AplicarFiltrosInsumos(
+        IQueryable<InsumosModel> query,
+        InsumosFiltro filtro)
+    {
+        if (!string.IsNullOrWhiteSpace(filtro.Termo))
+        {
+            var termo = filtro.Termo.Trim();
+            query = query.Where(p =>
+                (p.Codigo != null && p.Codigo.Contains(termo))
+                || (p.DescricaoSimplificada != null && p.DescricaoSimplificada.Contains(termo))
+                || (p.DescricaoDetalhada != null && p.DescricaoDetalhada.Contains(termo))
+                || (p.ItensEstoque.Any(e =>
+                    !e.IsDeleted && e.NFe != null && e.NFe.Contains(termo)))
+                || (p.ItensEstoque.Any(e =>
+                    !e.IsDeleted && e.Lote != null && e.Lote.Contains(termo))));
+        }
+
+        if (filtro.Unidade.HasValue && Enum.IsDefined(typeof(UnidadeInsumosEnum), filtro.Unidade.Value))
+            query = query.Where(p => p.Unidade == (UnidadeInsumosEnum)filtro.Unidade.Value);
 
         if (filtro.DataEntrega.HasValue)
             query = query.Where(p =>

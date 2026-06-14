@@ -27,6 +27,7 @@ import { motion } from 'framer-motion';
 import { Fragment, useState } from 'react';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 import type { InsumoLeituraDto } from '../types/tiposInsumos';
+import { rotuloUnidadeInsumo } from '../constants/opcoesUnidadeInsumo';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 
 type Props = {
@@ -81,7 +82,7 @@ function mapearLinha(item: InsumoLeituraDto): LinhaInsumo {
     id: item.id,
     codigo: item.codigo,
     nome: item.nomeOuDescricaoSimples,
-    unidadeNome: `Unidade ${item.unidade}`,
+    unidadeNome: rotuloUnidadeInsumo(item.unidade),
     quantidade,
     status: obterStatusInsumo(item),
     ultimaMovimentacao: ultimaData ? ultimaData.toLocaleDateString('pt-BR') : 'Sem movimentação',
