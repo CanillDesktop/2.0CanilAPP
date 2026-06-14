@@ -7,9 +7,9 @@ import {
   DialogContent,
   DialogTitle,
   Stack,
-  TextField,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
+import { CampoSenha } from '../../../shared/components/CampoSenha';
 import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 
 type Props = {
@@ -59,18 +59,16 @@ export function ModalTrocarSenha({ aberto, carregando, erro, errosValidacao, onF
               ) : null}
             </Alert>
           ) : null}
-          <TextField
+          <CampoSenha
             label="Senha atual"
-            type="password"
             value={senhaAtual}
             onChange={(e) => setSenhaAtual(e.target.value)}
             required
             fullWidth
             autoComplete="current-password"
           />
-          <TextField
+          <CampoSenha
             label="Nova senha"
-            type="password"
             value={novaSenha}
             onChange={(e) => setNovaSenha(e.target.value)}
             required
@@ -79,9 +77,8 @@ export function ModalTrocarSenha({ aberto, carregando, erro, errosValidacao, onF
             helperText="Mínimo 6 caracteres."
             autoComplete="new-password"
           />
-          <TextField
+          <CampoSenha
             label="Confirmar nova senha"
-            type="password"
             value={confirmacaoNovaSenha}
             onChange={(e) => setConfirmacaoNovaSenha(e.target.value)}
             required

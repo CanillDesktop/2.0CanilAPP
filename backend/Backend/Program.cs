@@ -182,6 +182,24 @@ public class Program
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                         });
                 });
+
+                options.AddPolicy("codigo-acesso", context =>
+                {
+                    var ip = context.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+                    var userAgent = context.Request.Headers.UserAgent.ToString();
+
+                    var partition = $"{ip}:{userAgent}";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(
+                        partition,
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 4,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0,
+                            AutoReplenishment = true
+                        });
+                });
             });
 
             builder.Services.AddScoped<IMedicamentosRepository, MedicamentosRepository>();
@@ -201,6 +219,7 @@ public class Program
             builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             builder.Services.AddScoped<IUserSessionService, UserSessionService>();
+            builder.Services.AddScoped<ICodigoAcessoService, CodigoAcessoService>();
 
             builder.Services.AddHttpContextAccessor();
 
