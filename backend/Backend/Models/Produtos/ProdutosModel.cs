@@ -10,7 +10,7 @@ public class ProdutosModel : ItemComEstoqueBaseModel
 {
     public string Codigo { get; set; } = string.Empty;
     public string DescricaoSimples { get; set; } = string.Empty;
-    public string? DescricaoDetalhada { get; set; }
+    public string DescricaoDetalhada { get; set; } = string.Empty;
     public UnidadeEnum Unidade { get; set; }
     public CategoriaEnum Categoria { get; set; }
 
@@ -48,7 +48,7 @@ public class ProdutosModel : ItemComEstoqueBaseModel
         {
             Codigo = codigoProduto,
             DescricaoSimples = dto.DescricaoSimples.ToLower(),
-            DescricaoDetalhada = dto.DescricaoDetalhada?.ToLower(),
+            DescricaoDetalhada = dto.DescricaoDetalhada.ToLower(),
             Unidade = dto.Unidade,
             Categoria = dto.Categoria,
             ItemNivelEstoque = new()
@@ -62,7 +62,6 @@ public class ProdutosModel : ItemComEstoqueBaseModel
                     Codigo = codigoProduto,
                     DataEntrega = dto.DataEntrega,
                     DataValidade = dto.DataValidade,
-                    Lote = dto.Lote,
                     NFe = dto.NFe,
                     Quantidade = dto.Quantidade
                 }

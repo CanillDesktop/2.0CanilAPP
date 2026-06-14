@@ -22,7 +22,6 @@ export type InsumoLeituraDto = {
 export type InsumoCadastroDto = {
   descricaoSimplificada: string;
   descricaoDetalhada: string;
-  lote?: string | null;
   quantidade: number;
   dataEntrega: string;
   nfe?: string | null;

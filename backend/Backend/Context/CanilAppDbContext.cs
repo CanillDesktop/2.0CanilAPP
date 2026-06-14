@@ -49,6 +49,7 @@ public class CanilAppDbContext : DbContext
     public DbSet<RetiradaEstoqueModel> RetiradaEstoque { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<CodigoAcessoModel> CodigoAcesso { get; set; }
+    public DbSet<ContadorLoteModel> ContadoresLote { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,6 +71,15 @@ public class CanilAppDbContext : DbContext
 
         modelBuilder.Entity<ItemEstoqueModel>()
             .Property(i => i.Versao)
+            .IsConcurrencyToken();
+
+        // Lote único: a geração é controlada pelo backend e nunca reutiliza números.
+        modelBuilder.Entity<ItemEstoqueModel>()
+            .HasIndex(i => i.Lote)
+            .IsUnique();
+
+        modelBuilder.Entity<ContadorLoteModel>()
+            .Property(c => c.Versao)
             .IsConcurrencyToken();
 
         modelBuilder.Entity<ItemNivelEstoqueModel>()

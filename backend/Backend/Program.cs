@@ -215,6 +215,7 @@ public class Program
             builder.Services.AddScoped<IRetiradaEstoqueService, RetiradaEstoqueService>();
             builder.Services.AddScoped<IRetiradaEstoqueHistoricoExportService, RetiradaEstoqueHistoricoExportService>();
             builder.Services.AddScoped<IRetiradaEstoqueRepository, RetiradaEstoqueRepository>();
+            builder.Services.AddScoped<ILoteGeradorService, LoteGeradorService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();

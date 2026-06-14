@@ -25,7 +25,6 @@ export type MedicamentoLeituraDto = {
 export type MedicamentoCadastroDto = {
   prioridade: number;
   descricao: string;
-  lote?: string | null;
   quantidade: number;
   dataEntrega: string;
   nfe?: string | null;

@@ -27,6 +27,8 @@ export type RetiradaEstoqueDto = {
   dataHoraRetirada: string;
   observacao?: string;
   idUsuarioRecebedor?: number;
+  /** Confirmação explícita do usuário para retirar mesmo com o lote vencido. */
+  confirmarLoteVencido?: boolean;
 };
 
 export type PeriodoRapidoRetiradasDto = 'HOJE' | 'ULTIMOS_7_DIAS' | 'ULTIMOS_30_DIAS';
@@ -61,6 +63,10 @@ export type RetiradaHistoricoItemDto = {
   idUsuarioRecebedor?: number | null;
   observacao?: string | null;
   status: string;
+  /** Indica que o lote estava vencido no momento da retirada (autorizada pelo retirante). */
+  estavaVencido?: boolean;
+  /** Data de validade do lote retirado, quando aplicável. */
+  dataValidadeLote?: string | null;
 };
 
 export type RetiradaHistoricoListaPaginadaDto = {

@@ -33,6 +33,12 @@ public class RetiradaEstoqueModel
 
     public int? IdUsuarioRecebedor { get; set; }
 
+    /// <summary>Indica que, no momento da retirada, o lote estava vencido (com autorização do usuário logado).</summary>
+    public bool EstavaVencido { get; set; }
+
+    /// <summary>Data de validade do lote retirado (registrada para auditoria de retirada de itens vencidos).</summary>
+    public DateTime? DataValidadeLote { get; set; }
+
     public static implicit operator RetiradaEstoqueModel(RetiradaEstoqueDTO dto)
     {
         return new RetiradaEstoqueModel()
@@ -61,6 +67,8 @@ public class RetiradaEstoqueModel
             DataHoraRetirada = model.DataHoraRetirada,
             Observacao = model.Observacao,
             IdUsuarioRecebedor = model.IdUsuarioRecebedor,
+            EstavaVencido = model.EstavaVencido,
+            DataValidadeLote = model.DataValidadeLote,
         };
     }
 }

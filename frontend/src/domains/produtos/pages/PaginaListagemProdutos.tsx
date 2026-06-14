@@ -23,7 +23,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
-import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
+import {
+  MENSAGEM_LOTE_INVALIDO_RETIRADA,
+  MENSAGEM_PRODUTO_SEM_NOME_RETIRADA,
+  montarRetiradaNavegacaoState,
+  montarRetiradaQueryString,
+} from '../../estoque/utils/retiradaNavegacao';
 import { FilterBarProdutos } from '../components/FilterBarProdutos';
 import { KpiSectionProdutos } from '../components/KpiSectionProdutos';
 import { TabelaProdutos } from '../components/TabelaProdutos';
@@ -233,12 +238,17 @@ export function PaginaListagemProdutos() {
                   onExcluir={(id) => setIdExclusao(id)}
                   onMovimentar={(id) => navigate(`/estoque/lotes/novo?idItem=${id}`)}
                   onRegistrarRetirada={(produto: ProdutoLeituraDto, lote: ItemEstoqueDto) => {
+                    if (!lote.lote?.trim()) {
+                      setSnackbar({ open: true, mensagem: MENSAGEM_LOTE_INVALIDO_RETIRADA, tipo: 'error' });
+                      return;
+                    }
+
                     const state = montarRetiradaNavegacaoState({
                       produto,
                       produtoId: produto.id,
                       codItem: produto.codigo,
-                      loteId: `${produto.id}-${lote.lote ?? ''}`,
-                      loteCodigo: lote.lote ?? 'Sem código',
+                      loteId: `${produto.id}-${lote.lote}`,
+                      loteCodigo: lote.lote,
                       quantidadeDisponivel: lote.quantidade,
                       retornoRota: '/produtos',
                     });
@@ -248,7 +258,7 @@ export function PaginaListagemProdutos() {
                       return;
                     }
 
-                    navigate('/estoque/retirada', { state });
+                    navigate(`/estoque/retirada?${montarRetiradaQueryString(state)}`, { state });
                   }}
                 />
               ) : (

@@ -23,11 +23,10 @@ export type ProdutoLeituraDto = {
 };
 
 export type ProdutoCadastroDto = {
-  descricaoSimples?: string | null;
-  descricaoDetalhada?: string | null;
+  descricaoSimples: string;
+  descricaoDetalhada: string;
   unidade: number;
   categoria: number;
-  lote?: string | null;
   quantidade: number;
   dataEntrega: string;
   nfe?: string | null;

@@ -5,6 +5,9 @@ import { useEstadoAssincrono } from '../../../shared/hooks/useEstadoAssincrono';
 import { servicoEstoque } from '../services/servicoEstoque';
 import type { ItemEstoqueDto, RetiradaEstoqueDto } from '../types/tiposEstoque';
 
+/** Resultado de uma retirada, indicando se houve necessidade de confirmar lote vencido. */
+export type ResultadoRetirada = ResultadoMutacao & { loteVencido?: boolean };
+
 export function useItemEstoqueDetalhe(id: number | undefined) {
   const { estado, executar } = useEstadoAssincrono<ItemEstoqueDto>();
   const carregar = useCallback(() => {
@@ -38,24 +41,29 @@ export function useMutacaoEstoque() {
     }
   }, []);
 
-  const registrarRetirada = useCallback(async (dto: RetiradaEstoqueDto): Promise<ResultadoMutacao> => {
-    setCarregando(true);
-    setErro(null);
-    setErrosValidacao(null);
-    try {
-      await servicoEstoque.registrarRetirada(dto);
-      return { ok: true };
-    } catch (e) {
-      const falha = capturarErroMutacao(e, MSG_ERRO.retirada);
-      if (!falha.ok) setErro(falha.mensagem);
-      if (e instanceof ErroApi && e.errors) {
-        setErrosValidacao(e.extrairMensagemErros());
+  const registrarRetirada = useCallback(
+    async (dto: RetiradaEstoqueDto): Promise<ResultadoRetirada> => {
+      setCarregando(true);
+      setErro(null);
+      setErrosValidacao(null);
+      try {
+        await servicoEstoque.registrarRetirada(dto);
+        return { ok: true };
+      } catch (e) {
+        const falha = capturarErroMutacao(e, MSG_ERRO.retirada);
+        // 409 sinaliza lote vencido: o backend exige confirmação explícita do usuário.
+        const loteVencido = e instanceof ErroApi && e.statusCode === 409;
+        if (!loteVencido && !falha.ok) setErro(falha.mensagem);
+        if (e instanceof ErroApi && e.errors) {
+          setErrosValidacao(e.extrairMensagemErros());
+        }
+        return { ...falha, loteVencido };
+      } finally {
+        setCarregando(false);
       }
-      return falha;
-    } finally {
-      setCarregando(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   return { criarLote, registrarRetirada, carregando, erro, errosValidacao };
 }

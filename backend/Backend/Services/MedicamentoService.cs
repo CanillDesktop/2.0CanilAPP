@@ -17,12 +17,30 @@ namespace Backend.Services
         private readonly IMedicamentosRepository _repository;
         private readonly IUserSessionService _userSessionService;
         private readonly IConfiguration _configuration;
+        private readonly ILoteGeradorService _loteGerador;
 
-        public MedicamentosService(IMedicamentosRepository repository, IUserSessionService userSessionService, IConfiguration configuration)
+        public MedicamentosService(
+            IMedicamentosRepository repository,
+            IUserSessionService userSessionService,
+            IConfiguration configuration,
+            ILoteGeradorService loteGerador)
         {
             _repository = repository;
             _userSessionService = userSessionService;
             _configuration = configuration;
+            _loteGerador = loteGerador;
+        }
+
+        private static void ValidarCamposObrigatorios(MedicamentosModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model.NomeComercial)
+                || string.IsNullOrWhiteSpace(model.Descricao)
+                || string.IsNullOrWhiteSpace(model.Formula)
+                || !Enum.IsDefined(typeof(PrioridadeEnum), (int)model.Prioridade)
+                || !Enum.IsDefined(typeof(PublicoAlvoMedicamentoEnum), (int)model.PublicoAlvo))
+            {
+                throw new ModelIncompletaException("Um ou mais campos obrigatórios não foram preenchidos");
+            }
         }
 
         public async Task<IEnumerable<MedicamentosModel>> BuscarTodosAsync() => await _repository.GetAsync();
@@ -32,15 +50,18 @@ namespace Backend.Services
 
         public async Task<MedicamentosModel?> CriarAsync(MedicamentosModel model)
         {
-            if (string.IsNullOrWhiteSpace(model.Codigo)
-                || string.IsNullOrWhiteSpace(model.NomeComercial)
-                || string.IsNullOrWhiteSpace(model.Formula)
-                || string.IsNullOrWhiteSpace(model.Descricao)
-                || !Enum.IsDefined(typeof(PrioridadeEnum), (int)model.Prioridade)
-                || !Enum.IsDefined(typeof(PublicoAlvoMedicamentoEnum), (int)model.PublicoAlvo)
-                || string.IsNullOrWhiteSpace(model.ItensEstoque?.FirstOrDefault()?.Lote))
+            ValidarCamposObrigatorios(model);
+
+            var itemInicial = model.ItensEstoque?.FirstOrDefault();
+            if (itemInicial != null && itemInicial.Quantidade > 0)
             {
-                throw new ModelIncompletaException("Um ou mais campos obrigatórios não foram preenchidos");
+                itemInicial.Codigo = model.Codigo;
+                itemInicial.Lote = await _loteGerador.GerarLoteMedicamentoAsync(model.PublicoAlvo, model.NomeComercial);
+                model.ItensEstoque = new List<ItemEstoqueModel> { itemInicial };
+            }
+            else
+            {
+                model.ItensEstoque = new List<ItemEstoqueModel>();
             }
 
             model.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
@@ -59,52 +80,34 @@ namespace Backend.Services
                     throw new ArgumentNullException(null, $"Medicamento de id {id} não encontrado");
                 }
 
+                ValidarCamposObrigatorios(model);
+
                 medicamentoExistente.Descricao = model.Descricao;
                 medicamentoExistente.Formula = model.Formula;
                 medicamentoExistente.NomeComercial = model.NomeComercial;
                 medicamentoExistente.PublicoAlvo = model.PublicoAlvo;
                 medicamentoExistente.Prioridade = model.Prioridade;
 
+                // Entrada de novo estoque na edição: o lote é sempre gerado pelo backend.
                 var itemEstoque = model.ItensEstoque?.FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(itemEstoque?.Lote))
+                if (itemEstoque != null && itemEstoque.Quantidade > 0)
                 {
-                    var loteExistente = medicamentoExistente.ItensEstoque
-                        ?.FirstOrDefault(e => e.Lote == itemEstoque.Lote);
-
-                    if (loteExistente != null)
+                    var novoLote = new ItemEstoqueModel
                     {
-                        loteExistente.Quantidade = itemEstoque.Quantidade;
-                        loteExistente.DataEntrega = itemEstoque.DataEntrega;
-                        loteExistente.DataValidade = itemEstoque.DataValidade;
-                        loteExistente.NFe = itemEstoque.NFe;
-                        loteExistente.DataHoraAtualizacao = DateTime.UtcNow;
-                    }
-                    else
-                    {
-                        var novoLote = new ItemEstoqueModel
-                        {
-                            Id = medicamentoExistente.Id,
-                            Codigo = medicamentoExistente.Codigo,
-                            Lote = itemEstoque.Lote,
-                            Quantidade = itemEstoque.Quantidade,
-                            DataEntrega = itemEstoque.DataEntrega,
-                            DataValidade = itemEstoque.DataValidade,
-                            NFe = itemEstoque.NFe,
-                            DataHoraCriacao = DateTime.UtcNow
-                        };
+                        Id = medicamentoExistente.Id,
+                        Codigo = medicamentoExistente.Codigo,
+                        Lote = await _loteGerador.GerarLoteMedicamentoAsync(
+                            medicamentoExistente.PublicoAlvo,
+                            medicamentoExistente.NomeComercial),
+                        Quantidade = itemEstoque.Quantidade,
+                        DataEntrega = itemEstoque.DataEntrega,
+                        DataValidade = itemEstoque.DataValidade,
+                        NFe = itemEstoque.NFe,
+                        DataHoraCriacao = DateTime.UtcNow
+                    };
 
-                        medicamentoExistente.ItensEstoque ??= new List<ItemEstoqueModel>();
-
-                        medicamentoExistente.ItensEstoque.Add(novoLote);
-                    }
-
-                    var quantidadeTotal = medicamentoExistente.ItensEstoque?.Sum(x => x.Quantidade) ?? 0;
-
-                    if (quantidadeTotal <= 0)
-                    {
-                        medicamentoExistente.IsDeleted = true;
-                    }
-                    medicamentoExistente.IsDeleted = false;
+                    medicamentoExistente.ItensEstoque ??= new List<ItemEstoqueModel>();
+                    medicamentoExistente.ItensEstoque.Add(novoLote);
                 }
 
                 if (medicamentoExistente.ItemNivelEstoque != null)
