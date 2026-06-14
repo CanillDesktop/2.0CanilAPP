@@ -8,11 +8,11 @@ import {
   CardContent,
   CircularProgress,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { CampoSenha } from '../../../shared/components/CampoSenha';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useCodigoSeguranca } from '../hooks/useCodigoSeguranca';
 
@@ -37,18 +37,19 @@ export function AbaCodigoSegurancaAdmin() {
             <LockOutlinedIcon sx={{ color: cores.focus }} />
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary }}>
-                Código de segurança
+                Código de acesso
               </Typography>
               <Typography variant="body2" sx={{ color: cores.textSecondary }}>
-                Código global usado pelo sistema. Somente administradores podem alterá-lo.
+                Código exigido no primeiro acesso (pré-login), antes da tela de login. Somente administradores
+                podem alterá-lo.
               </Typography>
             </Box>
           </Stack>
 
           {!apiDisponivel && !carregando ? (
-            <Alert severity="info">
-              A integração com o servidor ainda não está disponível. Alterações ficam salvas localmente neste
-              navegador até a API ser implementada.
+            <Alert severity="warning">
+              Não foi possível conectar ao servidor agora. As alterações ficam salvas apenas neste navegador até a
+              reconexão.
             </Alert>
           ) : null}
 
@@ -64,14 +65,15 @@ export function AbaCodigoSegurancaAdmin() {
             </Stack>
           ) : (
             <>
-              <TextField
-                label="Código de segurança"
+              <CampoSenha
+                label="Código de acesso"
+                visivelInicial
                 value={valor}
                 onChange={(e) => setValor(e.target.value)}
                 fullWidth
                 disabled={salvando}
                 placeholder="Informe o código do sistema"
-                helperText="Este código será validado em operações sensíveis quando a integração estiver ativa."
+                helperText="Usuários em primeiro acesso precisam informar este código antes de ver a tela de login. Use de 4 a 64 caracteres, sem espaços."
                 sx={estilosCampoFormulario(cores)}
               />
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>

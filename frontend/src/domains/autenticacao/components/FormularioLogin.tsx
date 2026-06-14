@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { CampoSenha } from '../../../shared/components/CampoSenha';
 import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useAcaoLogin } from '../hooks/useAcaoLogin';
@@ -110,9 +111,8 @@ export function FormularioLogin({ aoAutenticar }: Props) {
               },
             }}
           />
-          <TextField
+          <CampoSenha
             label="Senha"
-            type="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
             autoComplete="current-password"

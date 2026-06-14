@@ -469,3 +469,16 @@ Thumbs.db
 .dev.vars*
 !.dev.vars.example
 !.env.example
+
+# Frontend (Vite/React) — saída de build e caches locais (não commitar)
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+**/.vite/
+*.local
+frontend/coverage/
+frontend/.eslintcache
+# .env do frontend (segredos/locais); manter apenas o exemplo
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
