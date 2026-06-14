@@ -1,12 +1,12 @@
-import { solicitarLoginApi, solicitarRenovacaoTokenApi } from '../api/loginApi';
+import { solicitarLoginApi } from '../api/loginApi';
 import { solicitarLogoutApi } from '../api/logoutApi';
 import type { CredenciaisLogin, RespostaLogin } from '../types/tiposAutenticacao';
 import {
-  atualizarAccessToken,
   limparSessao,
   salvarSessao,
 } from '../../../shared/services/armazenamentoSessao';
 import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
+import { tentarRenovarAccessToken } from './gerenciadorRenovacaoSessao';
 
 /**
  * Serviço de aplicação do domínio de autenticação (orquestra API + persistência de sessão).
@@ -35,9 +35,6 @@ export const servicoAutenticacao = {
   },
 
   async renovarSePossivel(): Promise<boolean> {
-    const accessToken = await solicitarRenovacaoTokenApi();
-    if (!accessToken) return false;
-    atualizarAccessToken(accessToken);
-    return true;
+    return tentarRenovarAccessToken();
   },
 };

@@ -4,9 +4,12 @@ import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import { Alert, Box, Chip, Stack, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
+import { redefinirEstadoEncerramentoSessao } from '../services/gerenciadorRenovacaoSessao';
 import { FormularioLogin } from '../components/FormularioLogin';
 
 const MotionBox = motion(Box);
@@ -15,8 +18,15 @@ export function PaginaLogin() {
   const { autenticado, recarregarSessao } = useAutenticacao();
   const { cores } = useTemaApp();
   const local = useLocation();
-  const destino = (local.state as { de?: string } | null)?.de ?? '/';
+  const params = new URLSearchParams(local.search);
+  const destinoQuery = params.get('de');
+  const destino = (local.state as { de?: string } | null)?.de ?? destinoQuery ?? '/';
   const avisoLogout = (local.state as { avisoLogout?: string } | null)?.avisoLogout;
+  const sessaoExpirada = params.get('motivo') === 'sessao-expirada';
+
+  useEffect(() => {
+    redefinirEstadoEncerramentoSessao();
+  }, []);
 
   if (autenticado) return <Navigate to={destino} replace />;
 
@@ -103,6 +113,11 @@ export function PaginaLogin() {
         </Stack>
 
         <Stack sx={{ gap: 2, width: '100%' }}>
+          {sessaoExpirada ? (
+            <Alert severity="warning" sx={{ borderRadius: 2 }}>
+              {MSG_ERRO.sessaoExpirada}
+            </Alert>
+          ) : null}
           {avisoLogout ? (
             <Alert severity="warning" sx={{ borderRadius: 2 }}>
               {avisoLogout}

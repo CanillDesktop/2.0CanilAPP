@@ -1,4 +1,10 @@
 import type { ItemEstoqueDto, ItemNivelEstoqueDto } from '../../../shared/types/itemEstoque';
+import type {
+  ItemComEstoqueListaPaginadaDto,
+  ItemComEstoqueListaResumoDto,
+  ItensPaginacaoDto,
+  StatusEstoqueFiltro,
+} from '../../../shared/types/itemComEstoqueLista';
 
 export type { ItemEstoqueDto, ItemNivelEstoqueDto };
 
@@ -29,38 +35,19 @@ export type ProdutoCadastroDto = {
   nivelMinimoEstoque: number;
 };
 
-export type ProdutoStatusEstoqueFiltro = 'todos' | 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
+export type ProdutoStatusEstoqueFiltro = StatusEstoqueFiltro;
 
-export type ProdutoFiltroDto = {
+export type ProdutoFiltro = {
   /** Busca em código OU descrição (OR), server-side */
-  termoBusca?: string;
-  codProduto?: string;
-  descricaoSimples?: string;
-  nfe?: string;
+  termo?: string;
   categoria?: number;
   dataEntrega?: string;
   dataValidade?: string;
   statusEstoque?: ProdutoStatusEstoqueFiltro;
 };
 
-export type ProdutoPaginacaoDto = {
-  pageNumber?: number;
-  pageSize?: number;
-};
+export type ProdutoPaginacaoDto = ItensPaginacaoDto;
 
-export type ProdutosListaResumoDto = {
-  totalNoRecorte: number;
-  ativos: number;
-  baixoEstoque: number;
-  semEstoque: number;
-  aVencer: number;
-};
+export type ProdutosListaResumoDto = ItemComEstoqueListaResumoDto;
 
-export type ProdutosListaPaginadaDto = {
-  items: ProdutoLeituraDto[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
-  totalPages: number;
-  resumo: ProdutosListaResumoDto;
-};
+export type ProdutosListaPaginadaDto = ItemComEstoqueListaPaginadaDto<ProdutoLeituraDto>;

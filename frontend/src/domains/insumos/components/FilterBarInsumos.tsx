@@ -16,19 +16,23 @@ import {
 import { motion } from 'framer-motion';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { estilosCampoFiltro, estilosLabelFiltro } from '../../../shared/theme/estilosCampos';
+import { OPCOES_UNIDADE_INSUMO_FILTRO } from '../constants/opcoesFiltroInsumo';
+import type { InsumoStatusEstoqueFiltro } from '../types/tiposInsumos';
 
 const MotionButton = motion(Button);
 
-type StatusInsumo = 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
-
 type FilterBarInsumosProps = {
   busca: string;
-  unidade: string;
-  status: 'todos' | StatusInsumo;
-  unidades: string[];
+  unidade: 'todas' | string;
+  status: InsumoStatusEstoqueFiltro;
+  dataEntrega: string;
+  dataValidade: string;
   onBuscaChange: (valor: string) => void;
   onUnidadeChange: (valor: string) => void;
-  onStatusChange: (valor: 'todos' | StatusInsumo) => void;
+  onStatusChange: (valor: InsumoStatusEstoqueFiltro) => void;
+  onDataEntregaChange: (valor: string) => void;
+  onDataValidadeChange: (valor: string) => void;
+  onLimpar: () => void;
   onNovoInsumo: () => void;
 };
 
@@ -36,10 +40,14 @@ export function FilterBarInsumos({
   busca,
   unidade,
   status,
-  unidades,
+  dataEntrega,
+  dataValidade,
   onBuscaChange,
   onUnidadeChange,
   onStatusChange,
+  onDataEntregaChange,
+  onDataValidadeChange,
+  onLimpar,
   onNovoInsumo,
 }: FilterBarInsumosProps) {
   const { cores } = useTemaApp();
@@ -47,7 +55,7 @@ export function FilterBarInsumos({
   const labelSx = estilosLabelFiltro(cores);
 
   function handleStatusChange(e: SelectChangeEvent) {
-    onStatusChange(e.target.value as 'todos' | StatusInsumo);
+    onStatusChange(e.target.value as InsumoStatusEstoqueFiltro);
   }
 
   return (
@@ -62,7 +70,7 @@ export function FilterBarInsumos({
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 5 }}>
           <TextField
-            placeholder="Buscar por nome ou código"
+            placeholder="Buscar por código, descrição, NF-e ou lote"
             variant="outlined"
             size="small"
             fullWidth
@@ -85,9 +93,9 @@ export function FilterBarInsumos({
             <InputLabel sx={labelSx}>Unidade</InputLabel>
             <Select label="Unidade" value={unidade} onChange={(e) => onUnidadeChange(e.target.value)} sx={inputSx}>
               <MenuItem value="todas">Todas</MenuItem>
-              {unidades.map((u) => (
-                <MenuItem key={u} value={u}>
-                  Unidade {u}
+              {OPCOES_UNIDADE_INSUMO_FILTRO.map((opcao) => (
+                <MenuItem key={opcao.valor} value={String(opcao.valor)}>
+                  {opcao.rotulo}
                 </MenuItem>
               ))}
             </Select>
@@ -129,6 +137,39 @@ export function FilterBarInsumos({
             >
               Novo insumo
             </MotionButton>
+          </Box>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            size="small"
+            type="date"
+            label="Data de entrega"
+            value={dataEntrega}
+            onChange={(e) => onDataEntregaChange(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={inputSx}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            size="small"
+            type="date"
+            label="Data de validade"
+            value={dataValidade}
+            onChange={(e) => onDataValidadeChange(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={inputSx}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+            <Button variant="text" onClick={onLimpar} sx={{ color: cores.focus, fontWeight: 600, textTransform: 'none' }}>
+              Limpar filtros
+            </Button>
           </Box>
         </Grid>
       </Grid>

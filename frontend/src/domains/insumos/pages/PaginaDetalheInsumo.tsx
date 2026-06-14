@@ -13,16 +13,7 @@ import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
 import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
 import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
 import { useInsumoDetalhe, useMutacaoInsumo } from '../hooks/useInsumos';
-
-const OPCOES_UNIDADE: Record<number, string> = {
-  1: 'Unidade',
-  2: 'Kg',
-  3: 'Litro',
-};
-
-function rotuloUnidade(unidade: number) {
-  return OPCOES_UNIDADE[unidade] ?? String(unidade);
-}
+import { rotuloUnidadeInsumo } from '../constants/opcoesUnidadeInsumo';
 
 export function PaginaDetalheInsumo() {
   const params = useParams();
@@ -120,7 +111,7 @@ export function PaginaDetalheInsumo() {
               { rotulo: 'Código', valor: i.codigo },
               { rotulo: 'Descrição simplificada', valor: i.nomeOuDescricaoSimples ?? i.descricaoSimples ?? i.descricaoSimplificada },
               { rotulo: 'Descrição detalhada', valor: i.descricaoDetalhada },
-              { rotulo: 'Unidade', valor: rotuloUnidade(i.unidade) },
+              { rotulo: 'Unidade', valor: rotuloUnidadeInsumo(i.unidade) },
               { rotulo: 'Nível mínimo', valor: i.itemNivelEstoque.nivelMinimoEstoque },
             ]}
           />

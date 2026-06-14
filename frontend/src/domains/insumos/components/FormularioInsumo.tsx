@@ -26,15 +26,10 @@ import type { EstadoNavegacaoListagem } from '../../../shared/types/navegacaoLis
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { useMutacaoInsumo } from '../hooks/useInsumos';
+import { OPCOES_UNIDADE_INSUMO } from '../constants/opcoesUnidadeInsumo';
 import type { InsumoCadastroDto } from '../types/tiposInsumos';
 
 const PASSOS = ['Identificação', 'Estoque e configurações'] as const;
-
-const OPCOES_UNIDADE = [
-  { valor: 1, rotulo: 'Unidade' },
-  { valor: 2, rotulo: 'Kg' },
-  { valor: 3, rotulo: 'Litro' },
-];
 
 const estadoInicialFormulario = () => ({
   descricaoSimplificada: '',
@@ -167,7 +162,7 @@ export function FormularioInsumo() {
                       value={form.unidade}
                       onChange={(e) => setForm((p) => ({ ...p, unidade: Number(e.target.value) }))}
                     >
-                      {OPCOES_UNIDADE.map((opcao) => (
+                      {OPCOES_UNIDADE_INSUMO.map((opcao) => (
                         <MenuItem key={opcao.valor} value={opcao.valor}>
                           {opcao.rotulo}
                         </MenuItem>

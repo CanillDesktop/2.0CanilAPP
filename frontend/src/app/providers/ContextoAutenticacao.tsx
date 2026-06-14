@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { UsuarioSessao } from '../../shared/types/usuarioSessao';
 import { obterAccessToken, obterUsuarioArmazenado } from '../../shared/services/armazenamentoSessao';
 import { servicoAutenticacao } from '../../domains/autenticacao/services/servicoAutenticacao';
+import { registrarOuvinteSessaoEncerrada } from '../../domains/autenticacao/services/gerenciadorRenovacaoSessao';
 
 type ContextoAutenticacaoValor = {
   autenticado: boolean;
@@ -29,6 +30,13 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     const resultado = await servicoAutenticacao.sair();
     setSessao({ autenticado: false, usuario: null });
     return resultado;
+  }, []);
+
+  useEffect(() => {
+    registrarOuvinteSessaoEncerrada(() => {
+      setSessao({ autenticado: false, usuario: null });
+    });
+    return () => registrarOuvinteSessaoEncerrada(null);
   }, []);
 
   const valor = useMemo(
