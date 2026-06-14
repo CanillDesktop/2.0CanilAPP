@@ -16,7 +16,9 @@ const MotionBox = motion(Box);
 
 export function PaginaLogin() {
   const { autenticado, recarregarSessao } = useAutenticacao();
-  const { cores } = useTemaApp();
+  const { cores, modo } = useTemaApp();
+  const logoLogin =
+    modo === 'dark' ? '/branding/canil_logo_dark.png?v=2' : '/branding/canil_logo_light.png';
   const local = useLocation();
   const params = new URLSearchParams(local.search);
   const destinoQuery = params.get('de');
@@ -64,12 +66,18 @@ export function PaginaLogin() {
             <Typography variant="overline" sx={{ color: cores.focus, fontWeight: 800, letterSpacing: 1.6 }}>
               CanilApp Web
             </Typography>
-            <Typography
-              variant="h3"
-              sx={{ maxWidth: 560, mt: 1, fontWeight: 800, lineHeight: 1.05, letterSpacing: -1.2, color: cores.textPrimary }}
-            >
-              Gestão de estoque com controle profissional e seguro.
-            </Typography>
+            <Box
+              component="img"
+              src={logoLogin}
+              alt="Canil Juiz de Fora — gestão de estoque"
+              sx={{
+                display: 'block',
+                width: '100%',
+                maxWidth: 480,
+                mt: 1,
+                height: 'auto',
+              }}
+            />
             <Typography variant="body1" sx={{ maxWidth: 560, mt: 2, color: cores.textSecondary }}>
               Acesse produtos, medicamentos, insumos e o dashboard usando o mesmo ambiente visual padronizado.
             </Typography>

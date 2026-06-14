@@ -14,9 +14,8 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
-  Typography,
 } from '@mui/material';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import type { PapelUsuarioApp } from '../../../shared/types/papelUsuario';
 
@@ -80,19 +79,35 @@ function ConteudoSidebar({
         flexDirection: 'column',
       }}
     >
-      <Toolbar sx={{ minHeight: 72, px: 2.5 }}>
-        <Typography
-          variant="h6"
+      <Toolbar
+        sx={{
+          minHeight: 88,
+          px: 2.5,
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
+        <Box
+          component={Link}
+          to="/dashboard"
+          onClick={() => aoClicarItem?.()}
+          aria-label="Ir para o dashboard"
           sx={{
-            fontWeight: 800,
-            background: `linear-gradient(135deg, ${cores.accent} 0%, ${cores.brandHighlight} 100%)`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
+            display: 'inline-flex',
+            borderRadius: 1,
+            lineHeight: 0,
+            transition: 'opacity 0.15s ease',
+            '&:hover': { opacity: 0.85 },
           }}
         >
-          Canil Stock
-        </Typography>
+          <Box
+            component="img"
+            src="/branding/canil_sidebar_logo.png"
+            alt="CanilApp"
+            sx={{ height: 73, width: 'auto', display: 'block' }}
+          />
+        </Box>
       </Toolbar>
       <List sx={{ px: 1.2, flex: 1, overflow: 'hidden' }}>
         {itens.map((item) => {
