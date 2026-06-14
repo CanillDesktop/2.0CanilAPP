@@ -1,11 +1,12 @@
-﻿using Backend.DTOs.Insumos;
-using Backend.DTOs.Produtos;
+﻿using Backend.DTOs;
+using Backend.DTOs.Insumos;
 using Backend.Exceptions;
+using Backend.Filtro.Insumos;
 using Backend.Models;
 using Backend.Models.Insumos;
+using Backend.Pagination;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -22,22 +23,17 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<InsumosLeituraDTO>>> Get([FromQuery] InsumosFiltroDTO filtro)
+        public async Task<ActionResult<ItemComEstoqueListaPaginadaDTO<InsumosLeituraDTO>>> Get(
+            [FromQuery] InsumosFiltro? filtro,
+            [FromQuery] ItensPaginationParameters? paginationParameters,
+            CancellationToken cancellationToken)
         {
-            var filteredRequest = HttpContext.Request.GetDisplayUrl().Contains('?');
+            var resultado = await _service.BuscarPaginadoAsync(
+                filtro ?? new InsumosFiltro(),
+                paginationParameters ?? new ItensPaginationParameters(),
+                cancellationToken);
 
-            IEnumerable<InsumosLeituraDTO> result;
-
-            if (!filteredRequest || filtro == null)
-            {
-                result = (await _service.BuscarTodosAsync()).Select(p => (InsumosLeituraDTO)p);
-            }
-            else
-            {
-                result = (await _service.BuscarTodosAsync(filtro)).Select(p => (InsumosLeituraDTO)p);
-            }
-
-            return Ok(result);
+            return Ok(resultado);
         }
 
         [HttpGet("{id:int}", Name = "GetInsumo")]
@@ -70,7 +66,7 @@ namespace Backend.Controllers
                     throw new ArgumentNullException(nameof(novoInsumo));
                 }
 
-                return new CreatedAtRouteResult( "GetInsumo",
+                return new CreatedAtRouteResult("GetInsumo",
                     new { id = novoInsumo.Id }, novoInsumo);
             }
             catch (ModelIncompletaException ex)

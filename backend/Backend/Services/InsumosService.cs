@@ -1,8 +1,11 @@
-﻿using Backend.DTOs.Insumos;
+﻿using Backend.DTOs;
+using Backend.DTOs.Insumos;
 using Backend.Exceptions;
+using Backend.Filtro.Insumos;
 using Backend.Models.Enums;
 using Backend.Models.Estoque;
 using Backend.Models.Insumos;
+using Backend.Pagination;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -14,11 +17,13 @@ namespace Backend.Services
     {
         public readonly IInsumosRepository _repository;
         public readonly IUserSessionService _userSessionService;
+        private readonly IConfiguration _configuration;
 
-        public InsumosService(IInsumosRepository repository, IUserSessionService userSessionService)
+        public InsumosService(IInsumosRepository repository, IUserSessionService userSessionService, IConfiguration configuration)
         {
             _repository = repository;
             _userSessionService = userSessionService;
+            _configuration = configuration;
         }
 
         public async Task<IEnumerable<InsumosModel>> BuscarTodosAsync()
@@ -175,6 +180,37 @@ namespace Backend.Services
             return await _repository.DeleteAsync(insumo);
         }
 
-        public async Task<IEnumerable<InsumosModel>> BuscarTodosAsync(InsumosFiltroDTO filtro) => await _repository.GetAsync(filtro);
+        public async Task<ItemComEstoqueListaPaginadaDTO<InsumosLeituraDTO>> BuscarPaginadoAsync(
+            InsumosFiltro filtro,
+            ItensPaginationParameters produtosParameters,
+            CancellationToken cancellationToken = default)
+        {
+            var diasDataLimiteVencimento = _configuration.GetValue("RegrasDeNegocio:DiasDataLimiteVencimentoItens", 30);
+
+            var consulta = await _repository.ConsultarPaginadoAsync(filtro, produtosParameters, diasDataLimiteVencimento, cancellationToken);
+
+            var pageNumber = Math.Max(produtosParameters.PageNumber, 1);
+            var pageSize = produtosParameters.PageSize;
+            var totalPages = consulta.TotalCount == 0
+                ? 0
+                : (int)Math.Ceiling(consulta.TotalCount / (double)pageSize);
+
+            return new ItemComEstoqueListaPaginadaDTO<InsumosLeituraDTO>
+            {
+                Items = consulta.Items.Select(p => (InsumosLeituraDTO)p).ToList(),
+                TotalCount = consulta.TotalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                Resumo = new ItemComEstoqueListaResumoDTO
+                {
+                    TotalNoRecorte = consulta.Resumo.TotalNoRecorte,
+                    Ativos = consulta.Resumo.Ativos,
+                    BaixoEstoque = consulta.Resumo.BaixoEstoque,
+                    SemEstoque = consulta.Resumo.SemEstoque,
+                    AVencer = consulta.Resumo.AVencer,
+                },
+            };
+        }
     }
 }

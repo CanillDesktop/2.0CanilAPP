@@ -1,11 +1,16 @@
-﻿using Backend.DTOs.Insumos;
+﻿using Backend.Filtro.Insumos;
 using Backend.Models.Insumos;
+using Backend.Pagination;
 
 namespace Backend.Repositories.Interfaces
 {
     public interface IInsumosRepository : ICRUDEstoqueRepository<InsumosModel>
     {
-        Task<IEnumerable<InsumosModel>> GetAsync(InsumosFiltroDTO filtro);
+        Task<ConsultaPaginada<InsumosModel>> ConsultarPaginadoAsync(
+        InsumosFiltro filtro,
+        ItensPaginationParameters produtosParameters,
+        int diasDataLimiteVencimento,
+        CancellationToken cancellationToken = default);
     }
 }
 
