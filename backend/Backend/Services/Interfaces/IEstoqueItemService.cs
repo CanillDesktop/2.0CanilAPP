@@ -9,7 +9,6 @@ namespace Backend.Services.Interfaces
         Task<ItemEstoqueModel?> CriarAsync(ItemEstoqueModel model);
         Task<ItemEstoqueModel?> AtualizarAsync(string lote, ItemEstoqueModel model);
         Task<bool> DeletarAsync(string lote);
-
     }
 }
 

@@ -1,6 +1,8 @@
-﻿using Backend.DTOs.Estoque;
+﻿using Backend.DTOs.Common;
+using Backend.DTOs.Estoque;
 using Backend.Exceptions;
 using Backend.Models;
+using Backend.Pagination;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +15,12 @@ namespace Backend.Controllers
     public class EstoqueController : ControllerBase
     {
         private readonly IEstoqueItemService _service;
+        private readonly IEstoqueConsultaService _consultaService;
 
-        public EstoqueController(IEstoqueItemService service)
+        public EstoqueController(IEstoqueItemService service, IEstoqueConsultaService consultaService)
         {
             _service = service;
+            _consultaService = consultaService;
         }
 
         [HttpGet("{codigo}", Name = "GetItensEstoqueByCodigo")]
@@ -51,6 +55,44 @@ namespace Backend.Controllers
 
             return Ok(itemEstoque);
         }
+     
+        [HttpGet("pagination")]
+        [ProducesResponseType(typeof(PagedResultDto<EstoqueLinhaLeituraDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<PagedResultDto<EstoqueLinhaLeituraDTO>>> GetPagination(
+            [FromQuery] EstoqueFiltroDTO? filtro,
+            [FromQuery] EstoqueConsultaParameters? parameters,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var resultado = await _consultaService.ConsultarPaginadoAsync(
+                    filtro ?? new EstoqueFiltroDTO(),
+                    parameters ?? new EstoqueConsultaParameters(),
+                    cancellationToken);
+
+                return Ok(resultado);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Title = "Filtros ou paginação inválidos",
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message,
+                });
+            }
+        }
+
+        [HttpGet("contagens")]
+        [ProducesResponseType(typeof(EstoqueContagemPorOrigemDTO), StatusCodes.Status200OK)]
+        public async Task<ActionResult<EstoqueContagemPorOrigemDTO>> GetContagens(
+            CancellationToken cancellationToken)
+        {
+            var resultado = await _consultaService.ObterContagemPorOrigemAsync(cancellationToken);
+            return Ok(resultado);
+        }
+
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] ItemEstoqueDTO dto)

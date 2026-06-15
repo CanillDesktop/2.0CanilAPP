@@ -67,36 +67,28 @@ public class Program
                 options.KnownProxies.Clear();
             });
 
-            var corsOrigins = builder.Configuration
-     .GetSection("Cors:AllowedOrigins")
-     .Get<string[]>() ?? [];
-
+            var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("General", policy =>
                 {
                     if (corsOrigins.Length > 0)
                     {
-                        policy
-                            .WithOrigins(corsOrigins)
+                        policy.WithOrigins(corsOrigins)
                             .AllowAnyHeader()
                             .AllowAnyMethod()
                             .AllowCredentials();
                     }
                     else if (builder.Environment.IsDevelopment())
                     {
-                        policy
-                            .SetIsOriginAllowed(origin =>
+                        policy.SetIsOriginAllowed(origin =>
                             {
-                                if (string.IsNullOrEmpty(origin))
-                                    return false;
-
+                                if (string.IsNullOrEmpty(origin)) return false;
                                 var uri = new Uri(origin);
-
                                 return uri.Host is "localhost" or "127.0.0.1" or "::1"
-                                       || uri.Host.StartsWith("192.168.", StringComparison.Ordinal)
-                                       || uri.Host.StartsWith("10.", StringComparison.Ordinal)
-                                       || uri.Host.Equals("canilapp.pages.dev", StringComparison.OrdinalIgnoreCase);
+                                    || uri.Host.StartsWith("192.168.", StringComparison.Ordinal)
+                                    || uri.Host.StartsWith("10.", StringComparison.Ordinal)
+                                    || uri.Host.Contains("canilapp.pages.dev", StringComparison.Ordinal);
                             })
                             .AllowAnyHeader()
                             .AllowAnyMethod()
@@ -104,8 +96,9 @@ public class Program
                     }
                     else
                     {
-                        throw new InvalidOperationException(
-                            "Nenhuma origem CORS configurada para ambiente de produção.");
+                        policy.AllowAnyOrigin()
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
                     }
                 });
             });
@@ -194,6 +187,8 @@ public class Program
             builder.Services.AddScoped<IInsumosService, InsumosService>();
             builder.Services.AddScoped<IEstoqueItemService, EstoqueItemService>();
             builder.Services.AddScoped<IEstoqueItemRepository, EstoqueItemRepository>();
+            builder.Services.AddScoped<IEstoqueConsultaRepository, EstoqueConsultaRepository>();
+            builder.Services.AddScoped<IEstoqueConsultaService, EstoqueConsultaService>();
             builder.Services.AddScoped<IRetiradaEstoqueService, RetiradaEstoqueService>();
             builder.Services.AddScoped<IRetiradaEstoqueHistoricoExportService, RetiradaEstoqueHistoricoExportService>();
             builder.Services.AddScoped<IRetiradaEstoqueRepository, RetiradaEstoqueRepository>();
