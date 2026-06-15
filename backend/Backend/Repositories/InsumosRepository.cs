@@ -19,7 +19,7 @@ namespace Backend.Repositories
         CancellationToken cancellationToken = default)
         {
             var pageNumber = Math.Max(paginationParameters.PageNumber, 1);
-            var pageSize = paginationParameters.PageSize;
+            var pageSize = Math.Max(paginationParameters.PageSize, 1);
 
             var filtrada = FiltroHelper.AplicarFiltrosInsumos(
                 FiltroHelper.Base(_context.Insumos.AsQueryable()),

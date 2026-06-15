@@ -19,7 +19,7 @@ public class ProdutosRepository : BaseCRUDEstoqueRepository<ProdutosModel>, IPro
         CancellationToken cancellationToken = default)
     {
         var pageNumber = Math.Max(paginationParameters.PageNumber, 1);
-        var pageSize = paginationParameters.PageSize;
+        var pageSize = Math.Max(paginationParameters.PageSize, 1);
 
         var filtrada = FiltroHelper.AplicarFiltrosProdutos(
             FiltroHelper.Base(_context.Produtos.AsQueryable()),

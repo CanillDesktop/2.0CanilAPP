@@ -130,7 +130,7 @@ export function FormularioInsumo() {
           onIrParaLista={irParaLista}
         />
       ) : (
-        <Box component="form" onSubmit={aoEnviar}>
+        <Box component="form" onSubmit={aoEnviar} noValidate>
           {passoAtual === 0 ? (
             <SecaoFormularioCadastro
               titulo="Dados do insumo"
@@ -202,7 +202,7 @@ export function FormularioInsumo() {
                   />
                 }
               >
-                <Collapse in={form.cadastrarEstoqueInicial}>
+                <Collapse in={form.cadastrarEstoqueInicial} unmountOnExit>
                   <Grid container spacing={2}>
                     <Grid size={12}>
                       <Typography variant="body2" sx={{ color: estilos.cores.textMuted }}>
@@ -213,11 +213,12 @@ export function FormularioInsumo() {
                       <TextField
                         fullWidth
                         required={form.cadastrarEstoqueInicial}
+                        disabled={!form.cadastrarEstoqueInicial}
                         type="number"
                         label="Quantidade inicial"
                         value={form.quantidade}
                         onChange={(e) => setForm((p) => ({ ...p, quantidade: Number(e.target.value) }))}
-                        slotProps={{ htmlInput: { min: 0 } }}
+                        slotProps={{ htmlInput: { min: 1 } }}
                         sx={sxCampo}
                       />
                     </Grid>
@@ -225,6 +226,7 @@ export function FormularioInsumo() {
                       <TextField
                         fullWidth
                         required={form.cadastrarEstoqueInicial}
+                        disabled={!form.cadastrarEstoqueInicial}
                         type="date"
                         label="Data de entrega"
                         value={form.dataEntrega}
@@ -236,6 +238,7 @@ export function FormularioInsumo() {
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
+                        disabled={!form.cadastrarEstoqueInicial}
                         type="date"
                         label="Data de validade"
                         value={form.dataValidade}
@@ -247,6 +250,7 @@ export function FormularioInsumo() {
                     <Grid size={12}>
                       <TextField
                         fullWidth
+                        disabled={!form.cadastrarEstoqueInicial}
                         label="NF-e / documento"
                         value={form.nfe}
                         onChange={(e) => setForm((p) => ({ ...p, nfe: e.target.value }))}

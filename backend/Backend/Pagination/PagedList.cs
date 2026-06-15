@@ -7,7 +7,7 @@ namespace Backend.Pagination
     {
         public int CurrentPage { get; private set; }
         public int TotalPages { get; private set; }
-        public int PageSize { get; private set; } 
+        public int PageSize { get; private set; }
         public int TotalCount { get; private set; } = 0;
         public bool HasPrevious => CurrentPage > 1;
         public bool HasNext => CurrentPage < TotalPages;
@@ -38,14 +38,14 @@ namespace Backend.Pagination
 
         public async static Task<PagedList<T>> ToPagedListAsync(IQueryable<T> source, int pageNumber, int pageSize, CancellationToken cancellationToken = default)
         {
-            var count = source.Count();
+            var count = await source.CountAsync(cancellationToken);
             var items = source.Skip((pageNumber - 1) * pageSize).Take(pageSize);
             return new PagedList<T>(await items.ToListAsync(cancellationToken), count, pageNumber, pageSize);
         }
 
-        public async static Task<PagedList<T>> ToPagedListAsync<K>(IQueryable<T> source, int pageNumber , int pageSize, Expression<Func<T, K>> orderByExpression, CancellationToken cancellationToken = default)
+        public async static Task<PagedList<T>> ToPagedListAsync<K>(IQueryable<T> source, int pageNumber, int pageSize, Expression<Func<T, K>> orderByExpression, CancellationToken cancellationToken = default)
         {
-            var count = source.Count();
+            var count = await source.CountAsync(cancellationToken);
             var items = source.OrderBy(orderByExpression).Skip((pageNumber - 1) * pageSize).Take(pageSize);
             return new PagedList<T>(await items.ToListAsync(cancellationToken), count, pageNumber, pageSize);
         }
