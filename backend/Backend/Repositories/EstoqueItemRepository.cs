@@ -33,6 +33,14 @@ namespace Backend.Repositories
             return itemEstoque;
         }
 
+        public async Task<ItemComEstoqueBaseModel?> ObterItemBasePorIdAsync(int id)
+        {
+            // A herança TPT garante que o EF retorne a instância concreta
+            // (ProdutosModel/MedicamentosModel/InsumosModel) ao consultar o tipo base.
+            return await _context.Set<ItemComEstoqueBaseModel>()
+                .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted);
+        }
+
         public async Task<ItemEstoqueModel> CreateAsync(ItemEstoqueModel model, bool saveChanges = true)
         {
             ArgumentNullException.ThrowIfNull(model);

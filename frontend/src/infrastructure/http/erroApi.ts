@@ -107,7 +107,7 @@ export function extrairMensagemErroApi(erro: unknown): string {
 }
 
 /** Converte exceção de mutação em resultado com mensagem amigável. */
-export function capturarErroMutacao(erro: unknown, mensagemPadrao: string): ResultadoMutacao {
+export function capturarErroMutacao<T = void>(erro: unknown, mensagemPadrao: string): ResultadoMutacao<T> {
   const mensagem = extrairMensagemErroApi(erro);
   const usarPadrao =
     mensagem === MSG_ERRO.operacao ||

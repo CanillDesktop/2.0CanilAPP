@@ -31,4 +31,25 @@ public interface ILoteGeradorService
         PublicoAlvoMedicamentoEnum publicoAlvo,
         string nomeComercial,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Prevê (sem consumir a sequência) qual será o próximo lote do produto. Usado apenas para
+    /// exibição/conferência na tela de cadastro; a geração definitiva ocorre na criação do lote.
+    /// </summary>
+    Task<string> PreverProximoLoteProdutoAsync(
+        CategoriaEnum categoria,
+        string descricaoSimples,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Prevê (sem consumir a sequência) o próximo lote de um insumo.</summary>
+    Task<string> PreverProximoLoteInsumoAsync(
+        UnidadeInsumosEnum unidade,
+        string descricaoSimplificada,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Prevê (sem consumir a sequência) o próximo lote de um medicamento.</summary>
+    Task<string> PreverProximoLoteMedicamentoAsync(
+        PublicoAlvoMedicamentoEnum publicoAlvo,
+        string nomeComercial,
+        CancellationToken cancellationToken = default);
 }

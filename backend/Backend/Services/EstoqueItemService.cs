@@ -1,5 +1,9 @@
-﻿using Backend.Exceptions;
+﻿using Backend.DTOs.Estoque;
+using Backend.Exceptions;
 using Backend.Models.Estoque;
+using Backend.Models.Insumos;
+using Backend.Models.Medicamentos;
+using Backend.Models.Produtos;
 using Backend.Repositories.Interfaces;
 using Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -10,26 +14,75 @@ namespace Backend.Services
     {
         private readonly IEstoqueItemRepository _repository;
         private readonly IUserSessionService _userSessionService;
+        private readonly ILoteGeradorService _loteGerador;
 
-        public EstoqueItemService(IEstoqueItemRepository repository, IUserSessionService userSessionService)
+        public EstoqueItemService(
+            IEstoqueItemRepository repository,
+            IUserSessionService userSessionService,
+            ILoteGeradorService loteGerador)
         {
             _repository = repository;
             _userSessionService = userSessionService;
+            _loteGerador = loteGerador;
         }
 
         public async Task<IEnumerable<ItemEstoqueModel>> BuscarPorCodigoAsync(string codigo) => await _repository.GetByCodigoAsync(codigo);
 
         public async Task<ItemEstoqueModel?> BuscarPorLoteAsync(string lote) => await _repository.GetByLoteAsync(lote);
 
+        public async Task<ProximoLoteEstoqueDTO> GerarProximoLoteAsync(int itemId)
+        {
+            var itemBase = await _repository.ObterItemBasePorIdAsync(itemId)
+                ?? throw new RecursoNaoEncontradoException("Item não encontrado para gerar o lote.");
+
+            // Conferência: prevê o número sem consumir a sequência. O valor definitivo é gerado na criação.
+            return new ProximoLoteEstoqueDTO
+            {
+                Codigo = ObterCodigoItem(itemBase),
+                Lote = await PreverLoteAsync(itemBase)
+            };
+        }
+
         public async Task<ItemEstoqueModel?> CriarAsync(ItemEstoqueModel model)
         {
-            if (string.IsNullOrWhiteSpace(model.Codigo))
-            {
-                throw new ModelIncompletaException("Um ou mais campos obrigatórios não foram preenchidos");
-            }
+            var itemBase = await _repository.ObterItemBasePorIdAsync(model.Id)
+                ?? throw new RecursoNaoEncontradoException("Item não encontrado para adicionar o lote.");
+
+            if (model.Quantidade <= 0)
+                throw new ModelIncompletaException("Informe uma quantidade maior que zero para o lote.");
+
+            // Código e lote são responsabilidade exclusiva do backend: o código vem do item e o
+            // lote é sempre gerado pelo LoteGeradorService, ignorando qualquer valor enviado pelo cliente.
+            model.Codigo = ObterCodigoItem(itemBase);
+            model.Lote = await GerarLoteAsync(itemBase);
+            model.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
 
             return await _repository.CreateAsync(model);
         }
+
+        private Task<string> GerarLoteAsync(ItemComEstoqueBaseModel itemBase) => itemBase switch
+        {
+            ProdutosModel produto => _loteGerador.GerarLoteProdutoAsync(produto.Categoria, produto.DescricaoSimples),
+            MedicamentosModel medicamento => _loteGerador.GerarLoteMedicamentoAsync(medicamento.PublicoAlvo, medicamento.NomeComercial),
+            InsumosModel insumo => _loteGerador.GerarLoteInsumoAsync(insumo.Unidade, insumo.DescricaoSimplificada),
+            _ => throw new RegraDeNegocioInfringidaException("Tipo de item não suportado para geração de lote.")
+        };
+
+        private Task<string> PreverLoteAsync(ItemComEstoqueBaseModel itemBase) => itemBase switch
+        {
+            ProdutosModel produto => _loteGerador.PreverProximoLoteProdutoAsync(produto.Categoria, produto.DescricaoSimples),
+            MedicamentosModel medicamento => _loteGerador.PreverProximoLoteMedicamentoAsync(medicamento.PublicoAlvo, medicamento.NomeComercial),
+            InsumosModel insumo => _loteGerador.PreverProximoLoteInsumoAsync(insumo.Unidade, insumo.DescricaoSimplificada),
+            _ => throw new RegraDeNegocioInfringidaException("Tipo de item não suportado para geração de lote.")
+        };
+
+        private static string ObterCodigoItem(ItemComEstoqueBaseModel itemBase) => itemBase switch
+        {
+            ProdutosModel produto => produto.Codigo,
+            MedicamentosModel medicamento => medicamento.Codigo,
+            InsumosModel insumo => insumo.Codigo,
+            _ => throw new RegraDeNegocioInfringidaException("Tipo de item não suportado.")
+        };
 
         public async Task<ItemEstoqueModel?> AtualizarAsync(string lote, ItemEstoqueModel model)
         {

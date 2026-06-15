@@ -22,15 +22,15 @@ export function useMutacaoEstoque() {
   const [erro, setErro] = useState<string | null>(null);
   const [errosValidacao, setErrosValidacao] = useState<string[] | null>(null);
 
-  const criarLote = useCallback(async (dto: ItemEstoqueDto): Promise<ResultadoMutacao> => {
+  const criarLote = useCallback(async (dto: ItemEstoqueDto): Promise<ResultadoMutacao<ItemEstoqueDto>> => {
     setCarregando(true);
     setErro(null);
     setErrosValidacao(null);
     try {
-      await servicoEstoque.criarLote(dto);
-      return { ok: true };
+      const criado = await servicoEstoque.criarLote(dto);
+      return { ok: true, dados: criado };
     } catch (e) {
-      const falha = capturarErroMutacao(e, MSG_ERRO.lote);
+      const falha = capturarErroMutacao<ItemEstoqueDto>(e, MSG_ERRO.lote);
       if (!falha.ok) setErro(falha.mensagem);
       if (e instanceof ErroApi && e.errors) {
         setErrosValidacao(e.extrairMensagemErros());
