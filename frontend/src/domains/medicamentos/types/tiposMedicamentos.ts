@@ -3,7 +3,11 @@ import type { ItemEstoqueDto, ItemNivelEstoqueDto } from '../../../shared/types/
 export type MedicamentoLeituraDto = {
   id: number;
   codigo: string;
+  nomeInformado?: string | null;
+  nomeComercial?: string | null;
   nomeOuDescricaoSimples: string;
+  descricaoSimples?: string | null;
+  descricaoDetalhada?: string;
   prioridade: number;
   descricao: string;
   formula: string;

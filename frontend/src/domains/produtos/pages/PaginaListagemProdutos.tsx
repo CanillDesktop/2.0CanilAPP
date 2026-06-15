@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
 import { FilterBarProdutos } from '../components/FilterBarProdutos';
 import { KpiSectionProdutos } from '../components/KpiSectionProdutos';
 import { TabelaProdutos } from '../components/TabelaProdutos';
@@ -108,12 +109,12 @@ export function PaginaListagemProdutos() {
 
   async function confirmarExclusao() {
     if (idExclusao == null) return;
-    const ok = await excluir(idExclusao);
-    if (ok) {
+    const resultado = await excluir(idExclusao);
+    if (resultado.ok) {
       setSnackbar({ open: true, mensagem: 'Produto excluído com sucesso.', tipo: 'success' });
       await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
     } else {
-      setSnackbar({ open: true, mensagem: 'Não foi possível excluir o produto.', tipo: 'error' });
+      setSnackbar({ open: true, mensagem: resultado.mensagem, tipo: 'error' });
     }
     setIdExclusao(null);
   }
@@ -212,19 +213,24 @@ export function PaginaListagemProdutos() {
                   onEditar={(id) => navigate(`/produtos/${id}`)}
                   onExcluir={(id) => setIdExclusao(id)}
                   onMovimentar={(id) => navigate(`/estoque/lotes/novo?idItem=${id}`)}
-                  onRegistrarRetirada={(produto: ProdutoLeituraDto, lote: ItemEstoqueDto) =>
-                    navigate('/estoque/retirada', {
-                      state: {
-                        produtoId: produto.id,
-                        produtoNome: produto.nomeOuDescricaoSimples,
-                        codItem: produto.codigo,
-                        loteId: `${produto.id}-${lote.lote ?? ''}`,
-                        loteCodigo: lote.lote ?? 'Sem código',
-                        quantidadeDisponivel: lote.quantidade,
-                        retornoRota: '/produtos',
-                      },
-                    })
-                  }
+                  onRegistrarRetirada={(produto: ProdutoLeituraDto, lote: ItemEstoqueDto) => {
+                    const state = montarRetiradaNavegacaoState({
+                      produto,
+                      produtoId: produto.id,
+                      codItem: produto.codigo,
+                      loteId: `${produto.id}-${lote.lote ?? ''}`,
+                      loteCodigo: lote.lote ?? 'Sem código',
+                      quantidadeDisponivel: lote.quantidade,
+                      retornoRota: '/produtos',
+                    });
+
+                    if (!state) {
+                      setSnackbar({ open: true, mensagem: MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, tipo: 'error' });
+                      return;
+                    }
+
+                    navigate('/estoque/retirada', { state });
+                  }}
                 />
               ) : (
                 <Box sx={estilos.estadoVazio}>

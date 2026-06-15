@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { extrairMensagemErroApi, ErroApi } from '../../../infrastructure/http/erroApi';
+import { capturarErroMutacao, ErroApi, type ResultadoMutacao } from '../../../infrastructure/http/erroApi';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { useEstadoAssincrono } from '../../../shared/hooks/useEstadoAssincrono';
 import { servicoInsumos } from '../services/servicoInsumos';
 import type { InsumoCadastroDto, InsumoLeituraDto, InsumosFiltroDto } from '../types/tiposInsumos';
@@ -27,37 +28,39 @@ export function useMutacaoInsumo() {
   const [erro, setErro] = useState<string | null>(null);
   const [errosValidacao, setErrosValidacao] = useState<string[] | null>(null);
 
-  const criar = useCallback(async (dto: InsumoCadastroDto) => {
+  const criar = useCallback(async (dto: InsumoCadastroDto): Promise<ResultadoMutacao> => {
     setCarregando(true);
     setErro(null);
     setErrosValidacao(null);
     try {
       await servicoInsumos.criar(dto);
-      return true;
+      return { ok: true };
     } catch (e) {
-      setErro(extrairMensagemErroApi(e));
+      const falha = capturarErroMutacao(e, MSG_ERRO.operacao);
+      if (!falha.ok) setErro(falha.mensagem);
       if (e instanceof ErroApi && e.errors) {
         setErrosValidacao(e.extrairMensagemErros());
       }
-      return false;
+      return falha;
     } finally {
       setCarregando(false);
     }
   }, []);
 
-  const excluir = useCallback(async (id: number) => {
+  const excluir = useCallback(async (id: number): Promise<ResultadoMutacao> => {
     setCarregando(true);
     setErro(null);
     setErrosValidacao(null);
     try {
       await servicoInsumos.excluir(id);
-      return true;
+      return { ok: true };
     } catch (e) {
-      setErro(extrairMensagemErroApi(e));
+      const falha = capturarErroMutacao(e, MSG_ERRO.excluirInsumo);
+      if (!falha.ok) setErro(falha.mensagem);
       if (e instanceof ErroApi && e.errors) {
         setErrosValidacao(e.extrairMensagemErros());
       }
-      return false;
+      return falha;
     } finally {
       setCarregando(false);
     }

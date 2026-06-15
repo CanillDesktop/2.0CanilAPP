@@ -74,12 +74,12 @@ export function FormularioNovoLote() {
       nfe,
       dataValidade: dataValidade ? new Date(dataValidade).toISOString() : null,
     };
-    const ok = await criarLote(dto);
-    if (!ok) {
+    const resultado = await criarLote(dto);
+    if (!resultado.ok) {
       setSubmitErro(true);
       setSnackbar({
         open: true,
-        message: erro ?? 'Erro ao salvar lote.',
+        message: resultado.mensagem,
         severity: 'error',
       });
       return;

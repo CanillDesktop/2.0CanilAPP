@@ -1,5 +1,5 @@
 import { Box, useMediaQuery, useTheme } from '@mui/material';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { larguraConteudoPagina, paddingPaginaDetalhe } from '../../../shared/theme/estilosLayoutPagina';
@@ -11,6 +11,7 @@ import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarre
 import { PainelErro } from '../../../shared/components/PainelErro';
 import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
 import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
+import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
 import { useMedicamentoDetalhe, useMutacaoMedicamento } from '../hooks/useMedicamentos';
 
 const OPCOES_PRIORIDADE: Record<number, string> = {
@@ -43,6 +44,7 @@ export function PaginaDetalheMedicamento() {
 
   const { estado, carregar } = useMedicamentoDetalhe(Number.isFinite(id) ? id : undefined);
   const { excluir, carregando, erro, errosValidacao } = useMutacaoMedicamento();
+  const [erroRetirada, setErroRetirada] = useState<string | null>(null);
 
   useEffect(() => {
     void carregar();
@@ -62,22 +64,30 @@ export function PaginaDetalheMedicamento() {
   async function aoExcluir() {
     if (!Number.isFinite(id)) return;
     if (!window.confirm('Confirma excluir este medicamento?')) return;
-    const ok = await excluir(id);
-    if (ok) navigate('/medicamentos');
+    const resultado = await excluir(id);
+    if (resultado.ok) navigate('/medicamentos');
   }
 
   function handleRetirada(lote: LoteDetalhe) {
     if (!m) return;
+    const state = montarRetiradaNavegacaoState({
+      produto: { ...m, descricaoDetalhada: m.descricaoDetalhada ?? m.descricao },
+      produtoId: m.id,
+      codItem: m.codigo,
+      loteId: lote.id,
+      loteCodigo: lote.codigo,
+      quantidadeDisponivel: lote.quantidade,
+      retornoRota: `/medicamentos/${m.id}`,
+    });
+
+    if (!state) {
+      setErroRetirada(MENSAGEM_PRODUTO_SEM_NOME_RETIRADA);
+      return;
+    }
+
+    setErroRetirada(null);
     navigate('/estoque/retirada', {
-      state: {
-        produtoId: m.id,
-        produtoNome: m.nomeOuDescricaoSimples,
-        codItem: m.codigo,
-        loteId: lote.id,
-        loteCodigo: lote.codigo,
-        quantidadeDisponivel: lote.quantidade,
-        retornoRota: `/medicamentos/${m.id}`,
-      },
+      state,
     });
   }
 
@@ -95,13 +105,13 @@ export function PaginaDetalheMedicamento() {
         <CabecalhoDetalheItem
           rotuloLista="Voltar para medicamentos"
           rotaLista="/medicamentos"
-          titulo={m.nomeOuDescricaoSimples}
+          titulo={m.nomeComercial ?? m.nomeOuDescricaoSimples ?? m.descricaoSimples ?? m.descricaoDetalhada ?? m.descricao ?? 'Medicamento'}
         />
       ) : (
         <CabecalhoDetalheItem rotuloLista="Voltar para medicamentos" rotaLista="/medicamentos" titulo="Medicamento" />
       )}
 
-      <PainelErro mensagem={estado.erro ?? erro} errosValidacao={errosValidacao} />
+      <PainelErro mensagem={erroRetirada ?? estado.erro ?? erro} errosValidacao={errosValidacao} />
       <IndicadorCarregamento visivel={estado.carregando || carregando} />
 
       {m && (
@@ -117,7 +127,7 @@ export function PaginaDetalheMedicamento() {
             tituloSecao="Informações do medicamento"
             campos={[
               { rotulo: 'Código', valor: m.codigo },
-              { rotulo: 'Nome comercial', valor: m.nomeOuDescricaoSimples },
+              { rotulo: 'Nome comercial', valor: m.nomeComercial ?? m.nomeOuDescricaoSimples },
               { rotulo: 'Fórmula', valor: m.formula },
               { rotulo: 'Descrição', valor: m.descricao },
               { rotulo: 'Prioridade', valor: rotuloPrioridade(m.prioridade) },

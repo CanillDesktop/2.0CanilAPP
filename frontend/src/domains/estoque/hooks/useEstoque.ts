@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { extrairMensagemErroApi, ErroApi } from '../../../infrastructure/http/erroApi';
+import { capturarErroMutacao, ErroApi, type ResultadoMutacao } from '../../../infrastructure/http/erroApi';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { useEstadoAssincrono } from '../../../shared/hooks/useEstadoAssincrono';
 import { servicoEstoque } from '../services/servicoEstoque';
 import type { ItemEstoqueDto, RetiradaEstoqueDto } from '../types/tiposEstoque';
@@ -18,37 +19,39 @@ export function useMutacaoEstoque() {
   const [erro, setErro] = useState<string | null>(null);
   const [errosValidacao, setErrosValidacao] = useState<string[] | null>(null);
 
-  const criarLote = useCallback(async (dto: ItemEstoqueDto) => {
+  const criarLote = useCallback(async (dto: ItemEstoqueDto): Promise<ResultadoMutacao> => {
     setCarregando(true);
     setErro(null);
     setErrosValidacao(null);
     try {
       await servicoEstoque.criarLote(dto);
-      return true;
+      return { ok: true };
     } catch (e) {
-      setErro(extrairMensagemErroApi(e));
+      const falha = capturarErroMutacao(e, MSG_ERRO.lote);
+      if (!falha.ok) setErro(falha.mensagem);
       if (e instanceof ErroApi && e.errors) {
         setErrosValidacao(e.extrairMensagemErros());
       }
-      return false;
+      return falha;
     } finally {
       setCarregando(false);
     }
   }, []);
 
-  const registrarRetirada = useCallback(async (dto: RetiradaEstoqueDto) => {
+  const registrarRetirada = useCallback(async (dto: RetiradaEstoqueDto): Promise<ResultadoMutacao> => {
     setCarregando(true);
     setErro(null);
     setErrosValidacao(null);
     try {
       await servicoEstoque.registrarRetirada(dto);
-      return true;
+      return { ok: true };
     } catch (e) {
-      setErro(extrairMensagemErroApi(e));
+      const falha = capturarErroMutacao(e, MSG_ERRO.retirada);
+      if (!falha.ok) setErro(falha.mensagem);
       if (e instanceof ErroApi && e.errors) {
         setErrosValidacao(e.extrairMensagemErros());
       }
-      return false;
+      return falha;
     } finally {
       setCarregando(false);
     }

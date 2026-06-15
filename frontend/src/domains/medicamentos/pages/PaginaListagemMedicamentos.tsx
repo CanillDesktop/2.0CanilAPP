@@ -23,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
 import { FilterBarMedicamentos } from '../components/FilterBarMedicamentos';
 import { KpiSectionMedicamentos } from '../components/KpiSectionMedicamentos';
 import { TabelaMedicamentos } from '../components/TabelaMedicamentos';
@@ -112,12 +113,12 @@ export function PaginaListagemMedicamentos() {
 
   async function confirmarExclusao() {
     if (idExclusao == null) return;
-    const ok = await excluir(idExclusao);
-    if (ok) {
+    const resultado = await excluir(idExclusao);
+    if (resultado.ok) {
       setSnackbar({ open: true, mensagem: 'Medicamento excluído com sucesso.', tipo: 'success' });
       await carregar();
     } else {
-      setSnackbar({ open: true, mensagem: 'Não foi possível excluir o medicamento.', tipo: 'error' });
+      setSnackbar({ open: true, mensagem: resultado.mensagem, tipo: 'error' });
     }
     setIdExclusao(null);
   }
@@ -190,19 +191,24 @@ export function PaginaListagemMedicamentos() {
                   onEditar={(id) => navigate(`/medicamentos/${id}`)}
                   onExcluir={(id) => setIdExclusao(id)}
                   onMovimentar={(id) => navigate(`/estoque/lotes/novo?idItem=${id}`)}
-                  onRegistrarRetirada={(medicamento: MedicamentoLeituraDto, lote: ItemEstoqueDto) =>
-                    navigate('/estoque/retirada', {
-                      state: {
-                        produtoId: medicamento.id,
-                        produtoNome: medicamento.nomeOuDescricaoSimples,
-                        codItem: medicamento.codigo,
-                        loteId: `${medicamento.id}-${lote.lote ?? ''}`,
-                        loteCodigo: lote.lote ?? 'Sem código',
-                        quantidadeDisponivel: lote.quantidade,
-                        retornoRota: '/medicamentos',
-                      },
-                    })
-                  }
+                  onRegistrarRetirada={(medicamento: MedicamentoLeituraDto, lote: ItemEstoqueDto) => {
+                    const state = montarRetiradaNavegacaoState({
+                      produto: { ...medicamento, descricaoDetalhada: medicamento.descricaoDetalhada ?? medicamento.descricao },
+                      produtoId: medicamento.id,
+                      codItem: medicamento.codigo,
+                      loteId: `${medicamento.id}-${lote.lote ?? ''}`,
+                      loteCodigo: lote.lote ?? 'Sem código',
+                      quantidadeDisponivel: lote.quantidade,
+                      retornoRota: '/medicamentos',
+                    });
+
+                    if (!state) {
+                      setSnackbar({ open: true, mensagem: MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, tipo: 'error' });
+                      return;
+                    }
+
+                    navigate('/estoque/retirada', { state });
+                  }}
                 />
               ) : (
                 <Box sx={estilos.estadoVazio}>
