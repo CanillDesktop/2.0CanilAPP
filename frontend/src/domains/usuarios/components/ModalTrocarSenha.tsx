@@ -1,24 +1,27 @@
 import {
   Alert,
+  Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Stack,
-  TextField,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
+import { CampoSenha } from '../../../shared/components/CampoSenha';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 
 type Props = {
   aberto: boolean;
   carregando: boolean;
   erro: string | null;
+  errosValidacao?: string[] | null;
   onFechar: () => void;
   onConfirmar: (senhaAtual: string, novaSenha: string) => void;
 };
 
-export function ModalTrocarSenha({ aberto, carregando, erro, onFechar, onConfirmar }: Props) {
+export function ModalTrocarSenha({ aberto, carregando, erro, errosValidacao, onFechar, onConfirmar }: Props) {
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmacaoNovaSenha, setConfirmacaoNovaSenha] = useState('');
@@ -37,24 +40,35 @@ export function ModalTrocarSenha({ aberto, carregando, erro, onFechar, onConfirm
     return novaSenha === confirmacaoNovaSenha;
   }, [senhaAtual, novaSenha, confirmacaoNovaSenha]);
 
+  const resumoErro = erro ?? (errosValidacao?.length ? MSG_ERRO.validacaoResumo : null);
+
   return (
     <Dialog open={aberto} onClose={carregando ? undefined : onFechar} fullWidth maxWidth="sm">
       <DialogTitle>Alterar senha</DialogTitle>
       <DialogContent>
         <Stack spacing={1.5} sx={{ pt: 0.5 }}>
-          {erro ? <Alert severity="error">{erro}</Alert> : null}
-          <TextField
+          {resumoErro || errosValidacao?.length ? (
+            <Alert severity="error">
+              {resumoErro}
+              {errosValidacao?.length ? (
+                <Box component="ul" sx={{ pl: 2.2, my: resumoErro ? 1 : 0, mb: 0 }}>
+                  {errosValidacao.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </Box>
+              ) : null}
+            </Alert>
+          ) : null}
+          <CampoSenha
             label="Senha atual"
-            type="password"
             value={senhaAtual}
             onChange={(e) => setSenhaAtual(e.target.value)}
             required
             fullWidth
             autoComplete="current-password"
           />
-          <TextField
+          <CampoSenha
             label="Nova senha"
-            type="password"
             value={novaSenha}
             onChange={(e) => setNovaSenha(e.target.value)}
             required
@@ -63,9 +77,8 @@ export function ModalTrocarSenha({ aberto, carregando, erro, onFechar, onConfirm
             helperText="Mínimo 6 caracteres."
             autoComplete="new-password"
           />
-          <TextField
+          <CampoSenha
             label="Confirmar nova senha"
-            type="password"
             value={confirmacaoNovaSenha}
             onChange={(e) => setConfirmacaoNovaSenha(e.target.value)}
             required

@@ -2,6 +2,7 @@ import {
   atualizarItemEstoqueApi,
   criarItemEstoqueApi,
   excluirItemEstoqueApi,
+  obterItemEstoquePorCodigoELoteApi,
   obterItemEstoquePorIdApi,
 } from '../api/estoqueItensApi';
 import {
@@ -21,6 +22,9 @@ import type {
 export const servicoEstoque = {
   obterItemPorId(id: number): Promise<ItemEstoqueDto> {
     return obterItemEstoquePorIdApi(id);
+  },
+  obterSaldoLote(codigo: string, lote: string): Promise<ItemEstoqueDto> {
+    return obterItemEstoquePorCodigoELoteApi(codigo, lote);
   },
   criarLote(dto: ItemEstoqueDto): Promise<void> {
     return criarItemEstoqueApi(dto);

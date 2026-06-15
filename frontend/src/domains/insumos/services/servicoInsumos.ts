@@ -2,14 +2,20 @@ import {
   atualizarInsumoApi,
   criarInsumoApi,
   excluirInsumoApi,
-  listarInsumosApi,
+  listarInsumosPaginadosApi,
   obterInsumoPorIdApi,
 } from '../api/insumosApi';
-import type { InsumoCadastroDto, InsumoLeituraDto, InsumosFiltroDto } from '../types/tiposInsumos';
+import type {
+  InsumoCadastroDto,
+  InsumoFiltro,
+  InsumoLeituraDto,
+  InsumoPaginacaoDto,
+  InsumosListaPaginadaDto,
+} from '../types/tiposInsumos';
 
 export const servicoInsumos = {
-  listar(filtro?: InsumosFiltroDto): Promise<InsumoLeituraDto[]> {
-    return listarInsumosApi(filtro);
+  listarPaginado(filtro?: InsumoFiltro, paginacao?: InsumoPaginacaoDto): Promise<InsumosListaPaginadaDto> {
+    return listarInsumosPaginadosApi(filtro, paginacao);
   },
   obterPorId(id: number): Promise<InsumoLeituraDto> {
     return obterInsumoPorIdApi(id);

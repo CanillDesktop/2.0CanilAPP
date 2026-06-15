@@ -2,6 +2,7 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { larguraConteudoPagina, paddingPaginaDetalhe } from '../../../shared/theme/estilosLayoutPagina';
 import { CabecalhoDetalheItem } from '../../../shared/components/detalheItem/CabecalhoDetalheItem';
 import { InfoCardDetalheItem } from '../../../shared/components/detalheItem/InfoCardDetalheItem';
 import { KpiCardsDetalheItem } from '../../../shared/components/detalheItem/KpiCardsDetalheItem';
@@ -10,7 +11,12 @@ import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarre
 import { PainelErro } from '../../../shared/components/PainelErro';
 import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
 import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
-import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
+import {
+  MENSAGEM_LOTE_INVALIDO_RETIRADA,
+  MENSAGEM_PRODUTO_SEM_NOME_RETIRADA,
+  montarRetiradaNavegacaoState,
+  montarRetiradaQueryString,
+} from '../../estoque/utils/retiradaNavegacao';
 import { OPCOES_CATEGORIA_PRODUTO_FILTRO } from '../constants/opcoesCategoriaProduto';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
 import { useProdutoDetalhe } from '../hooks/useProdutos';
@@ -60,12 +66,17 @@ export function PaginaDetalheProduto() {
   async function aoExcluir() {
     if (!Number.isFinite(id)) return;
     if (!window.confirm('Confirma excluir este produto?')) return;
-    const ok = await excluir(id);
-    if (ok) navigate('/produtos');
+    const resultado = await excluir(id);
+    if (resultado.ok) navigate('/produtos');
   }
 
   function handleRetirada(lote: LoteDetalhe) {
     if (!p) return;
+    if (!lote.codigo?.trim()) {
+      setErroRetirada(MENSAGEM_LOTE_INVALIDO_RETIRADA);
+      return;
+    }
+
     const state = montarRetiradaNavegacaoState({
       produto: p,
       produtoId: p.id,
@@ -82,7 +93,7 @@ export function PaginaDetalheProduto() {
     }
 
     setErroRetirada(null);
-    navigate('/estoque/retirada', {
+    navigate(`/estoque/retirada?${montarRetiradaQueryString(state)}`, {
       state,
     });
   }
@@ -91,7 +102,8 @@ export function PaginaDetalheProduto() {
     <Box
       component="main"
       sx={{
-        p: { xs: 2, sm: 3 },
+        ...paddingPaginaDetalhe,
+        ...larguraConteudoPagina,
         bgcolor: cores.bgConteudo,
         minHeight: '100%',
       }}

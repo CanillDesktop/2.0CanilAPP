@@ -16,6 +16,8 @@ import {
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { CampoSenha } from '../../../shared/components/CampoSenha';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useAcaoLogin } from '../hooks/useAcaoLogin';
 
@@ -25,7 +27,7 @@ type Props = {
 
 export function FormularioLogin({ aoAutenticar }: Props) {
   const { cores } = useTemaApp();
-  const campoSx = estilosCampoFormulario(cores);
+  const campoSx = estilosCampoFormulario(cores, { semAnelFoco: true });
   const { entrar, carregando, erro, errosValidacao } = useAcaoLogin();
   const [login, setLogin] = useState('');
   const [senha, setSenha] = useState('');
@@ -78,7 +80,7 @@ export function FormularioLogin({ aoAutenticar }: Props) {
 
         {(erro || errosValidacao?.length) && (
           <Alert severity="error" sx={{ borderRadius: 2 }}>
-            {erro}
+            {erro ?? MSG_ERRO.validacaoResumo}
             {errosValidacao?.length ? (
               <Box component="ul" sx={{ pl: 2.2, my: erro ? 1 : 0 }}>
                 {errosValidacao.map((mensagem) => (
@@ -109,9 +111,8 @@ export function FormularioLogin({ aoAutenticar }: Props) {
               },
             }}
           />
-          <TextField
+          <CampoSenha
             label="Senha"
-            type="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
             autoComplete="current-password"
@@ -156,7 +157,7 @@ export function FormularioLogin({ aoAutenticar }: Props) {
         </Button>
 
         <Typography variant="body2" sx={{ color: cores.textSecondary, textAlign: 'center' }}>
-          Ainda nao tem acesso?{' '}
+          Ainda não tem acesso?{' '}
           <Box
             component={Link}
             to="/cadastro"

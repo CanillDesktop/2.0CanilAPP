@@ -32,4 +32,13 @@ public class RetiradaEstoqueDTO
 
     /// <summary>Recebedor opcional quando o destinatário é um usuário cadastrado no sistema.</summary>
     public int? IdUsuarioRecebedor { get; set; }
+
+    /// <summary>Confirmação explícita do usuário para retirar mesmo com o lote vencido.</summary>
+    public bool ConfirmarLoteVencido { get; set; }
+
+    /// <summary>Saída: indica que o lote retirado estava vencido.</summary>
+    public bool EstavaVencido { get; set; }
+
+    /// <summary>Saída: data de validade do lote retirado.</summary>
+    public DateTime? DataValidadeLote { get; set; }
 }

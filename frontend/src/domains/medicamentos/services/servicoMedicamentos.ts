@@ -2,14 +2,23 @@ import {
   atualizarMedicamentoApi,
   criarMedicamentoApi,
   excluirMedicamentoApi,
-  listarMedicamentosApi,
+  listarMedicamentosPaginadosApi,
   obterMedicamentoPorIdApi,
 } from '../api/medicamentosApi';
-import type { MedicamentoCadastroDto, MedicamentoLeituraDto, MedicamentosFiltroDto } from '../types/tiposMedicamentos';
+import type {
+  MedicamentoCadastroDto,
+  MedicamentoFiltro,
+  MedicamentoLeituraDto,
+  MedicamentoPaginacaoDto,
+  MedicamentosListaPaginadaDto,
+} from '../types/tiposMedicamentos';
 
 export const servicoMedicamentos = {
-  listar(filtro?: MedicamentosFiltroDto): Promise<MedicamentoLeituraDto[]> {
-    return listarMedicamentosApi(filtro);
+  listarPaginado(
+    filtro?: MedicamentoFiltro,
+    paginacao?: MedicamentoPaginacaoDto,
+  ): Promise<MedicamentosListaPaginadaDto> {
+    return listarMedicamentosPaginadosApi(filtro, paginacao);
   },
   obterPorId(id: number): Promise<MedicamentoLeituraDto> {
     return obterMedicamentoPorIdApi(id);

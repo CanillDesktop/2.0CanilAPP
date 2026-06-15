@@ -1,10 +1,12 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { LeiautePrincipal } from '../../shared/components/LeiautePrincipal';
+import { GuardaPreLogin } from '../../shared/components/GuardaPreLogin';
 import { RotaProtegida } from '../../shared/components/RotaProtegida';
 import { RotaProtegidaPorPapel } from '../../shared/components/RotaProtegidaPorPapel';
 import { PaginaAcessoNegado } from '../../shared/pages/PaginaAcessoNegado';
 import { PaginaDetalheSessao } from '../../domains/autenticacao/pages/PaginaDetalheSessao';
 import { PaginaLogin } from '../../domains/autenticacao/pages/PaginaLogin';
+import { PaginaPreLogin } from '../../domains/autenticacao/pages/PaginaPreLogin';
 import { PaginaCadastroUsuario } from '../../domains/usuarios/pages/PaginaCadastroUsuario';
 import { PaginaListagemUsuarios } from '../../domains/usuarios/pages/PaginaListagemUsuarios';
 import { PaginaDetalheProduto } from '../../domains/produtos/pages/PaginaDetalheProduto';
@@ -28,8 +30,13 @@ export function RotasApp() {
     <Routes>
       <Route path="/" element={<LeiautePrincipal />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="login" element={<PaginaLogin />} />
-        <Route path="cadastro" element={<PaginaCadastroUsuario />} />
+        <Route path="codigo-acesso" element={<PaginaPreLogin />} />
+
+        <Route element={<GuardaPreLogin />}>
+          <Route path="login" element={<PaginaLogin />} />
+          <Route path="cadastro" element={<PaginaCadastroUsuario />} />
+        </Route>
+
         <Route path="403" element={<PaginaAcessoNegado />} />
 
         <Route element={<RotaProtegida />}>

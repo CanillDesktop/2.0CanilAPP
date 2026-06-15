@@ -23,13 +23,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
-import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
+import {
+  MENSAGEM_LOTE_INVALIDO_RETIRADA,
+  MENSAGEM_PRODUTO_SEM_NOME_RETIRADA,
+  montarRetiradaNavegacaoState,
+  montarRetiradaQueryString,
+} from '../../estoque/utils/retiradaNavegacao';
 import { FilterBarProdutos } from '../components/FilterBarProdutos';
 import { KpiSectionProdutos } from '../components/KpiSectionProdutos';
 import { TabelaProdutos } from '../components/TabelaProdutos';
 import { useListaProdutosPaginados } from '../hooks/useProdutos';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
-import type { ProdutoFiltroDto, ProdutoLeituraDto, ProdutoStatusEstoqueFiltro } from '../types/tiposProdutos';
+import type { ProdutoFiltro, ProdutoLeituraDto, ProdutoStatusEstoqueFiltro } from '../types/tiposProdutos';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 
 const MotionBox = motion(Box);
@@ -43,6 +48,8 @@ export function PaginaListagemProdutos() {
   const [debouncedBusca, setDebouncedBusca] = useState('');
   const [categoria, setCategoria] = useState<'todas' | string>('todas');
   const [status, setStatus] = useState<ProdutoStatusEstoqueFiltro>('todos');
+  const [dataEntrega, setDataEntrega] = useState('');
+  const [dataValidade, setDataValidade] = useState('');
   const [idExclusao, setIdExclusao] = useState<number | null>(null);
   const { snackbar, setSnackbar } = useSnackbarRetornoListagem({
     open: false,
@@ -59,16 +66,28 @@ export function PaginaListagemProdutos() {
 
   useEffect(() => {
     setPage(0);
-  }, [debouncedBusca, categoria, status]);
+  }, [debouncedBusca, categoria, status, dataEntrega, dataValidade]);
 
-  const montarFiltroApi = useCallback((): ProdutoFiltroDto => {
+  function limparFiltros() {
+    setBusca('');
+    setDebouncedBusca('');
+    setCategoria('todas');
+    setStatus('todos');
+    setDataEntrega('');
+    setDataValidade('');
+    setPage(0);
+  }
+
+  const montarFiltroApi = useCallback((): ProdutoFiltro => {
     const termo = debouncedBusca.trim();
     return {
-      termoBusca: termo.length > 0 ? termo : undefined,
+      termo: termo.length > 0 ? termo : undefined,
       categoria: categoria === 'todas' ? undefined : Number(categoria),
+      dataEntrega: dataEntrega.trim().length > 0 ? dataEntrega : undefined,
+      dataValidade: dataValidade.trim().length > 0 ? dataValidade : undefined,
       statusEstoque: status,
     };
-  }, [debouncedBusca, categoria, status]);
+  }, [debouncedBusca, categoria, status, dataEntrega, dataValidade]);
 
   const recarregar = useCallback(async () => {
     await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
@@ -109,12 +128,12 @@ export function PaginaListagemProdutos() {
 
   async function confirmarExclusao() {
     if (idExclusao == null) return;
-    const ok = await excluir(idExclusao);
-    if (ok) {
+    const resultado = await excluir(idExclusao);
+    if (resultado.ok) {
       setSnackbar({ open: true, mensagem: 'Produto excluído com sucesso.', tipo: 'success' });
       await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
     } else {
-      setSnackbar({ open: true, mensagem: 'Não foi possível excluir o produto.', tipo: 'error' });
+      setSnackbar({ open: true, mensagem: resultado.mensagem, tipo: 'error' });
     }
     setIdExclusao(null);
   }
@@ -148,9 +167,14 @@ export function PaginaListagemProdutos() {
             busca={busca}
             categoria={categoria}
             status={status}
+            dataEntrega={dataEntrega}
+            dataValidade={dataValidade}
             onBuscaChange={setBusca}
             onCategoriaChange={setCategoria}
             onStatusChange={setStatus}
+            onDataEntregaChange={setDataEntrega}
+            onDataValidadeChange={setDataValidade}
+            onLimpar={limparFiltros}
             onNovoProduto={() => navigate('/produtos/novo')}
           />
 
@@ -191,8 +215,8 @@ export function PaginaListagemProdutos() {
               ]}
             />
             <Typography variant="caption" sx={estilos.legenda}>
-              Indicadores refletem todos os produtos que obedecem a busca e categoria (sem o filtro de status). O
-              filtro de status restringe apenas a tabela e a paginação.
+              Indicadores refletem todos os produtos que obedecem à busca, categoria e datas (sem o filtro de status).
+              O filtro de status restringe apenas a tabela e a paginação.
             </Typography>
           </Stack>
 
@@ -214,12 +238,17 @@ export function PaginaListagemProdutos() {
                   onExcluir={(id) => setIdExclusao(id)}
                   onMovimentar={(id) => navigate(`/estoque/lotes/novo?idItem=${id}`)}
                   onRegistrarRetirada={(produto: ProdutoLeituraDto, lote: ItemEstoqueDto) => {
+                    if (!lote.lote?.trim()) {
+                      setSnackbar({ open: true, mensagem: MENSAGEM_LOTE_INVALIDO_RETIRADA, tipo: 'error' });
+                      return;
+                    }
+
                     const state = montarRetiradaNavegacaoState({
                       produto,
                       produtoId: produto.id,
                       codItem: produto.codigo,
-                      loteId: `${produto.id}-${lote.lote ?? ''}`,
-                      loteCodigo: lote.lote ?? 'Sem código',
+                      loteId: `${produto.id}-${lote.lote}`,
+                      loteCodigo: lote.lote,
                       quantidadeDisponivel: lote.quantidade,
                       retornoRota: '/produtos',
                     });
@@ -229,7 +258,7 @@ export function PaginaListagemProdutos() {
                       return;
                     }
 
-                    navigate('/estoque/retirada', { state });
+                    navigate(`/estoque/retirada?${montarRetiradaQueryString(state)}`, { state });
                   }}
                 />
               ) : (

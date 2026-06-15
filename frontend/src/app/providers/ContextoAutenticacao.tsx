@@ -1,13 +1,14 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { UsuarioSessao } from '../../shared/types/usuarioSessao';
 import { obterAccessToken, obterUsuarioArmazenado } from '../../shared/services/armazenamentoSessao';
 import { servicoAutenticacao } from '../../domains/autenticacao/services/servicoAutenticacao';
+import { registrarOuvinteSessaoEncerrada } from '../../domains/autenticacao/services/gerenciadorRenovacaoSessao';
 
 type ContextoAutenticacaoValor = {
   autenticado: boolean;
   usuario: UsuarioSessao | null;
   recarregarSessao: () => void;
-  sair: () => void;
+  sair: () => Promise<{ confirmadoNoServidor: boolean }>;
 };
 
 const ContextoAutenticacao = createContext<ContextoAutenticacaoValor | null>(null);
@@ -25,9 +26,17 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     setSessao(lerSessaoAtual());
   }, []);
 
-  const sair = useCallback(() => {
-    servicoAutenticacao.sair();
+  const sair = useCallback(async () => {
+    const resultado = await servicoAutenticacao.sair();
     setSessao({ autenticado: false, usuario: null });
+    return resultado;
+  }, []);
+
+  useEffect(() => {
+    registrarOuvinteSessaoEncerrada(() => {
+      setSessao({ autenticado: false, usuario: null });
+    });
+    return () => registrarOuvinteSessaoEncerrada(null);
   }, []);
 
   const valor = useMemo(

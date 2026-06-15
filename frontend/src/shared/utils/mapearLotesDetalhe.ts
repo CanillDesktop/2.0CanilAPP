@@ -5,7 +5,7 @@ export function mapearItensEstoqueParaLotes(idItem: number, originais: ItemEstoq
   return originais
     .map((lote, idx) => ({
       id: `${idItem}-${lote.lote ?? idx}`,
-      codigo: lote.lote ?? `L${idx + 1}`,
+      codigo: lote.lote ?? '',
       quantidade: lote.quantidade,
       validade: lote.dataValidade ?? new Date(Date.now() + 50 * 24 * 60 * 60 * 1000).toISOString(),
     }))

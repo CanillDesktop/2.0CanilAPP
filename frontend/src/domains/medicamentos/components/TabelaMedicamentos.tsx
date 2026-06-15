@@ -52,6 +52,16 @@ type LinhaMedicamento = {
 
 const MotionAction = motion.div;
 
+const mapaPrioridade: Record<number, string> = {
+  0: "Baixa",
+  1: "Média",
+  2: "Alta"
+};
+
+function prioridadeNome(prioridade: number) {
+  return mapaPrioridade[prioridade] || `Prioridade ${prioridade}`;
+}
+
 export function obterStatusMedicamento(item: MedicamentoLeituraDto): StatusMedicamento {
   const quantidade = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
   const minimo = item.itemNivelEstoque?.nivelMinimoEstoque ?? 0;
@@ -81,7 +91,7 @@ function mapearLinha(item: MedicamentoLeituraDto): LinhaMedicamento {
     id: item.id,
     codigo: item.codigo,
     nome: item.nomeOuDescricaoSimples,
-    prioridadeNome: `Prioridade ${item.prioridade}`,
+    prioridadeNome: prioridadeNome(item.prioridade),
     quantidade,
     status: obterStatusMedicamento(item),
     ultimaMovimentacao: ultimaData ? ultimaData.toLocaleDateString('pt-BR') : 'Sem movimentação',

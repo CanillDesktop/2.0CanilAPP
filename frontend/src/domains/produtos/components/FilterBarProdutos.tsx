@@ -25,9 +25,14 @@ type FilterBarProdutosProps = {
   busca: string;
   categoria: 'todas' | string;
   status: ProdutoStatusEstoqueFiltro;
+  dataEntrega: string;
+  dataValidade: string;
   onBuscaChange: (valor: string) => void;
   onCategoriaChange: (valor: string) => void;
   onStatusChange: (valor: ProdutoStatusEstoqueFiltro) => void;
+  onDataEntregaChange: (valor: string) => void;
+  onDataValidadeChange: (valor: string) => void;
+  onLimpar: () => void;
   onNovoProduto: () => void;
 };
 
@@ -35,9 +40,14 @@ export function FilterBarProdutos({
   busca,
   categoria,
   status,
+  dataEntrega,
+  dataValidade,
   onBuscaChange,
   onCategoriaChange,
   onStatusChange,
+  onDataEntregaChange,
+  onDataValidadeChange,
+  onLimpar,
   onNovoProduto,
 }: FilterBarProdutosProps) {
   const { cores } = useTemaApp();
@@ -60,7 +70,7 @@ export function FilterBarProdutos({
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 5 }}>
           <TextField
-            placeholder="Buscar por nome ou código"
+            placeholder="Buscar por código, descrição, NF-e ou lote"
             variant="outlined"
             size="small"
             fullWidth
@@ -127,6 +137,39 @@ export function FilterBarProdutos({
             >
               Novo Produto
             </MotionButton>
+          </Box>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            size="small"
+            type="date"
+            label="Data de entrega"
+            value={dataEntrega}
+            onChange={(e) => onDataEntregaChange(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={inputSx}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            size="small"
+            type="date"
+            label="Data de validade"
+            value={dataValidade}
+            onChange={(e) => onDataValidadeChange(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={inputSx}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+            <Button variant="text" onClick={onLimpar} sx={{ color: cores.focus, fontWeight: 600, textTransform: 'none' }}>
+              Limpar filtros
+            </Button>
           </Box>
         </Grid>
       </Grid>

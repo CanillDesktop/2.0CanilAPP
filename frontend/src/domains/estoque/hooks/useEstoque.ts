@@ -1,8 +1,12 @@
 import { useCallback, useState } from 'react';
-import { extrairMensagemErroApi, ErroApi } from '../../../infrastructure/http/erroApi';
+import { capturarErroMutacao, ErroApi, type ResultadoMutacao } from '../../../infrastructure/http/erroApi';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { useEstadoAssincrono } from '../../../shared/hooks/useEstadoAssincrono';
 import { servicoEstoque } from '../services/servicoEstoque';
 import type { ItemEstoqueDto, RetiradaEstoqueDto } from '../types/tiposEstoque';
+
+/** Resultado de uma retirada, indicando se houve necessidade de confirmar lote vencido. */
+export type ResultadoRetirada = ResultadoMutacao & { loteVencido?: boolean };
 
 export function useItemEstoqueDetalhe(id: number | undefined) {
   const { estado, executar } = useEstadoAssincrono<ItemEstoqueDto>();
@@ -18,41 +22,48 @@ export function useMutacaoEstoque() {
   const [erro, setErro] = useState<string | null>(null);
   const [errosValidacao, setErrosValidacao] = useState<string[] | null>(null);
 
-  const criarLote = useCallback(async (dto: ItemEstoqueDto) => {
+  const criarLote = useCallback(async (dto: ItemEstoqueDto): Promise<ResultadoMutacao> => {
     setCarregando(true);
     setErro(null);
     setErrosValidacao(null);
     try {
       await servicoEstoque.criarLote(dto);
-      return true;
+      return { ok: true };
     } catch (e) {
-      setErro(extrairMensagemErroApi(e));
+      const falha = capturarErroMutacao(e, MSG_ERRO.lote);
+      if (!falha.ok) setErro(falha.mensagem);
       if (e instanceof ErroApi && e.errors) {
         setErrosValidacao(e.extrairMensagemErros());
       }
-      return false;
+      return falha;
     } finally {
       setCarregando(false);
     }
   }, []);
 
-  const registrarRetirada = useCallback(async (dto: RetiradaEstoqueDto) => {
-    setCarregando(true);
-    setErro(null);
-    setErrosValidacao(null);
-    try {
-      await servicoEstoque.registrarRetirada(dto);
-      return true;
-    } catch (e) {
-      setErro(extrairMensagemErroApi(e));
-      if (e instanceof ErroApi && e.errors) {
-        setErrosValidacao(e.extrairMensagemErros());
+  const registrarRetirada = useCallback(
+    async (dto: RetiradaEstoqueDto): Promise<ResultadoRetirada> => {
+      setCarregando(true);
+      setErro(null);
+      setErrosValidacao(null);
+      try {
+        await servicoEstoque.registrarRetirada(dto);
+        return { ok: true };
+      } catch (e) {
+        const falha = capturarErroMutacao(e, MSG_ERRO.retirada);
+        // 409 sinaliza lote vencido: o backend exige confirmação explícita do usuário.
+        const loteVencido = e instanceof ErroApi && e.statusCode === 409;
+        if (!loteVencido && !falha.ok) setErro(falha.mensagem);
+        if (e instanceof ErroApi && e.errors) {
+          setErrosValidacao(e.extrairMensagemErros());
+        }
+        return { ...falha, loteVencido };
+      } finally {
+        setCarregando(false);
       }
-      return false;
-    } finally {
-      setCarregando(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   return { criarLote, registrarRetirada, carregando, erro, errosValidacao };
 }

@@ -1,7 +1,9 @@
 using Backend.Models;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 
 namespace Backend.Controllers;
 
@@ -12,12 +14,18 @@ public class AuthController : ControllerBase
     private readonly IAuthService _authService;
     private readonly IRefreshTokenService _refreshTokenService;
     private readonly ILogger<AuthController> _logger;
+    private readonly IWebHostEnvironment _environment;
 
-    public AuthController(IAuthService authService, IRefreshTokenService refreshTokenService, ILogger<AuthController> logger)
+    public AuthController(
+        IAuthService authService,
+        IRefreshTokenService refreshTokenService,
+        ILogger<AuthController> logger,
+        IWebHostEnvironment environment)
     {
         _authService = authService;
         _refreshTokenService = refreshTokenService;
         _logger = logger;
+        _environment = environment;
     }
 
     [HttpPost("login")]
@@ -41,10 +49,10 @@ public class AuthController : ControllerBase
 
             if (result?.TokenResponse == null)
             {
-                return Unauthorized(new ErrorResponse
+                return BadRequest(new ErrorResponse
                 {
                     Title = "Acesso não autorizado",
-                    Status = StatusCodes.Status401Unauthorized,
+                    Status = StatusCodes.Status400BadRequest,
                     Details = "Usuário ou senha inválidos."
                 });
             }
@@ -57,24 +65,13 @@ public class AuthController : ControllerBase
                 result.Usuario
             });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (ArgumentNullException ex)
         {
-            return Unauthorized(new ErrorResponse
+            return BadRequest(new ErrorResponse
             {
                 Title = "Acesso não autorizado",
-                Status = StatusCodes.Status401Unauthorized,
-                Details = ex.Message ?? "Usuário inativo. Favor contatar o suporte/administradores."
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erro interno ao processar login para {Login}.", request.Login);
-
-            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
-            {
-                Title = "Erro interno no servidor",
-                Status = StatusCodes.Status500InternalServerError,
-                Details = "Ocorreu um erro inesperado. Tente novamente mais tarde."
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message
             });
         }
     }
@@ -88,7 +85,7 @@ public class AuthController : ControllerBase
 
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                throw new UnauthorizedAccessException();
+                throw new ArgumentNullException();
             }
 
             var result = await _authService.RefreshTokenAsync(refreshToken, cancellationToken);
@@ -97,7 +94,7 @@ public class AuthController : ControllerBase
 
             return Ok(result.AccessToken);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (ArgumentNullException ex)
         {
             return Unauthorized(new ErrorResponse
             {
@@ -118,14 +115,14 @@ public class AuthController : ControllerBase
 
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                throw new UnauthorizedAccessException();
+                throw new ArgumentNullException();
             }
 
             await _refreshTokenService.RevokeRefreshTokenAsync(refreshToken);
 
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (ArgumentNullException ex)
         {
             return Unauthorized(new ErrorResponse
             {
@@ -140,11 +137,22 @@ public class AuthController : ControllerBase
     {
         var cookieOptions = new CookieOptions
         {
-            HttpOnly = true, 
-            Secure = true, 
-            SameSite = SameSiteMode.None,
-            Expires = refreshToken.ExpiresAt
+            HttpOnly = true,
+            Path = "/",
+            Expires = refreshToken.ExpiresAt,
         };
+
+        if (_environment.IsDevelopment())
+        {
+            cookieOptions.Secure = false;
+            cookieOptions.SameSite = SameSiteMode.Lax;
+        }
+        else
+        {
+            cookieOptions.Secure = true;
+            cookieOptions.SameSite = SameSiteMode.None;
+        }
+
         Response.Cookies.Append("refreshToken", refreshToken.TokenHash, cookieOptions);
     }
 }

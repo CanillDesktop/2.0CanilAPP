@@ -46,13 +46,18 @@ export function estilosLabelFiltro(cores: CoresApp) {
   };
 }
 
-export function estilosCampoFormulario(cores: CoresApp) {
+export function estilosCampoFormulario(cores: CoresApp, opcoes?: { semAnelFoco?: boolean }) {
   return {
     '& .MuiInputLabel-root': {
       color: cores.textMuted,
+      backgroundColor: cores.bgCard,
+      px: 0.5,
     },
     '& .MuiInputLabel-root.Mui-focused': {
       color: cores.focus,
+    },
+    '& .MuiInputLabel-root.MuiInputLabel-shrink': {
+      backgroundColor: cores.bgCard,
     },
     '& .MuiInputBase-input': {
       color: cores.textPrimary,
@@ -64,7 +69,7 @@ export function estilosCampoFormulario(cores: CoresApp) {
       minHeight: 54,
       borderRadius: 2,
       backgroundColor: cores.bgInput,
-      transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+      transition: 'border-color 0.2s ease',
       '& .MuiOutlinedInput-notchedOutline': {
         borderColor: cores.borderForte,
       },
@@ -73,8 +78,14 @@ export function estilosCampoFormulario(cores: CoresApp) {
       },
       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
         borderColor: cores.focus,
-        boxShadow: `0 0 0 2px ${cores.focusRing}`,
+        boxShadow: opcoes?.semAnelFoco ? 'none' : `0 0 0 2px ${cores.focusRing}`,
       },
+    },
+    '& input:-webkit-autofill, & input:-webkit-autofill:hover, & input:-webkit-autofill:focus': {
+      WebkitBoxShadow: `0 0 0 100px ${cores.bgInput} inset`,
+      WebkitTextFillColor: cores.textPrimary,
+      caretColor: cores.textPrimary,
+      transition: 'background-color 9999s ease-out 0s',
     },
   };
 }

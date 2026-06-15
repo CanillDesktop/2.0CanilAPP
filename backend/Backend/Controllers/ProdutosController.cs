@@ -1,12 +1,13 @@
+using Backend.DTOs;
 using Backend.DTOs.Produtos;
 using Backend.Exceptions;
+using Backend.Filtro.Produtos;
 using Backend.Models;
 using Backend.Models.Produtos;
+using Backend.Pagination;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Backend.Pagination;
 
 namespace Backend.Controllers
 {
@@ -24,15 +25,15 @@ namespace Backend.Controllers
             _logger = logger;
         }
 
-        [HttpGet("pagination")]
-        public async Task<ActionResult<ProdutosListaPaginadaDTO>> GetPagination(
-            [FromQuery] ProdutosFiltroDTO? filtro,
-            [FromQuery] ProdutosParameters? produtosParameters,
+        [HttpGet]
+        public async Task<ActionResult<ItemComEstoqueListaPaginadaDTO<ProdutosLeituraDTO>>> Get(
+            [FromQuery] ProdutosFiltro? filtro,
+            [FromQuery] ItensPaginationParameters? paginationParameters,
             CancellationToken cancellationToken)
         {
             var resultado = await _service.BuscarPaginadoAsync(
-                filtro ?? new ProdutosFiltroDTO(),
-                produtosParameters ?? new ProdutosParameters(),
+                filtro ?? new ProdutosFiltro(),
+                paginationParameters ?? new ItensPaginationParameters(),
                 cancellationToken);
 
             return Ok(resultado);
@@ -90,6 +91,15 @@ namespace Backend.Controllers
                 var produtoAtualizado = await _service.AtualizarAsync(id, dto);
 
                 return Ok(produtoAtualizado);
+            }
+            catch (ModelIncompletaException ex)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Title = "Falha ao atualizar produto",
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message ?? "Um ou mais campos obrigatórios não foram preenchidos"
+                });
             }
             catch (ArgumentNullException ex)
             {

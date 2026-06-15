@@ -20,9 +20,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
-import { listarInsumosApi } from '../../insumos/api/insumosApi';
-import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
-import { listarProdutosPaginadosApi } from '../../produtos/api/produtosApi';
+import { larguraConteudoPagina, paddingPaginaShell } from '../../../shared/theme/estilosLayoutPagina';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
+import { listarTodosInsumosParaEstoqueApi } from '../../insumos/api/insumosApi';
+import { listarTodosMedicamentosParaEstoqueApi } from '../../medicamentos/api/medicamentosApi';
+import { listarTodosProdutosParaEstoqueApi } from '../../produtos/api/produtosApi';
 import { AlertaCard } from '../components/AlertaCard';
 import { BuscaCategoriaTabs } from '../components/BuscaCategoriaTabs';
 import { ResumoItensCadastrados, type ContagemPorClasse } from '../components/ResumoItensCadastrados';
@@ -83,12 +85,11 @@ export function DashboardPage() {
       setCarregando(true);
       setErroCarregamento(null);
       try {
-        const [produtosPaginado, medicamentos, insumos] = await Promise.all([
-          listarProdutosPaginadosApi(undefined, { pageNumber: 1, pageSize: 50 }),
-          listarMedicamentosApi(),
-          listarInsumosApi(),
+        const [produtos, medicamentos, insumos] = await Promise.all([
+          listarTodosProdutosParaEstoqueApi(),
+          listarTodosMedicamentosParaEstoqueApi(),
+          listarTodosInsumosParaEstoqueApi(),
         ]);
-        const produtos = produtosPaginado.items;
         if (!ativo) return;
         setContagemPorOrigem({
           produtos: produtos.length,
@@ -140,7 +141,7 @@ export function DashboardPage() {
             status,
             ultimaMovimentacao: maiorDataMovimentacao
               ? maiorDataMovimentacao.toLocaleDateString('pt-BR')
-              : 'Sem movimentacao',
+              : 'Sem movimentação',
             validadeMs: menorValidade ? menorValidade.getTime() : null,
             movimentacaoMs: maiorDataMovimentacao ? maiorDataMovimentacao.getTime() : null,
           } satisfies LinhaOperacionalEstoque;
@@ -150,7 +151,7 @@ export function DashboardPage() {
         setLinhasOperacionais(itens);
       } catch {
         if (!ativo) return;
-        setErroCarregamento('Nao foi possivel carregar os estoques atuais do backend.');
+        setErroCarregamento(MSG_ERRO.carregarEstoque);
         setContagemPorOrigem(contagemInicial);
         setTotalItens(0);
         setLinhasOperacionais([]);
@@ -266,9 +267,8 @@ export function DashboardPage() {
   return (
     <Box
       sx={{
-        px: { xs: SPACING.sm, sm: SPACING.md, md: SPACING.lg },
-        pt: SPACING.sm,
-        pb: SPACING.lg,
+        ...paddingPaginaShell,
+        ...larguraConteudoPagina,
         backgroundColor: cores.bgConteudo,
         minHeight: '100%',
       }}
@@ -291,7 +291,7 @@ export function DashboardPage() {
             <Stack spacing={SPACING.lg} sx={{ p: 0 }}>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary, mb: SPACING.sm }}>
-                  Acoes principais
+                  Ações principais
                 </Typography>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={SPACING.sm}>
                   <Button

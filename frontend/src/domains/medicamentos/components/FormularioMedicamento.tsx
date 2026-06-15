@@ -44,7 +44,6 @@ const OPCOES_PUBLICO_ALVO = [
 const estadoInicialFormulario = () => ({
   prioridade: 0,
   descricaoMedicamento: '',
-  lote: '',
   quantidade: 0,
   dataEntrega: new Date().toISOString().slice(0, 10),
   nfe: '',
@@ -78,10 +77,9 @@ export function FormularioMedicamento() {
     if (!Number.isFinite(form.nivelMinimoEstoque) || form.nivelMinimoEstoque < 0) return false;
     if (!form.cadastrarEstoqueInicial) return true;
     return (
-      form.lote.trim().length > 0 &&
       form.dataEntrega.trim().length > 0 &&
       Number.isFinite(form.quantidade) &&
-      form.quantidade >= 0
+      form.quantidade > 0
     );
   }, [form]);
 
@@ -89,7 +87,6 @@ export function FormularioMedicamento() {
     return {
       prioridade: form.prioridade,
       descricao: form.descricaoMedicamento,
-      lote: form.cadastrarEstoqueInicial ? form.lote : null,
       quantidade: form.cadastrarEstoqueInicial ? form.quantidade : 0,
       dataEntrega: new Date(form.dataEntrega).toISOString(),
       nfe: form.nfe,
@@ -105,8 +102,8 @@ export function FormularioMedicamento() {
     e.preventDefault();
     if (!passoEstoqueValido || carregando) return;
 
-    const ok = await criar(montarDto());
-    if (!ok) return;
+    const resultado = await criar(montarDto());
+    if (!resultado.ok) return;
 
     setSucesso({ nome: form.nomeComercial.trim() });
   }
@@ -248,15 +245,10 @@ export function FormularioMedicamento() {
               >
                 <Collapse in={form.cadastrarEstoqueInicial}>
                   <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        required={form.cadastrarEstoqueInicial}
-                        label="Lote inicial"
-                        value={form.lote}
-                        onChange={(e) => setForm((p) => ({ ...p, lote: e.target.value }))}
-                        sx={sxCampo}
-                      />
+                    <Grid size={12}>
+                      <Typography variant="body2" sx={{ color: estilos.cores.textMuted }}>
+                        O número do lote é gerado automaticamente pelo sistema ao salvar.
+                      </Typography>
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField

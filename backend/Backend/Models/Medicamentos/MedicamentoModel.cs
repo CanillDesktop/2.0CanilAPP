@@ -10,7 +10,7 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
 {
     public string Codigo { get; set; } = string.Empty;
     public PrioridadeEnum Prioridade { get; set; }
-    public string? Descricao { get; set; } = string.Empty;
+    public string Descricao { get; set; } = string.Empty;
     public string Formula { get; set; } = string.Empty;
     public string NomeComercial { get; set; } = string.Empty;
     public PublicoAlvoMedicamentoEnum PublicoAlvo { get; set; }
@@ -36,7 +36,6 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
             Codigo = codigoMedicamento,
             DataEntrega = dto.DataEntrega,
             DataValidade = dto.DataValidade,
-            Lote = dto.Lote,
             NFe = dto.NFe,
             Quantidade = dto.Quantidade
         };
@@ -50,7 +49,7 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
         {
             Codigo = codigoMedicamento,
             Prioridade = dto.Prioridade,
-            Descricao = dto.Descricao?.ToLower(),
+            Descricao = dto.Descricao.ToLower(),
             Formula = dto.Formula,
             NomeComercial = dto.NomeComercial.ToUpper(),
             PublicoAlvo = dto.PublicoAlvo,

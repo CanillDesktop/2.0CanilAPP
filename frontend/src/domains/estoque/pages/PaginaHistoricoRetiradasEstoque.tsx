@@ -1,33 +1,15 @@
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined';
-import SearchIcon from '@mui/icons-material/Search';
 import TableViewOutlinedIcon from '@mui/icons-material/TableViewOutlined';
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
   Alert,
-  Autocomplete,
   Box,
   Button,
+  Card,
   CircularProgress,
-  Divider,
-  FormControlLabel,
-  IconButton,
-  InputAdornment,
   LinearProgress,
   Paper,
   Stack,
-  Switch,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TableSortLabel,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -36,10 +18,13 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
-import { estilosCampoFiltro } from '../../../shared/theme/estilosCampos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { HistoricoRetiradasDetalheDrawer } from '../components/historicoRetiradas/HistoricoRetiradasDetalheDrawer';
-import { HistoricoRetiradasStatusChip } from '../components/historicoRetiradas/HistoricoRetiradasStatusChip';
+import { HistoricoRetiradasListaConteudo } from '../components/historicoRetiradas/HistoricoRetiradasListaConteudo';
+import {
+  contarFiltrosHistoricoRetiradasAtivos,
+  PainelFiltrosHistoricoRetiradas,
+} from '../components/historicoRetiradas/PainelFiltrosHistoricoRetiradas';
 import { exportarRetiradasPaginaComoCsv } from '../components/historicoRetiradas/historicoRetiradasExport';
 import { servicoEstoque } from '../services/servicoEstoque';
 import { ErroApi } from '../../../infrastructure/http/erroApi';
@@ -52,9 +37,7 @@ import {
   formatarFaixaPeriodoBrasilia,
   inicioDiaBrasiliaParaUtc,
   intervaloPadraoUltimosDiasBrasilia,
-  rotuloFusoBrasilia,
 } from '../../../shared/utils/fusoBrasilia';
-import { HistoricoRetiradasCelulaData } from '../utils/historicoRetiradasDataFormat';
 
 /** Cartão KPI compacto mantendo valores do backend intactos */
 function KpiResumoAudit({
@@ -93,13 +76,13 @@ export function PaginaHistoricoRetiradasEstoque() {
   const tema = useTheme();
   const { cores } = useTemaApp();
   const estilos = useEstilosListagem();
-  const sxCampoFiltro = estilosCampoFiltro(cores);
   const sxPaperFiltro = {
     bgcolor: cores.bgCard,
     border: `1px solid ${cores.border}`,
   };
   const { estado, carregar } = useHistoricoRetiradasPaginado();
   const [usuariosResumo, setUsuariosResumo] = useState<UsuarioResumoFiltroDto[]>([]);
+  const [filtrosExpandidos, setFiltrosExpandidos] = useState(false);
 
   const [usarIntervaloLivre, setUsarIntervaloLivre] = useState(false);
   const [periodoRapido, setPeriodoRapido] = useState<PeriodoRapidoRetiradasDto>('ULTIMOS_30_DIAS');
@@ -170,6 +153,27 @@ export function PaginaHistoricoRetiradasEstoque() {
     if (!d) return null;
     return formatarFaixaPeriodoBrasilia(d.dataInicioUtcAplicada, d.dataFimUtcInclusiveAplicada);
   }, [estado.dados]);
+
+  const filtrosAtivos = useMemo(
+    () =>
+      contarFiltrosHistoricoRetiradasAtivos({
+        usarIntervaloLivre,
+        periodoRapido,
+        idRetirante,
+        idRecebedor,
+        termoBusca,
+      }),
+    [usarIntervaloLivre, periodoRapido, idRetirante, idRecebedor, termoBusca],
+  );
+
+  function aoAlternarIntervaloLivre(ativo: boolean) {
+    setUsarIntervaloLivre(ativo);
+    if (ativo) {
+      const { ini, fim } = intervaloPadraoUltimosDiasBrasilia(30);
+      setDataIni(ini);
+      setDataFim(fim);
+    }
+  }
 
   const recarregar = useCallback(async () => {
     const filtro = montarFiltro();
@@ -246,23 +250,12 @@ export function PaginaHistoricoRetiradasEstoque() {
           backgroundColor: fundoSticky,
           borderBottom: 1,
           borderColor: cores.border,
-          mx: -0.75,
-          px: 0.75,
           pt: 0.75,
           pb: 1.75,
           mb: 2,
         }}
       >
-        <Paper
-          sx={{
-            position: 'relative',
-            p: 2.5,
-            mb: metricas ? 2 : 0,
-            borderRadius: 2,
-            overflow: 'hidden',
-            ...sxPaperFiltro,
-          }}
-        >
+        <Card sx={{ ...estilos.cardTabela, p: { xs: 2, sm: 2.5 }, mb: metricas ? 2 : 0, position: 'relative', overflow: 'hidden' }}>
           {estado.carregando && (
             <LinearProgress
               sx={{
@@ -271,149 +264,33 @@ export function PaginaHistoricoRetiradasEstoque() {
                 left: 0,
                 right: 0,
                 height: 2,
-                borderRadius: '2px 2px 0 0',
+                borderRadius: '12px 12px 0 0',
               }}
             />
           )}
-          <Stack spacing={2.2}>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'center' } }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={usarIntervaloLivre}
-                    onChange={(_, c) => {
-                      setUsarIntervaloLivre(c);
-                      if (c) {
-                        const { ini, fim } = intervaloPadraoUltimosDiasBrasilia(30);
-                        setDataIni(ini);
-                        setDataFim(fim);
-                      }
-                    }}
-                  />
-                }
-                label={`Intervalo livre (${rotuloFusoBrasilia})`}
-                sx={{ color: cores.textPrimary, '& .MuiFormControlLabel-label': { color: cores.textPrimary } }}
-              />
-              {!usarIntervaloLivre && (
-                <ToggleButtonGroup
-                  exclusive
-                  value={periodoRapido}
-                  onChange={(_, v) => v != null && setPeriodoRapido(v)}
-                  size="small"
-                  sx={{
-                    flexWrap: 'wrap',
-                    '& .MuiToggleButton-root': {
-                      color: cores.textMuted,
-                      borderColor: cores.borderForte,
-                      '&.Mui-selected': {
-                        color: cores.textPrimary,
-                        bgcolor: cores.hoverSurface,
-                        borderColor: cores.focus,
-                      },
-                    },
-                  }}
-                >
-                  <ToggleButton value="HOJE">Hoje</ToggleButton>
-                  <ToggleButton value="ULTIMOS_7_DIAS">Últimos 7 dias</ToggleButton>
-                  <ToggleButton value="ULTIMOS_30_DIAS">Últimos 30 dias</ToggleButton>
-                </ToggleButtonGroup>
-              )}
-            </Stack>
-
-            {faixaTituloHumano && (
-              <Typography variant="caption" sx={{ color: cores.textSecondary }}>
-                Período amostrado nesta consulta ({rotuloFusoBrasilia}): <strong>{faixaTituloHumano}</strong>. Os
-                atalhos «Hoje» e «Últimos N dias» também seguem o calendário de Brasília.
-              </Typography>
-            )}
-
-            {usarIntervaloLivre && (
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <TextField
-                  label={`Data inicial (${rotuloFusoBrasilia})`}
-                  type="date"
-                  size="small"
-                  value={dataIni}
-                  onChange={(e) => setDataIni(e.target.value)}
-                  fullWidth
-                  sx={sxCampoFiltro}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                />
-                <TextField
-                  label={`Data final (${rotuloFusoBrasilia})`}
-                  type="date"
-                  size="small"
-                  value={dataFim}
-                  onChange={(e) => setDataFim(e.target.value)}
-                  fullWidth
-                  sx={sxCampoFiltro}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                />
-              </Stack>
-            )}
-
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-              <Autocomplete
-                options={usuariosResumo}
-                getOptionLabel={(o) => o.nomeExibicao}
-                value={usuariosResumo.find((u) => u.id === idRetirante) ?? null}
-                onChange={(_, v) => setIdRetirante(v?.id ?? null)}
-                renderInput={(params) => (
-                  <TextField {...params} label="Quem retirou" size="small" sx={sxCampoFiltro} />
-                )}
-                slotProps={{
-                  paper: { sx: { bgcolor: cores.bgCard, border: `1px solid ${cores.border}` } },
-                }}
-                sx={{ flex: 1, minWidth: 200 }}
-              />
-              <Autocomplete
-                options={usuariosResumo}
-                getOptionLabel={(o) => o.nomeExibicao}
-                value={usuariosResumo.find((u) => u.id === idRecebedor) ?? null}
-                onChange={(_, v) => setIdRecebedor(v?.id ?? null)}
-                renderInput={(params) => (
-                  <TextField {...params} label="Destinatário (quem recebeu)" size="small" sx={sxCampoFiltro} />
-                )}
-                slotProps={{
-                  paper: { sx: { bgcolor: cores.bgCard, border: `1px solid ${cores.border}` } },
-                }}
-                sx={{ flex: 1, minWidth: 200 }}
-              />
-            </Stack>
-
-            <TextField
-              size="small"
-              label="Busca"
-              placeholder="Buscar por ID, produto, lote, usuário ou observação..."
-              value={termoBusca}
-              onChange={(e) => setTermoBusca(e.target.value)}
-              fullWidth
-              sx={{
-                ...sxCampoFiltro,
-                '& .MuiFormHelperText-root': { color: cores.textMuted },
-              }}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: cores.textMuted, opacity: 0.85 }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: estado.carregando ? (
-                    <InputAdornment position="end">
-                      <CircularProgress size={18} />
-                    </InputAdornment>
-                  ) : undefined,
-                },
-              }}
-              helperText="A busca abrange código, nome, lote, retirante, destinatário, observações e IDs numéricos."
-            />
-
-            {usarIntervaloLivre && dataIni > dataFim && (
-              <Alert severity="warning">A data inicial não pode ser maior que a data final.</Alert>
-            )}
-          </Stack>
-        </Paper>
+          <PainelFiltrosHistoricoRetiradas
+            expandido={filtrosExpandidos}
+            onExpandidoChange={setFiltrosExpandidos}
+            carregando={estado.carregando}
+            usarIntervaloLivre={usarIntervaloLivre}
+            onUsarIntervaloLivreChange={aoAlternarIntervaloLivre}
+            periodoRapido={periodoRapido}
+            onPeriodoRapidoChange={setPeriodoRapido}
+            dataIni={dataIni}
+            onDataIniChange={setDataIni}
+            dataFim={dataFim}
+            onDataFimChange={setDataFim}
+            idRetirante={idRetirante}
+            onIdRetiranteChange={setIdRetirante}
+            idRecebedor={idRecebedor}
+            onIdRecebedorChange={setIdRecebedor}
+            termoBusca={termoBusca}
+            onTermoBuscaChange={setTermoBusca}
+            usuariosResumo={usuariosResumo}
+            faixaTituloHumano={faixaTituloHumano}
+            filtrosAtivos={filtrosAtivos}
+          />
+        </Card>
 
         {metricas && (
           <Stack spacing={2}>
@@ -530,187 +407,23 @@ export function PaginaHistoricoRetiradasEstoque() {
           </Typography>
         </Paper>
       ) : exibirTabela ? (
-        <Box sx={{ position: 'relative' }}>
-          {estado.carregando && dados != null && (
-            <LinearProgress
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                zIndex: 3,
-              }}
-            />
-          )}
-          <TableContainer component={Paper} sx={{ borderRadius: 2, ...sxPaperFiltro }}>
-            <Table size="medium" stickyHeader>
-              <TableHead>
-                <TableRow sx={{ '& th': { fontWeight: 700, bgcolor: cores.bgCabecalhoTabela, color: cores.textMuted } }}>
-                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' }, width: 72 }}>
-                    ID
-                  </TableCell>
-                  <TableCell sortDirection={ordenacaoDataAsc ? 'asc' : 'desc'} sx={{ minWidth: 160 }}>
-                    <TableSortLabel
-                      active
-                      direction={ordenacaoDataAsc ? 'asc' : 'desc'}
-                      onClick={() => setOrdenacaoDataAsc((v) => !v)}
-                      sx={{ '& .MuiTableSortLabel-icon': { ml: -0.5 } }}
-                    >
-                      Data e horário
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sx={{ minWidth: 180 }}>Produto</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Lote</TableCell>
-                  <TableCell align="right">Qtd</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Retirou</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Recebeu</TableCell>
-                  <TableCell
-                    sx={{ display: { xs: 'none', md: 'table-cell' }, maxWidth: 200 }}
-                  >
-                    Observação
-                  </TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                    Ações
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {itensPagina.map((r) => (
-                  <TableRow
-                    key={r.id}
-                    hover
-                    tabIndex={0}
-                    role="button"
-                    selected={detalheSelecionado?.id === r.id}
-                    onClick={() => setDetalheSelecionado(r)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setDetalheSelecionado(r);
-                      }
-                    }}
-                    sx={{
-                      cursor: 'pointer',
-                      transition: tema.transitions.create(['background-color', 'transform'], {
-                        duration: tema.transitions.duration.shortest,
-                      }),
-                      '&:hover': { bgcolor: cores.hoverSurface },
-                      '&.Mui-selected': { bgcolor: cores.hoverSurfaceStrong },
-                      '& .MuiTableCell-root': { color: cores.textPrimary, borderColor: cores.borderSuave },
-                    }}
-                  >
-                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{r.id}</TableCell>
-                    <TableCell>
-                      <HistoricoRetiradasCelulaData iso={r.dataHoraRetirada} />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 750, color: cores.textPrimary }}>
-                        {r.nomeProduto}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: cores.textMuted }}>
-                        Cód. {r.codigo}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: cores.textMuted, display: { xs: 'block', sm: 'none' } }}>
-                        Ref. #{r.id}
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }, fontVariantNumeric: 'tabular-nums' }}>
-                      {r.lote}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Typography sx={{ fontWeight: 820, fontSize: '1rem', letterSpacing: 0.2 }} component="span">
-                        {r.quantidade}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: cores.textMuted, display: { xs: 'block', lg: 'none' } }}>
-                        unid.
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                      <Typography variant="body2" sx={{ color: cores.textPrimary }}>{r.usuarioRetiranteExibicao}</Typography>
-                      {r.idUsuarioRetirante != null && (
-                        <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block' }}>
-                          ID usuário {r.idUsuarioRetirante}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                      <Typography variant="body2" sx={{ color: cores.textPrimary }}>{r.usuarioRecebedorExibicao}</Typography>
-                      {r.idUsuarioRecebedor != null && (
-                        <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block' }}>
-                          ID usuário {r.idUsuarioRecebedor}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' }, maxWidth: 220 }}>
-                      <Tooltip title={r.observacao?.trim() ? r.observacao : '—'} placement="top-start">
-                        <Typography
-                          variant="body2"
-                          noWrap
-                          sx={{ opacity: r.observacao?.trim().length ? 1 : 0.45 }}
-                        >
-                          {r.observacao?.trim().length ? r.observacao : '—'}
-                        </Typography>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell>
-                      <HistoricoRetiradasStatusChip status={r.status} />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Detalhes">
-                        <IconButton
-                          aria-label={`Detalhes da retirada ${r.id}`}
-                          edge="end"
-                          size="small"
-                          color="primary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDetalheSelecionado(r);
-                          }}
-                        >
-                          <VisibilityOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <Divider sx={{ mb: -0.01 }} />
-
-          <TablePagination
-            component={Paper}
-            elevation={2}
-            rowsPerPageOptions={[10, 20, 50, 100]}
-            count={estado.dados?.totalCount ?? 0}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={(_, p) => setPage(p)}
-            onRowsPerPageChange={(e) => {
-              setRowsPerPage(parseInt(e.target.value, 10));
-              setPage(0);
-            }}
-            labelRowsPerPage="Linhas por página"
-            labelDisplayedRows={({ from, to, count }) =>
-              `${from}-${to} de ${count !== -1 ? count : 'mais de ' + to}`
-            }
-            sx={{
-              ...estilos.paginacao,
-              borderTopLeftRadius: 2,
-              borderTopRightRadius: 2,
-              bgcolor: cores.bgCard,
-              border: `1px solid ${cores.border}`,
-            }}
-          />
-
-          {/* Em telas pequenas, use o drawer para todas as informações */}
-          <Typography variant="caption" sx={{ color: cores.textMuted, display: { xs: 'block', lg: 'none' }, mt: 1 }}>
-            Algumas colunas ficam apenas em telas maiores para manter margem útil ao operador. Toque uma linha para ver
-            tudo no painel de detalhes.
-          </Typography>
-        </Box>
+        <HistoricoRetiradasListaConteudo
+          itens={itensPagina}
+          totalCount={estado.dados?.totalCount ?? 0}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setPage}
+          onRowsPerPageChange={(n) => {
+            setRowsPerPage(n);
+            setPage(0);
+          }}
+          ordenacaoDataAsc={ordenacaoDataAsc}
+          onToggleOrdenacaoData={() => setOrdenacaoDataAsc((v) => !v)}
+          selecionadoId={detalheSelecionado?.id ?? null}
+          onSelecionar={setDetalheSelecionado}
+          carregando={estado.carregando && dados != null}
+          sxPaper={sxPaperFiltro}
+        />
       ) : null}
 
       <HistoricoRetiradasDetalheDrawer aberto={detalheSelecionado} aoFechar={() => setDetalheSelecionado(null)} />

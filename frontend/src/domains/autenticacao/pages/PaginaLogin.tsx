@@ -1,21 +1,34 @@
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicalServicesOutlinedIcon from '@mui/icons-material/MedicalServicesOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
-import { Box, Chip, Stack, Typography } from '@mui/material';
+import { Alert, Box, Chip, Stack, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { BotaoAlternarTema } from '../../../shared/components/BotaoAlternarTema';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
+import { redefinirEstadoEncerramentoSessao } from '../services/gerenciadorRenovacaoSessao';
 import { FormularioLogin } from '../components/FormularioLogin';
 
 const MotionBox = motion(Box);
 
 export function PaginaLogin() {
   const { autenticado, recarregarSessao } = useAutenticacao();
-  const { cores } = useTemaApp();
+  const { cores, modo } = useTemaApp();
+  const logoLogin =
+    modo === 'dark' ? '/branding/canil_logo_dark.png?v=2' : '/branding/canil_logo_light.png';
   const local = useLocation();
-  const destino = (local.state as { de?: string } | null)?.de ?? '/';
+  const params = new URLSearchParams(local.search);
+  const destinoQuery = params.get('de');
+  const destino = (local.state as { de?: string } | null)?.de ?? destinoQuery ?? '/';
+  const avisoLogout = (local.state as { avisoLogout?: string } | null)?.avisoLogout;
+  const sessaoExpirada = params.get('motivo') === 'sessao-expirada';
+
+  useEffect(() => {
+    redefinirEstadoEncerramentoSessao();
+  }, []);
 
   if (autenticado) return <Navigate to={destino} replace />;
 
@@ -53,12 +66,18 @@ export function PaginaLogin() {
             <Typography variant="overline" sx={{ color: cores.focus, fontWeight: 800, letterSpacing: 1.6 }}>
               CanilApp Web
             </Typography>
-            <Typography
-              variant="h3"
-              sx={{ maxWidth: 560, mt: 1, fontWeight: 800, lineHeight: 1.05, letterSpacing: -1.2, color: cores.textPrimary }}
-            >
-              Gestao de estoque com controle profissional e seguro.
-            </Typography>
+            <Box
+              component="img"
+              src={logoLogin}
+              alt="Canil Juiz de Fora — gestão de estoque"
+              sx={{
+                display: 'block',
+                width: '100%',
+                maxWidth: 480,
+                mt: 1,
+                height: 'auto',
+              }}
+            />
             <Typography variant="body1" sx={{ maxWidth: 560, mt: 2, color: cores.textSecondary }}>
               Acesse produtos, medicamentos, insumos e o dashboard usando o mesmo ambiente visual padronizado.
             </Typography>
@@ -101,7 +120,19 @@ export function PaginaLogin() {
           </Stack>
         </Stack>
 
-        <FormularioLogin aoAutenticar={recarregarSessao} />
+        <Stack sx={{ gap: 2, width: '100%' }}>
+          {sessaoExpirada ? (
+            <Alert severity="warning" sx={{ borderRadius: 2 }}>
+              {MSG_ERRO.sessaoExpirada}
+            </Alert>
+          ) : null}
+          {avisoLogout ? (
+            <Alert severity="warning" sx={{ borderRadius: 2 }}>
+              {avisoLogout}
+            </Alert>
+          ) : null}
+          <FormularioLogin aoAutenticar={recarregarSessao} />
+        </Stack>
       </MotionBox>
     </Box>
   );

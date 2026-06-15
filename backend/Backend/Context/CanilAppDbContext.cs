@@ -1,4 +1,5 @@
 ﻿using Backend.Models;
+using Backend.Models.CodigoAcesso;
 using Backend.Models.Insumos;
 using Backend.Models.Medicamentos;
 using Backend.Models.Produtos;
@@ -46,7 +47,9 @@ public class CanilAppDbContext : DbContext
     public DbSet<ItemNivelEstoqueModel> ItensNivelEstoque { get; set; }
     public DbSet<ItemEstoqueModel> ItensEstoque { get; set; }
     public DbSet<RetiradaEstoqueModel> RetiradaEstoque { get; set; }
-    public DbSet<RefreshToken> RefreshTokens { get; set; } 
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<CodigoAcessoModel> CodigoAcesso { get; set; }
+    public DbSet<ContadorLoteModel> ContadoresLote { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,6 +71,15 @@ public class CanilAppDbContext : DbContext
 
         modelBuilder.Entity<ItemEstoqueModel>()
             .Property(i => i.Versao)
+            .IsConcurrencyToken();
+
+        // Lote único: a geração é controlada pelo backend e nunca reutiliza números.
+        modelBuilder.Entity<ItemEstoqueModel>()
+            .HasIndex(i => i.Lote)
+            .IsUnique();
+
+        modelBuilder.Entity<ContadorLoteModel>()
+            .Property(c => c.Versao)
             .IsConcurrencyToken();
 
         modelBuilder.Entity<ItemNivelEstoqueModel>()
@@ -117,5 +129,14 @@ public class CanilAppDbContext : DbContext
         modelBuilder.Entity<RetiradaEstoqueModel>()
             .Property(r => r.Status)
             .HasMaxLength(48);
+
+        modelBuilder.Entity<CodigoAcessoModel>()
+            .HasData(new CodigoAcessoModel
+            {
+                Id = CodigoAcessoModel.IdRegistroUnico,
+                Codigo = CodigoAcessoModel.CodigoPadrao,
+                DataHoraAtualizacao = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                EditadoPor = "Sistema"
+            });
     }
 }

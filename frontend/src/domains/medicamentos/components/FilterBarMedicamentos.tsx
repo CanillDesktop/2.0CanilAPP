@@ -16,30 +16,45 @@ import {
 import { motion } from 'framer-motion';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { estilosCampoFiltro, estilosLabelFiltro } from '../../../shared/theme/estilosCampos';
+import {
+  OPCOES_PRIORIDADE_MEDICAMENTO_FILTRO,
+  OPCOES_PUBLICO_ALVO_MEDICAMENTO_FILTRO,
+} from '../constants/opcoesFiltroMedicamento';
+import type { MedicamentoStatusEstoqueFiltro } from '../types/tiposMedicamentos';
 
 const MotionButton = motion(Button);
 
-type StatusMedicamento = 'ativo' | 'baixo' | 'sem_estoque' | 'a_vencer';
-
 type FilterBarMedicamentosProps = {
   busca: string;
-  prioridade: string;
-  status: 'todos' | StatusMedicamento;
-  prioridades: string[];
+  prioridade: 'todas' | string;
+  publicoAlvo: 'todos' | string;
+  status: MedicamentoStatusEstoqueFiltro;
+  dataEntrega: string;
+  dataValidade: string;
   onBuscaChange: (valor: string) => void;
   onPrioridadeChange: (valor: string) => void;
-  onStatusChange: (valor: 'todos' | StatusMedicamento) => void;
+  onPublicoAlvoChange: (valor: string) => void;
+  onStatusChange: (valor: MedicamentoStatusEstoqueFiltro) => void;
+  onDataEntregaChange: (valor: string) => void;
+  onDataValidadeChange: (valor: string) => void;
+  onLimpar: () => void;
   onNovoMedicamento: () => void;
 };
 
 export function FilterBarMedicamentos({
   busca,
   prioridade,
+  publicoAlvo,
   status,
-  prioridades,
+  dataEntrega,
+  dataValidade,
   onBuscaChange,
   onPrioridadeChange,
+  onPublicoAlvoChange,
   onStatusChange,
+  onDataEntregaChange,
+  onDataValidadeChange,
+  onLimpar,
   onNovoMedicamento,
 }: FilterBarMedicamentosProps) {
   const { cores } = useTemaApp();
@@ -47,7 +62,7 @@ export function FilterBarMedicamentos({
   const labelSx = estilosLabelFiltro(cores);
 
   function handleStatusChange(e: SelectChangeEvent) {
-    onStatusChange(e.target.value as 'todos' | StatusMedicamento);
+    onStatusChange(e.target.value as MedicamentoStatusEstoqueFiltro);
   }
 
   return (
@@ -60,9 +75,9 @@ export function FilterBarMedicamentos({
       }}
     >
       <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 5 }}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <TextField
-            placeholder="Buscar por nome ou código"
+            placeholder="Buscar por código, descrição, fórmula, NF-e ou lote"
             variant="outlined"
             size="small"
             fullWidth
@@ -80,14 +95,37 @@ export function FilterBarMedicamentos({
             }}
           />
         </Grid>
-        <Grid size={{ xs: 6, md: 3 }}>
+        <Grid size={{ xs: 6, md: 2 }}>
           <FormControl size="small" fullWidth>
             <InputLabel sx={labelSx}>Prioridade</InputLabel>
-            <Select label="Prioridade" value={prioridade} onChange={(e) => onPrioridadeChange(e.target.value)} sx={inputSx}>
+            <Select
+              label="Prioridade"
+              value={prioridade}
+              onChange={(e) => onPrioridadeChange(e.target.value)}
+              sx={inputSx}
+            >
               <MenuItem value="todas">Todas</MenuItem>
-              {prioridades.map((p) => (
-                <MenuItem key={p} value={p}>
-                  Prioridade {p}
+              {OPCOES_PRIORIDADE_MEDICAMENTO_FILTRO.map((opcao) => (
+                <MenuItem key={opcao.valor} value={String(opcao.valor)}>
+                  {opcao.rotulo}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid size={{ xs: 6, md: 2 }}>
+          <FormControl size="small" fullWidth>
+            <InputLabel sx={labelSx}>Público-alvo</InputLabel>
+            <Select
+              label="Público-alvo"
+              value={publicoAlvo}
+              onChange={(e) => onPublicoAlvoChange(e.target.value)}
+              sx={inputSx}
+            >
+              <MenuItem value="todos">Todos</MenuItem>
+              {OPCOES_PUBLICO_ALVO_MEDICAMENTO_FILTRO.map((opcao) => (
+                <MenuItem key={opcao.valor} value={String(opcao.valor)}>
+                  {opcao.rotulo}
                 </MenuItem>
               ))}
             </Select>
@@ -129,6 +167,39 @@ export function FilterBarMedicamentos({
             >
               Novo medicamento
             </MotionButton>
+          </Box>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            size="small"
+            type="date"
+            label="Data de entrega"
+            value={dataEntrega}
+            onChange={(e) => onDataEntregaChange(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={inputSx}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            size="small"
+            type="date"
+            label="Data de validade"
+            value={dataValidade}
+            onChange={(e) => onDataValidadeChange(e.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+            sx={inputSx}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+            <Button variant="text" onClick={onLimpar} sx={{ color: cores.focus, fontWeight: 600, textTransform: 'none' }}>
+              Limpar filtros
+            </Button>
           </Box>
         </Grid>
       </Grid>

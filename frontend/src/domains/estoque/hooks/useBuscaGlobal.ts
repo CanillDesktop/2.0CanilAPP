@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { buscarGlobalApi, type BuscaGlobalItem } from '../services/buscaService';
 
 export function useBuscaGlobal(termo: string) {
@@ -28,7 +29,7 @@ export function useBuscaGlobal(termo: string) {
         })
         .catch(() => {
           if (requisicaoId.current !== idAtual) return;
-          setErro('Nao foi possivel buscar itens no momento.');
+          setErro(MSG_ERRO.buscaGlobal);
           setResultados([]);
         })
         .finally(() => {

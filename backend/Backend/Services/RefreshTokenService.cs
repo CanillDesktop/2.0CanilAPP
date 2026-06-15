@@ -35,7 +35,7 @@ namespace Backend.Services
 
             if (refreshToken == null || !refreshToken.IsActive)
             {
-                throw new UnauthorizedAccessException("Sessão inválida");
+                throw new ArgumentNullException(null, "Sessão inválida");
             }
 
             RevokeRefreshToken(refreshToken!);

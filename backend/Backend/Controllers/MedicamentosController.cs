@@ -1,10 +1,12 @@
+using Backend.DTOs;
 using Backend.DTOs.Medicamentos;
 using Backend.Exceptions;
+using Backend.Filtro.Medicamentos;
 using Backend.Models;
 using Backend.Models.Medicamentos;
+using Backend.Pagination;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -24,22 +26,17 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MedicamentoLeituraDTO>>> Get([FromQuery] MedicamentosFiltroDTO filtro)
+        public async Task<ActionResult<ItemComEstoqueListaPaginadaDTO<MedicamentoLeituraDTO>>> Get(
+            [FromQuery] MedicamentosFiltro? filtro,
+            [FromQuery] ItensPaginationParameters? paginationParameters,
+            CancellationToken cancellationToken)
         {
-            var filteredRequest = HttpContext.Request.GetDisplayUrl().Contains('?');
+            var resultado = await _service.BuscarPaginadoAsync(
+                filtro ?? new MedicamentosFiltro(),
+                paginationParameters ?? new ItensPaginationParameters(),
+                cancellationToken);
 
-            IEnumerable<MedicamentoLeituraDTO> result;
-
-            if (!filteredRequest || filtro == null)
-            {
-                result = (await _service.BuscarTodosAsync()).Select(p => (MedicamentoLeituraDTO)p);
-            }
-            else
-            {
-                result = (await _service.BuscarTodosAsync(filtro)).Select(p => (MedicamentoLeituraDTO)p);
-            }
-
-            return Ok(result);
+            return Ok(resultado);
         }
 
 
@@ -99,6 +96,15 @@ namespace Backend.Controllers
                 var medicamentoAtualizado = await _service.AtualizarAsync(id, dto);
 
                 return Ok(medicamentoAtualizado);
+            }
+            catch (ModelIncompletaException ex)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Title = "Falha ao atualizar medicamento",
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message ?? "Um ou mais campos obrigatórios não foram preenchidos"
+                });
             }
             catch (ArgumentNullException ex)
             {

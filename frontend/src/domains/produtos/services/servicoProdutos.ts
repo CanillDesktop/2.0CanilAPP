@@ -7,14 +7,14 @@ import {
 } from '../api/produtosApi';
 import type {
   ProdutoCadastroDto,
-  ProdutoFiltroDto,
+  ProdutoFiltro,
   ProdutoLeituraDto,
   ProdutoPaginacaoDto,
   ProdutosListaPaginadaDto,
 } from '../types/tiposProdutos';
 
 export const servicoProdutos = {
-  listarPaginado(filtro?: ProdutoFiltroDto, paginacao?: ProdutoPaginacaoDto): Promise<ProdutosListaPaginadaDto> {
+  listarPaginado(filtro?: ProdutoFiltro, paginacao?: ProdutoPaginacaoDto): Promise<ProdutosListaPaginadaDto> {
     return listarProdutosPaginadosApi(filtro, paginacao);
   },
   obterPorId(id: number): Promise<ProdutoLeituraDto> {

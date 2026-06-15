@@ -12,7 +12,7 @@ public interface IRetiradaEstoqueRepository
 
     Task<RetiradaEstoqueHistoricoConsulta> ConsultarHistoricoAsync(
         RetiradaEstoqueFiltroConsulta filtros,
-        RetiradaEstoqueParameters parameters,
+        RetiradaEstoquePaginationParameters parameters,
         CancellationToken cancellationToken = default);
 
     Task<RetiradaEstoqueHistoricoExportacaoConsulta> ListarHistoricoParaExportacaoAsync(

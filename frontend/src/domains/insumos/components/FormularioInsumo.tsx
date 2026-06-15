@@ -26,20 +26,14 @@ import type { EstadoNavegacaoListagem } from '../../../shared/types/navegacaoLis
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { useMutacaoInsumo } from '../hooks/useInsumos';
+import { OPCOES_UNIDADE_INSUMO } from '../constants/opcoesUnidadeInsumo';
 import type { InsumoCadastroDto } from '../types/tiposInsumos';
 
 const PASSOS = ['Identificação', 'Estoque e configurações'] as const;
 
-const OPCOES_UNIDADE = [
-  { valor: 1, rotulo: 'Unidade' },
-  { valor: 2, rotulo: 'Kg' },
-  { valor: 3, rotulo: 'Litro' },
-];
-
 const estadoInicialFormulario = () => ({
   descricaoSimplificada: '',
   descricaoDetalhada: '',
-  lote: '',
   quantidade: 0,
   dataEntrega: new Date().toISOString().slice(0, 10),
   nfe: '',
@@ -72,10 +66,9 @@ export function FormularioInsumo() {
     if (!Number.isFinite(form.nivelMinimoEstoque) || form.nivelMinimoEstoque < 0) return false;
     if (!form.cadastrarEstoqueInicial) return true;
     return (
-      form.lote.trim().length > 0 &&
       form.dataEntrega.trim().length > 0 &&
       Number.isFinite(form.quantidade) &&
-      form.quantidade >= 0
+      form.quantidade > 0
     );
   }, [form]);
 
@@ -83,7 +76,6 @@ export function FormularioInsumo() {
     return {
       descricaoSimplificada: form.descricaoSimplificada,
       descricaoDetalhada: form.descricaoDetalhada,
-      lote: form.cadastrarEstoqueInicial ? form.lote : null,
       quantidade: form.cadastrarEstoqueInicial ? form.quantidade : 0,
       dataEntrega: new Date(form.dataEntrega).toISOString(),
       nfe: form.nfe,
@@ -97,8 +89,8 @@ export function FormularioInsumo() {
     e.preventDefault();
     if (!passoEstoqueValido || carregando) return;
 
-    const ok = await criar(montarDto());
-    if (!ok) return;
+    const resultado = await criar(montarDto());
+    if (!resultado.ok) return;
 
     setSucesso({ nome: form.descricaoSimplificada.trim() });
   }
@@ -167,7 +159,7 @@ export function FormularioInsumo() {
                       value={form.unidade}
                       onChange={(e) => setForm((p) => ({ ...p, unidade: Number(e.target.value) }))}
                     >
-                      {OPCOES_UNIDADE.map((opcao) => (
+                      {OPCOES_UNIDADE_INSUMO.map((opcao) => (
                         <MenuItem key={opcao.valor} value={opcao.valor}>
                           {opcao.rotulo}
                         </MenuItem>
@@ -212,19 +204,15 @@ export function FormularioInsumo() {
               >
                 <Collapse in={form.cadastrarEstoqueInicial}>
                   <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        required={form.cadastrarEstoqueInicial}
-                        label="Lote inicial"
-                        value={form.lote}
-                        onChange={(e) => setForm((p) => ({ ...p, lote: e.target.value }))}
-                        sx={sxCampo}
-                      />
+                    <Grid size={12}>
+                      <Typography variant="body2" sx={{ color: estilos.cores.textMuted }}>
+                        O número do lote é gerado automaticamente pelo sistema ao salvar.
+                      </Typography>
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
+                        required={form.cadastrarEstoqueInicial}
                         type="number"
                         label="Quantidade inicial"
                         value={form.quantidade}
