@@ -1,5 +1,6 @@
 using Backend.Context;
 using Backend.Data;
+using Backend.Exceptions;
 using Backend.Models;
 using Backend.Repositories;
 using Backend.Repositories.Interfaces;
@@ -248,21 +249,38 @@ public class Program
             {
                 exception.Run(async context =>
                 {
-                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                    context.Response.ContentType = "application/json";
                     var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+                    var erro = feature?.Error;
 
-                    var message = app.Environment.IsDevelopment() ?
-                        (feature?.Error?.Message ?? "Erro interno do servidor")
-                        : "Erro interno do servidor";
+                    // Regras de negócio (exceções de domínio) são convertidas em respostas HTTP
+                    // padronizadas. Somente erros realmente inesperados retornam 500.
+                    var (status, titulo, detalhe) = erro switch
+                    {
+                        ExcecaoDeNegocio negocio => (negocio.StatusCode, negocio.Titulo, negocio.Message),
+                        ConflitoDeConcorrenciaEstoqueException concorrencia =>
+                            (StatusCodes.Status409Conflict, "Conflito ao atualizar estoque", concorrencia.Message),
+                        ModelIncompletaException incompleta =>
+                            (StatusCodes.Status400BadRequest, "Dados incompletos", incompleta.Message),
+                        _ => (
+                            StatusCodes.Status500InternalServerError,
+                            "Erro interno do servidor",
+                            app.Environment.IsDevelopment() ? (erro?.Message ?? "Erro interno do servidor") : "Erro interno do servidor")
+                    };
+
+                    context.Response.StatusCode = status;
+                    context.Response.ContentType = "application/json";
+
+                    if (status >= StatusCodes.Status500InternalServerError)
+                        Log.Error(erro, "Erro não tratado");
+                    else
+                        Log.Warning(erro, "Regra de negócio: {Detalhe}", detalhe);
 
                     var response = new ErrorResponse
                     {
-                        Title = "Erro interno do servidor",
-                        Status = context.Response.StatusCode,
-                        Details = message
+                        Title = titulo,
+                        Status = status,
+                        Details = detalhe
                     };
-                    Log.Error(feature?.Error, "Erro não tratado");
                     await context.Response.WriteAsJsonAsync(response);
                 });
             });

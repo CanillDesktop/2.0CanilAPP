@@ -1,4 +1,5 @@
-﻿using Backend.Models.Estoque;
+﻿using Backend.DTOs.Estoque;
+using Backend.Models.Estoque;
 
 namespace Backend.Services.Interfaces
 {
@@ -9,6 +10,12 @@ namespace Backend.Services.Interfaces
         Task<ItemEstoqueModel?> CriarAsync(ItemEstoqueModel model);
         Task<ItemEstoqueModel?> AtualizarAsync(string lote, ItemEstoqueModel model);
         Task<bool> DeletarAsync(string lote);
+
+        /// <summary>
+        /// Gera (pelo LoteGeradorService) o próximo lote e devolve também o código do item,
+        /// para a tela de cadastro exibir esses valores apenas para conferência.
+        /// </summary>
+        Task<ProximoLoteEstoqueDTO> GerarProximoLoteAsync(int itemId);
     }
 }
 

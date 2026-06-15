@@ -29,36 +29,65 @@ public class LoteGeradorService : ILoteGeradorService
         CategoriaEnum categoria,
         string descricaoSimples,
         CancellationToken cancellationToken = default)
-    {
-        var prefixo = "PRO"
-            + TextoNormalizador.PrimeirasLetras(DescricaoOuNome(categoria), 2)
-            + TextoNormalizador.PrimeirasLetras(descricaoSimples, 3);
-
-        return prefixo + await ProximoSequencialAsync("PRO", cancellationToken);
-    }
+        => PrefixoProduto(categoria, descricaoSimples) + await ProximoSequencialAsync("PRO", cancellationToken);
 
     public async Task<string> GerarLoteInsumoAsync(
         UnidadeInsumosEnum unidade,
         string descricaoSimplificada,
         CancellationToken cancellationToken = default)
-    {
-        var prefixo = "INS"
-            + TextoNormalizador.PrimeirasLetras(DescricaoOuNome(unidade), 3)
-            + TextoNormalizador.PrimeirasLetras(descricaoSimplificada, 3);
-
-        return prefixo + await ProximoSequencialAsync("INS", cancellationToken);
-    }
+        => PrefixoInsumo(unidade, descricaoSimplificada) + await ProximoSequencialAsync("INS", cancellationToken);
 
     public async Task<string> GerarLoteMedicamentoAsync(
         PublicoAlvoMedicamentoEnum publicoAlvo,
         string nomeComercial,
         CancellationToken cancellationToken = default)
-    {
-        var prefixo = "MED"
-            + TokenPublicoAlvo(publicoAlvo)
-            + TextoNormalizador.PrimeirasLetras(nomeComercial, 3);
+        => PrefixoMedicamento(publicoAlvo, nomeComercial) + await ProximoSequencialAsync("MED", cancellationToken);
 
-        return prefixo + await ProximoSequencialAsync("MED", cancellationToken);
+    public async Task<string> PreverProximoLoteProdutoAsync(
+        CategoriaEnum categoria,
+        string descricaoSimples,
+        CancellationToken cancellationToken = default)
+        => PrefixoProduto(categoria, descricaoSimples) + await PreverProximoSequencialAsync("PRO", cancellationToken);
+
+    public async Task<string> PreverProximoLoteInsumoAsync(
+        UnidadeInsumosEnum unidade,
+        string descricaoSimplificada,
+        CancellationToken cancellationToken = default)
+        => PrefixoInsumo(unidade, descricaoSimplificada) + await PreverProximoSequencialAsync("INS", cancellationToken);
+
+    public async Task<string> PreverProximoLoteMedicamentoAsync(
+        PublicoAlvoMedicamentoEnum publicoAlvo,
+        string nomeComercial,
+        CancellationToken cancellationToken = default)
+        => PrefixoMedicamento(publicoAlvo, nomeComercial) + await PreverProximoSequencialAsync("MED", cancellationToken);
+
+    private static string PrefixoProduto(CategoriaEnum categoria, string descricaoSimples) =>
+        "PRO"
+        + TextoNormalizador.PrimeirasLetras(DescricaoOuNome(categoria), 2)
+        + TextoNormalizador.PrimeirasLetras(descricaoSimples, 3);
+
+    private static string PrefixoInsumo(UnidadeInsumosEnum unidade, string descricaoSimplificada) =>
+        "INS"
+        + TextoNormalizador.PrimeirasLetras(DescricaoOuNome(unidade), 3)
+        + TextoNormalizador.PrimeirasLetras(descricaoSimplificada, 3);
+
+    private static string PrefixoMedicamento(PublicoAlvoMedicamentoEnum publicoAlvo, string nomeComercial) =>
+        "MED"
+        + TokenPublicoAlvo(publicoAlvo)
+        + TextoNormalizador.PrimeirasLetras(nomeComercial, 3);
+
+    /// <summary>
+    /// Lê o contador sem incrementá-lo, retornando o próximo número que <em>seria</em> gerado.
+    /// Apenas para conferência: o valor definitivo só é fixado em <see cref="ProximoSequencialAsync"/>.
+    /// </summary>
+    private async Task<string> PreverProximoSequencialAsync(string tipo, CancellationToken cancellationToken)
+    {
+        var contador = await _context.ContadoresLote
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Tipo == tipo, cancellationToken);
+
+        var proximo = (contador?.UltimoNumero ?? 0) + 1;
+        return proximo.ToString("D6");
     }
 
     /// <summary>Público-alvo: T = humano e animal; A = exclusivamente animal.</summary>

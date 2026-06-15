@@ -111,6 +111,10 @@ public class UsuariosService : IUsuariosService
 
     public async Task<bool> DeletarAsync(int id, bool hardDelete = false)
     {
+        _ = int.TryParse(_userSessionService?.UserId, out int idLogado);
+        if (idLogado != 0 && id == idLogado)
+            throw new ConflitoDeNegocioException("Você não pode remover sua própria conta.");
+
         var usuario = await BuscarPorIdAsync(id);
 
         if (usuario == null) return false;
@@ -164,6 +168,9 @@ public class UsuariosService : IUsuariosService
     {
         _ = int.TryParse(_userSessionService?.UserId, out int idLogado);
 
+        if (idLogado != 0 && id == idLogado)
+            throw new ConflitoDeNegocioException("Você não pode inativar sua própria conta.");
+
         var usuario = await _repository.GetByIdAsync(idLogado);
         if (usuario == null)
             throw new ArgumentNullException(null, "Usuário não encontrado");
@@ -191,7 +198,7 @@ public class UsuariosService : IUsuariosService
             return;
 
         if (await _repository.CountAsync(u => u.Permissao == PermissoesEnum.ADMIN && !u.IsDeleted) == 1)
-            throw new InvalidOperationException("Não é possível remover ou inativar o último administrador ativo");
+            throw new ConflitoDeNegocioException("Não é permitido remover o último administrador ativo do sistema.");
     }
 
     public Task<IReadOnlyList<UsuarioResumoFiltroDTO>> ListarResumoParaFiltrosHistoricoRetiradasAsync(

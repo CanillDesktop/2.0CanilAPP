@@ -94,28 +94,38 @@ namespace Backend.Controllers
         }
 
 
+        /// <summary>
+        /// Lote (e código do item) gerados pelo backend, apenas para conferência na tela de cadastro.
+        /// O usuário nunca edita esses valores.
+        /// </summary>
+        [HttpGet("proximo-lote/{itemId:int}", Name = "GetProximoLoteEstoque")]
+        [ProducesResponseType(typeof(ProximoLoteEstoqueDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ProximoLoteEstoqueDTO>> GetProximoLote(int itemId)
+        {
+            var proximoLote = await _service.GerarProximoLoteAsync(itemId);
+            return Ok(proximoLote);
+        }
+
         [HttpPost]
+        [ProducesResponseType(typeof(ItemEstoqueDTO), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Create([FromBody] ItemEstoqueDTO dto)
         {
-            try
-            {
-                var novoItemEstoque = await _service.CriarAsync(dto);
+            var novoItemEstoque = await _service.CriarAsync(dto);
 
-                if (novoItemEstoque == null)
-                    throw new ArgumentNullException();
+            if (novoItemEstoque == null)
+                throw new RecursoNaoEncontradoException("Não foi possível criar o lote.");
 
-                return new CreatedAtRouteResult("GetItemEstoqueByLote",
-                    new { lote = novoItemEstoque.Lote }, novoItemEstoque);
-            }
-            catch (ModelIncompletaException ex)
-            {
-                return BadRequest(new ErrorResponse
-                {
-                    Title = "Erro ao adicionar um novo lote ao item",
-                    Status = StatusCodes.Status400BadRequest,
-                    Details = ex.Message ?? "Erro ao adicionar um novo lote ao item"
-                });
-            }
+            ItemEstoqueDTO itemCriado = novoItemEstoque;
+
+            // Rota nomeada exige código + lote (chave da consulta); informar ambos evita o
+            // "No route matches the supplied values" que retornava 500.
+            return CreatedAtRoute(
+                "GetItemEstoqueByLote",
+                new { codigo = itemCriado.Codigo, lote = itemCriado.Lote },
+                itemCriado);
         }
 
         [HttpDelete("{lote}")]

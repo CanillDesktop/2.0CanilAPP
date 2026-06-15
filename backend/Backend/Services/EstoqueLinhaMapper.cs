@@ -4,6 +4,7 @@ using Backend.Models.Estoque;
 using Backend.Models.Insumos;
 using Backend.Models.Medicamentos;
 using Backend.Models.Produtos;
+using Backend.Repositories;
 
 namespace Backend.Services;
 
@@ -22,7 +23,7 @@ internal static class EstoqueLinhaMapper
         var minimo = model.ItemNivelEstoque?.NivelMinimoEstoque ?? 0;
 
         var hoje = DateTime.UtcNow.Date;
-        var limite = hoje.AddDays(EstoqueStatusOperacional.DiasProximoVencimento);
+        var limite = EstoqueStatusCalculo.LimiteVencimento(hoje);
 
         var menorValidade = lotes
             .Where(e => e.DataValidade.HasValue)
@@ -40,13 +41,7 @@ internal static class EstoqueLinhaMapper
             && e.DataValidade.Value.Date >= hoje
             && e.DataValidade.Value.Date <= limite);
 
-        var status = quantidade <= 0
-            ? EstoqueStatusOperacional.Critico
-            : temProximoVencimento
-                ? EstoqueStatusOperacional.ProximoVencimento
-                : quantidade < minimo
-                    ? EstoqueStatusOperacional.Baixo
-                    : EstoqueStatusOperacional.Ok;
+        var status = EstoqueStatusCalculo.Classificar(quantidade, minimo, temProximoVencimento);
 
         return new EstoqueLinhaLeituraDTO
         {

@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Backend.DTOs.Estoque;
 using Backend.Models.Estoque;
 using Backend.Models.Insumos;
@@ -73,44 +74,16 @@ internal static class EstoqueConsultaQueryable
         if (string.IsNullOrWhiteSpace(status)) return query;
 
         var hoje = DateTime.UtcNow.Date;
-        var limite = hoje.AddDays(EstoqueStatusOperacional.DiasProximoVencimento);
+        var limite = EstoqueStatusCalculo.LimiteVencimento(hoje);
+        var alvo = EstoqueStatusCalculo.Peso(status);
 
-        return status.ToLowerInvariant() switch
-        {
-            EstoqueStatusOperacional.Critico => query.Where(x =>
-                !x.ItensEstoque.Any(e => !e.IsDeleted)
-                || x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) <= 0),
+        // Reusa a MESMA expressão de classificação da ordenação/mapper: filtra por código == alvo.
+        var codigo = EstoqueStatusCalculo.CodigoExpression<T>(hoje, limite);
+        var predicado = Expression.Lambda<Func<T, bool>>(
+            Expression.Equal(codigo.Body, Expression.Constant(alvo)),
+            codigo.Parameters);
 
-            EstoqueStatusOperacional.ProximoVencimento => query.Where(x =>
-                x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
-                && x.ItensEstoque.Any(e =>
-                    !e.IsDeleted
-                    && e.DataValidade != null
-                    && e.DataValidade >= hoje
-                    && e.DataValidade <= limite)),
-
-            EstoqueStatusOperacional.Baixo => query.Where(x =>
-                x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
-                && x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)
-                    < (x.ItemNivelEstoque != null ? x.ItemNivelEstoque.NivelMinimoEstoque : 0)
-                && !x.ItensEstoque.Any(e =>
-                    !e.IsDeleted
-                    && e.DataValidade != null
-                    && e.DataValidade >= hoje
-                    && e.DataValidade <= limite)),
-
-            EstoqueStatusOperacional.Ok => query.Where(x =>
-                x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
-                && x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)
-                    >= (x.ItemNivelEstoque != null ? x.ItemNivelEstoque.NivelMinimoEstoque : 0)
-                && !x.ItensEstoque.Any(e =>
-                    !e.IsDeleted
-                    && e.DataValidade != null
-                    && e.DataValidade >= hoje
-                    && e.DataValidade <= limite)),
-
-            _ => query,
-        };
+        return query.Where(predicado);
     }
 
     public static IQueryable<ProdutosModel> AplicarTermoBuscaProdutos(
@@ -174,7 +147,7 @@ internal static class EstoqueConsultaQueryable
     {
         var asc = p.IsSortAscending;
         var hoje = DateTime.UtcNow.Date;
-        var limite = hoje.AddDays(EstoqueStatusOperacional.DiasProximoVencimento);
+        var limite = EstoqueStatusCalculo.LimiteVencimento(hoje);
 
         IOrderedQueryable<T> ordenado = p.NormalizedOrderBy switch
         {
@@ -194,9 +167,10 @@ internal static class EstoqueConsultaQueryable
                 : query.OrderByDescending(x => x.ItensEstoque.Where(e => !e.IsDeleted)
                     .Max(e => (DateTime?)e.DataEntrega)),
 
+            // Mesma expressão de classificação do filtro/mapper (traduzível para SQL via CASE WHEN).
             "status" => asc
-                ? query.OrderBy(x => OrdemStatus(x, hoje, limite))
-                : query.OrderByDescending(x => OrdemStatus(x, hoje, limite)),
+                ? query.OrderBy(EstoqueStatusCalculo.CodigoExpression<T>(hoje, limite))
+                : query.OrderByDescending(EstoqueStatusCalculo.CodigoExpression<T>(hoje, limite)),
 
             _ => asc
                 ? query.OrderBy(seletorNome)
@@ -204,25 +178,5 @@ internal static class EstoqueConsultaQueryable
         };
 
         return ordenado.ThenBy(x => x.Id);
-    }
-
-    /// <summary>
-    /// Peso de ordenação por status (mesma escala usada no front: ok=0, baixo=1, proximo=2, critico=3).
-    /// </summary>
-    private static int OrdemStatus<T>(T x, DateTime hoje, DateTime limite)
-        where T : ItemComEstoqueBaseModel
-    {
-        var total = x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade);
-        var minimo = x.ItemNivelEstoque != null ? x.ItemNivelEstoque.NivelMinimoEstoque : 0;
-        var temProximoVencimento = x.ItensEstoque.Any(e =>
-            !e.IsDeleted && e.DataValidade != null && e.DataValidade >= hoje && e.DataValidade <= limite);
-
-        return total <= 0
-            ? 3
-            : temProximoVencimento
-                ? 2
-                : total < minimo
-                    ? 1
-                    : 0;
     }
 }
