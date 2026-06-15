@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ErroApi } from '../../../infrastructure/http/erroApi';
+import { ErroApi, extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
 import { atualizarCodigoSegurancaApi, obterCodigoSegurancaApi } from '../api/codigoSegurancaApi';
 
 const CHAVE_LOCAL = 'canilapp_codigo_seguranca';
@@ -18,11 +18,6 @@ function salvarCodigoLocal(codigo: string) {
   } catch {
     /* ignore */
   }
-}
-
-function extrairMensagemErro(e: unknown): string {
-  if (e instanceof ErroApi) return e.message;
-  return 'Não foi possível concluir a operação. Tente novamente.';
 }
 
 /** Carrega e persiste o código de segurança (API com fallback local até integração completa). */
@@ -46,7 +41,7 @@ export function useCodigoSeguranca(ehAdmin: boolean) {
       const local = lerCodigoLocal();
       setCodigo(local?.trim() ? local : null);
       if (e instanceof ErroApi && e.statusCode !== 404) {
-        setErro(extrairMensagemErro(e));
+        setErro(extrairMensagemErroApi(e));
       }
     } finally {
       setCarregando(false);
@@ -84,7 +79,7 @@ export function useCodigoSeguranca(ehAdmin: boolean) {
           );
           return true;
         }
-        setErro(extrairMensagemErro(e));
+        setErro(extrairMensagemErroApi(e));
         return false;
       } finally {
         setSalvando(false);
