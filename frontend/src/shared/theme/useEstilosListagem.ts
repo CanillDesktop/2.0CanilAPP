@@ -29,7 +29,44 @@ export function useEstilosListagem() {
     paginacao: {
       color: cores.textPrimary,
       borderTop: `1px solid ${cores.borderSuave}`,
-      '& .MuiTablePagination-toolbar': { minHeight: 52 },
+      width: '100%',
+      maxWidth: '100%',
+      boxSizing: 'border-box',
+      '& .MuiTablePagination-toolbar': {
+        minHeight: 52,
+        width: '100%',
+        maxWidth: '100%',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        alignItems: 'center',
+        rowGap: { xs: 0.5, sm: 0 },
+        columnGap: { xs: 0.5, sm: 1 },
+        px: { xs: 0.5, sm: 2 },
+        py: { xs: 0.75, sm: 0 },
+        '& .MuiTablePagination-spacer': {
+          display: 'none',
+        },
+      },
+      '& .MuiTablePagination-selectLabel': {
+        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+        m: 0,
+      },
+      '& .MuiTablePagination-select': {
+        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+        mr: { xs: 0.5, sm: 2 },
+      },
+      '& .MuiTablePagination-input': {
+        mr: { xs: 0.5, sm: 2 },
+      },
+      '& .MuiTablePagination-displayedRows': {
+        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+        m: 0,
+        whiteSpace: 'nowrap',
+      },
+      '& .MuiTablePagination-actions': {
+        marginLeft: { xs: 0, sm: 'auto' },
+        flexShrink: 0,
+      },
       '& .MuiTablePagination-selectIcon, & .MuiTablePagination-actions': { color: cores.textMuted },
     },
     cardTabela: {
