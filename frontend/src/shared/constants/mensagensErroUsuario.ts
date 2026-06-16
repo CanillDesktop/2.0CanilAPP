@@ -11,7 +11,6 @@ export const MSG_ERRO = {
   naoEncontrado: 'Registro não encontrado. Atualize a página e tente novamente.',
   servidor: 'Ocorreu um problema no servidor. Tente novamente em instantes.',
   carregarEstoque: 'Não foi possível carregar o estoque. Atualize a página e tente novamente.',
-  buscaGlobal: 'Não foi possível buscar itens agora. Tente novamente em instantes.',
   retirada: 'Não foi possível registrar a retirada. Verifique os dados e tente novamente.',
   lote: 'Não foi possível salvar o lote. Verifique os dados e tente novamente.',
   excluirProduto: 'Não foi possível excluir o produto. Tente novamente.',

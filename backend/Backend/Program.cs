@@ -206,6 +206,7 @@ public class Program
             builder.Services.AddScoped<IInsumosService, InsumosService>();
             builder.Services.AddScoped<IEstoqueItemService, EstoqueItemService>();
             builder.Services.AddScoped<IEstoqueItemRepository, EstoqueItemRepository>();
+            builder.Services.AddScoped<IDashboardService, DashboardService>();
             builder.Services.AddScoped<IEstoqueConsultaRepository, EstoqueConsultaRepository>();
             builder.Services.AddScoped<IEstoqueConsultaService, EstoqueConsultaService>();
             builder.Services.AddScoped<IRetiradaEstoqueService, RetiradaEstoqueService>();

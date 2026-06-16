@@ -1,7 +1,6 @@
 import { obterClienteHttp } from '../../../infrastructure/http/clienteHttpSingleton';
 import { montarQueryString } from '../../../shared/utils/montarQueryString';
 import {
-  carregarTodasPaginasLista,
   montarParamsPaginacao,
   normalizarStatusEstoqueQuery,
 } from '../../../shared/utils/listaItemComEstoqueApi';
@@ -40,15 +39,6 @@ export async function listarInsumosPaginadosApi(
   const qs = montarQueryString(params);
   const { data } = await cliente.get<InsumosListaPaginadaDto>(`/api/Insumos${qs}`);
   return data;
-}
-
-/**
- * Carrega todos os insumos (várias páginas na API) para telas que agregam estoque no cliente.
- */
-export async function listarTodosInsumosParaEstoqueApi(): Promise<InsumoLeituraDto[]> {
-  return carregarTodasPaginasLista((pageNumber, pageSize) =>
-    listarInsumosPaginadosApi(undefined, { pageNumber, pageSize }),
-  );
 }
 
 export async function obterInsumoPorIdApi(id: number): Promise<InsumoLeituraDto> {

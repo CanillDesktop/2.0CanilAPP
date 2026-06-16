@@ -1,7 +1,6 @@
 import { obterClienteHttp } from '../../../infrastructure/http/clienteHttpSingleton';
 import { montarQueryString } from '../../../shared/utils/montarQueryString';
 import {
-  carregarTodasPaginasLista,
   montarParamsPaginacao,
   normalizarStatusEstoqueQuery,
 } from '../../../shared/utils/listaItemComEstoqueApi';
@@ -41,15 +40,6 @@ export async function listarMedicamentosPaginadosApi(
   const qs = montarQueryString(params);
   const { data } = await cliente.get<MedicamentosListaPaginadaDto>(`/api/Medicamentos${qs}`);
   return data;
-}
-
-/**
- * Carrega todos os medicamentos (várias páginas na API) para telas que agregam estoque no cliente.
- */
-export async function listarTodosMedicamentosParaEstoqueApi(): Promise<MedicamentoLeituraDto[]> {
-  return carregarTodasPaginasLista((pageNumber, pageSize) =>
-    listarMedicamentosPaginadosApi(undefined, { pageNumber, pageSize }),
-  );
 }
 
 export async function obterMedicamentoPorIdApi(id: number): Promise<MedicamentoLeituraDto> {
