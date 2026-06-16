@@ -3,6 +3,7 @@ import {
   criarItemEstoqueApi,
   excluirItemEstoqueApi,
   obterItemEstoquePorIdApi,
+  obterProximoLoteEstoqueApi,
 } from '../api/estoqueItensApi';
 import {
   consultarHistoricoRetiradasApi,
@@ -12,6 +13,7 @@ import {
 import { registrarRetiradaApi } from '../api/retiradaEstoqueApi';
 import type {
   ItemEstoqueDto,
+  ProximoLoteEstoqueDto,
   RetiradaEstoqueDto,
   RetiradaHistoricoFiltroDto,
   RetiradaHistoricoListaPaginadaDto,
@@ -22,7 +24,10 @@ export const servicoEstoque = {
   obterItemPorId(id: number): Promise<ItemEstoqueDto> {
     return obterItemEstoquePorIdApi(id);
   },
-  criarLote(dto: ItemEstoqueDto): Promise<void> {
+  obterProximoLote(itemId: number): Promise<ProximoLoteEstoqueDto> {
+    return obterProximoLoteEstoqueApi(itemId);
+  },
+  criarLote(dto: ItemEstoqueDto): Promise<ItemEstoqueDto> {
     return criarItemEstoqueApi(dto);
   },
   atualizarLote(lote: string, dto: ItemEstoqueDto): Promise<void> {

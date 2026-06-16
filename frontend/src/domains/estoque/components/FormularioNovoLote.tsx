@@ -16,10 +16,12 @@ import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { RotuloCampoComDica } from '../../../shared/components/RotuloCampoComDica';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
+import { servicoEstoque } from '../services/servicoEstoque';
 import type { ItemEstoqueDto } from '../types/tiposEstoque';
 
 export function FormularioNovoLote() {
@@ -29,17 +31,40 @@ export function FormularioNovoLote() {
   const campoSx = estilosCampoFormulario(cores);
   const { criarLote, carregando, erro, errosValidacao } = useMutacaoEstoque();
 
-  const inicialIdItem = useMemo(() => Number(params.get('idItem')) || 0, [params]);
+  const idItem = useMemo(() => Number(params.get('idItem')) || 0, [params]);
   const inicialCodItem = useMemo(() => params.get('codItem') ?? '', [params]);
 
-  const [idItem, setIdItem] = useState(inicialIdItem);
   const [codItem, setCodItem] = useState(inicialCodItem);
+  const [lote, setLote] = useState('');
+  const [carregandoLote, setCarregandoLote] = useState(false);
+  const [erroLote, setErroLote] = useState<string | null>(null);
 
   useEffect(() => {
-    setIdItem(inicialIdItem);
-    setCodItem(inicialCodItem);
-  }, [inicialIdItem, inicialCodItem]);
-  const [lote, setLote] = useState('');
+    if (idItem <= 0) return;
+    let ativo = true;
+    const carregarLote = async () => {
+      setCarregandoLote(true);
+      setErroLote(null);
+      try {
+        const dados = await servicoEstoque.obterProximoLote(idItem);
+        if (!ativo) return;
+        setLote(dados.lote);
+        setCodItem((atual) => atual || dados.codigo);
+      } catch (e) {
+        if (ativo) setErroLote(extrairMensagemErroApi(e));
+      } finally {
+        if (ativo) setCarregandoLote(false);
+      }
+    };
+    void carregarLote();
+    return () => {
+      ativo = false;
+    };
+  }, [idItem]);
+
+  const itemInvalido = idItem <= 0;
+  const mensagemErro = erro ?? erroLote ?? (itemInvalido ? 'Item inválido. Volte à listagem e selecione o item novamente.' : null);
+
   const [quantidade, setQuantidade] = useState(0);
   const [dataEntrega, setDataEntrega] = useState(new Date().toISOString().slice(0, 10));
   const [nfe, setNfe] = useState('');
@@ -57,8 +82,8 @@ export function FormularioNovoLote() {
   });
 
   const formularioValido = useMemo(() => {
-    return idItem > 0 && codItem.trim().length > 0 && lote.trim().length > 0 && quantidade > 0 && dataEntrega.trim().length > 0;
-  }, [idItem, codItem, lote, quantidade, dataEntrega]);
+    return idItem > 0 && lote.trim().length > 0 && quantidade > 0 && dataEntrega.trim().length > 0;
+  }, [idItem, lote, quantidade, dataEntrega]);
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
@@ -86,17 +111,17 @@ export function FormularioNovoLote() {
       return;
     }
 
+    const loteCadastrado = resultado.dados?.lote ?? lote;
     setSubmitSucesso(true);
     setSnackbar({
       open: true,
-      message: 'Lote adicionado com sucesso.',
+      message: `Lote ${loteCadastrado} cadastrado com sucesso.`,
       severity: 'success',
     });
-    window.setTimeout(() => navegar('/estoque'), 850);
+    window.setTimeout(() => navegar('/estoque'), 1200);
   }
 
   const botaoPrimario = !submitSucesso && !submitErro;
-  const codItemSomenteLeitura = inicialCodItem.trim().length > 0;
 
   return (
     <Box
@@ -121,7 +146,7 @@ export function FormularioNovoLote() {
         }}
       >
         <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
-          <Box component="form" onSubmit={aoEnviar}>
+          <Box component="form" onSubmit={aoEnviar} noValidate>
             <Stack spacing={2}>
               <Box>
                 <Typography variant="h5" sx={{ fontWeight: 800, color: cores.textPrimary }}>
@@ -131,20 +156,8 @@ export function FormularioNovoLote() {
                   Campos obrigatórios: item, lote, quantidade e data de entrega.
                 </Typography>
               </Box>
-              <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
+              <PainelErro mensagem={mensagemErro} errosValidacao={errosValidacao} />
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    type="number"
-                    label="ID do item"
-                    value={idItem}
-                    onChange={(e) => setIdItem(Number(e.target.value))}
-                    slotProps={{ htmlInput: { min: 1 } }}
-                    sx={campoSx}
-                  />
-                </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     fullWidth
@@ -156,8 +169,7 @@ export function FormularioNovoLote() {
                       />
                     }
                     value={codItem}
-                    onChange={(e) => setCodItem(e.target.value)}
-                    slotProps={{ input: { readOnly: codItemSomenteLeitura } }}
+                    slotProps={{ input: { readOnly: true } }}
                     sx={campoSx}
                   />
                 </Grid>
@@ -171,8 +183,8 @@ export function FormularioNovoLote() {
                         dica="Gerado automaticamente pelo sistema (somente leitura)."
                       />
                     }
-                    value={lote}
-                    onChange={(e) => setLote(e.target.value)}
+                    value={carregandoLote ? 'Gerando lote…' : lote}
+                    slotProps={{ input: { readOnly: true } }}
                     sx={campoSx}
                   />
                 </Grid>

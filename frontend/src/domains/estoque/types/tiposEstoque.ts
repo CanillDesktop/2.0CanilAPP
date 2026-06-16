@@ -2,6 +2,11 @@ import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 
 export type { ItemEstoqueDto };
 
+export type ProximoLoteEstoqueDto = {
+  codigo: string;
+  lote: string;
+};
+
 export type LinhaOperacionalEstoque = {
   id: number;
   nome: string;

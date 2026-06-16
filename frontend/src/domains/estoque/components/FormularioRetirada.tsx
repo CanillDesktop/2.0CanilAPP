@@ -124,7 +124,7 @@ export function FormularioRetirada() {
       observacao: observacao.trim() || undefined,
       idUsuarioRecebedor,
     };
-    const ok = await registrarRetirada(dto);
+    const resultado = await registrarRetirada(dto);
     setConfirmarAberto(false);
     if (resultado.ok) {
       setSubmitSucesso(true);

@@ -1,5 +1,6 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { IconButton, Stack, Tooltip } from '@mui/material';
+import { Box, IconButton, Tooltip } from '@mui/material';
+import { useTemaApp } from '../../app/providers/ContextoTemaApp';
 
 type Props = {
   rotulo: string;
@@ -7,14 +8,10 @@ type Props = {
 };
 
 export function RotuloCampoComDica({ rotulo, dica }: Props) {
+  const { cores } = useTemaApp();
+
   return (
-    <Stack
-      direction="row"
-      alignItems="center"
-      spacing={0.25}
-      component="span"
-      sx={{ display: 'inline-flex', maxWidth: '100%' }}
-    >
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25, maxWidth: '100%' }}>
       <span>{rotulo}</span>
       <Tooltip title={dica} arrow placement="top" enterTouchDelay={0} leaveTouchDelay={4000}>
         <IconButton
@@ -25,15 +22,15 @@ export function RotuloCampoComDica({ rotulo, dica }: Props) {
           onMouseDown={(e) => e.preventDefault()}
           sx={{
             p: 0.25,
-            color: 'inherit',
-            opacity: 0.7,
+            color: cores.textMuted,
+            opacity: 0.9,
             verticalAlign: 'middle',
-            '&:hover': { opacity: 1, backgroundColor: 'transparent' },
+            '&:hover': { opacity: 1, color: cores.focus, backgroundColor: 'transparent' },
           }}
         >
-          <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+          <InfoOutlinedIcon sx={{ fontSize: 17 }} />
         </IconButton>
       </Tooltip>
-    </Stack>
+    </Box>
   );
 }

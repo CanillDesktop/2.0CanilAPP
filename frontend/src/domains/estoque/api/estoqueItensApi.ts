@@ -1,5 +1,5 @@
 import { obterClienteHttp } from '../../../infrastructure/http/clienteHttpSingleton';
-import type { ItemEstoqueDto } from '../types/tiposEstoque';
+import type { ItemEstoqueDto, ProximoLoteEstoqueDto } from '../types/tiposEstoque';
 
 export async function obterItemEstoquePorIdApi(id: number): Promise<ItemEstoqueDto> {
   const cliente = obterClienteHttp();
@@ -7,9 +7,17 @@ export async function obterItemEstoquePorIdApi(id: number): Promise<ItemEstoqueD
   return data;
 }
 
-export async function criarItemEstoqueApi(dto: ItemEstoqueDto): Promise<void> {
+/** Lote (e código) gerados pelo backend para conferência. O usuário não edita esses valores. */
+export async function obterProximoLoteEstoqueApi(itemId: number): Promise<ProximoLoteEstoqueDto> {
   const cliente = obterClienteHttp();
-  await cliente.post('/api/Estoque', dto);
+  const { data } = await cliente.get<ProximoLoteEstoqueDto>(`/api/Estoque/proximo-lote/${itemId}`);
+  return data;
+}
+
+export async function criarItemEstoqueApi(dto: ItemEstoqueDto): Promise<ItemEstoqueDto> {
+  const cliente = obterClienteHttp();
+  const { data } = await cliente.post<ItemEstoqueDto>('/api/Estoque', dto);
+  return data;
 }
 
 export async function atualizarItemEstoqueApi(lote: string, dto: ItemEstoqueDto): Promise<void> {
