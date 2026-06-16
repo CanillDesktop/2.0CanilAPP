@@ -11,7 +11,6 @@ namespace Backend.Repositories;
 
 /// <summary>
 /// Expressões EF reutilizáveis da listagem operacional de estoque (/estoque).
-/// Espelha as regras que rodavam client-side em useListaEstoqueProcessada.
 /// </summary>
 internal static class EstoqueConsultaQueryable
 {
