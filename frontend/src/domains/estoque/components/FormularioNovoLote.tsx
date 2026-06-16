@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { PainelErro } from '../../../shared/components/PainelErro';
+import { RotuloCampoComDica } from '../../../shared/components/RotuloCampoComDica';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
 import type { ItemEstoqueDto } from '../types/tiposEstoque';
@@ -95,6 +96,7 @@ export function FormularioNovoLote() {
   }
 
   const botaoPrimario = !submitSucesso && !submitErro;
+  const codItemSomenteLeitura = inicialCodItem.trim().length > 0;
 
   return (
     <Box
@@ -147,9 +149,15 @@ export function FormularioNovoLote() {
                   <TextField
                     fullWidth
                     variant="outlined"
-                    label="Código do item"
+                    label={
+                      <RotuloCampoComDica
+                        rotulo="Código do item"
+                        dica="Identificador do item (somente leitura)."
+                      />
+                    }
                     value={codItem}
                     onChange={(e) => setCodItem(e.target.value)}
+                    slotProps={{ input: { readOnly: codItemSomenteLeitura } }}
                     sx={campoSx}
                   />
                 </Grid>
@@ -157,7 +165,12 @@ export function FormularioNovoLote() {
                   <TextField
                     fullWidth
                     variant="outlined"
-                    label="Lote"
+                    label={
+                      <RotuloCampoComDica
+                        rotulo="Lote"
+                        dica="Gerado automaticamente pelo sistema (somente leitura)."
+                      />
+                    }
                     value={lote}
                     onChange={(e) => setLote(e.target.value)}
                     sx={campoSx}
