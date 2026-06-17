@@ -1,7 +1,8 @@
 ﻿using Backend.Context;
-using Backend.DTOs.Medicamentos;
-using Backend.Models.Enums;
+using Backend.Filtro.Helpers;
+using Backend.Filtro.Medicamentos;
 using Backend.Models.Medicamentos;
+using Backend.Pagination;
 using Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,45 +12,52 @@ namespace Backend.Repositories
     {
         public MedicamentosRepository(CanilAppDbContext context) : base(context) { }
 
-        public async Task<IEnumerable<MedicamentosModel>> GetAsync(MedicamentosFiltroDTO filtro)
+        public async Task<ConsultaPaginada<MedicamentosModel>> ConsultarPaginadoAsync(
+        MedicamentosFiltro filtro,
+        ItensPaginationParameters paginationParameters,
+        int diasDataLimiteVencimento,
+        CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(filtro);
+            var pageNumber = Math.Max(paginationParameters.PageNumber, 1);
+            var pageSize = Math.Max(paginationParameters.PageSize, 1);
 
-            var query = _context.Medicamentos
-                .Include(m => m.ItensEstoque.Where(e => !e.IsDeleted))
-                .Include(m => m.ItemNivelEstoque)
-                .Where(m => m.IsDeleted == false)
-                .AsQueryable();
+            var filtrada = FiltroHelper.AplicarFiltrosMedicamentos(
+                FiltroHelper.Base(_context.Medicamentos.AsQueryable()),
+                filtro);
 
-            if (!string.IsNullOrWhiteSpace(filtro.CodMedicamento))
-                query = query.Where(m => m.Codigo!.Contains(filtro.CodMedicamento));
+            var hoje = DateTime.UtcNow.Date;
+            var limiteVencimento = hoje.AddDays(diasDataLimiteVencimento);
 
-            if (!string.IsNullOrWhiteSpace(filtro.NomeComercial))
-                query = query.Where(m => m.NomeComercial!.Contains(filtro.NomeComercial));
+            var resumo = new ItemComEstoqueResumoConsulta(
+                TotalNoRecorte: await filtrada.CountAsync(cancellationToken),
+                Ativos: await filtrada.CountAsync(
+                    p => p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
+                         && p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)
+                            >= (p.ItemNivelEstoque != null ? p.ItemNivelEstoque.NivelMinimoEstoque : 0),
+                    cancellationToken),
+                BaixoEstoque: await filtrada.CountAsync(
+                    p => p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
+                         && p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)
+                            < (p.ItemNivelEstoque != null ? p.ItemNivelEstoque.NivelMinimoEstoque : 0),
+                    cancellationToken),
+                SemEstoque: await filtrada.CountAsync(
+                    p => !p.ItensEstoque.Any(e => !e.IsDeleted)
+                         || p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) <= 0,
+                    cancellationToken),
+                AVencer: await filtrada.CountAsync(
+                    p => p.ItensEstoque.Any(e =>
+                        !e.IsDeleted
+                        && e.DataValidade != null
+                        && e.DataValidade >= hoje
+                        && e.DataValidade <= limiteVencimento),
+                    cancellationToken));
 
-            if (!string.IsNullOrWhiteSpace(filtro.Formula))
-                query = query.Where(m => m.Formula!.Contains(filtro.Formula));
+            var comStatus = FiltroHelper.AplicarStatusEstoque(filtrada, filtro.StatusEstoque);
+            var totalCount = await comStatus.CountAsync(cancellationToken);
 
-            if (!string.IsNullOrWhiteSpace(filtro.DescricaoMedicamento))
-                query = query.Where(m => m.Descricao!.Contains(filtro.DescricaoMedicamento));
+            var items = await PagedList<MedicamentosModel>.ToPagedListAsync(comStatus, pageNumber, pageSize, p => p.Id, cancellationToken);
 
-            if (!string.IsNullOrWhiteSpace(filtro.NFe))
-                query = query.Where(m => m.ItensEstoque!.Any(e => !e.IsDeleted && !string.IsNullOrWhiteSpace(e.NFe) && e.NFe.Contains(filtro.NFe)));
-
-            if (Enum.IsDefined(typeof(PrioridadeEnum), filtro.Prioridade))
-                query = query.Where(m => m.Prioridade == (PrioridadeEnum)filtro.Prioridade);
-
-            if (Enum.IsDefined(typeof(PublicoAlvoMedicamentoEnum), filtro.PublicoAlvo))
-                query = query.Where(m => m.PublicoAlvo == (PublicoAlvoMedicamentoEnum)filtro.PublicoAlvo);
-
-            if (filtro.DataEntrega != null)
-                query = query.Where(m => m.ItensEstoque!.Any(e => !e.IsDeleted && e.DataEntrega == filtro.DataEntrega));
-
-            if (filtro.DataValidade != null)
-                query = query.Where(m => m.ItensEstoque!.Any(e => !e.IsDeleted && e.DataValidade == filtro.DataValidade));
-
-            var medicamentos = await query.ToListAsync();
-            return medicamentos;
+            return new ConsultaPaginada<MedicamentosModel>(items, totalCount, resumo);
         }
     }
 }

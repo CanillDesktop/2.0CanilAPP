@@ -1,4 +1,10 @@
 import type { ItemEstoqueDto, ItemNivelEstoqueDto } from '../../../shared/types/itemEstoque';
+import type {
+  ItemComEstoqueListaPaginadaDto,
+  ItemComEstoqueListaResumoDto,
+  ItensPaginacaoDto,
+  StatusEstoqueFiltro,
+} from '../../../shared/types/itemComEstoqueLista';
 
 export type MedicamentoLeituraDto = {
   id: number;
@@ -19,7 +25,6 @@ export type MedicamentoLeituraDto = {
 export type MedicamentoCadastroDto = {
   prioridade: number;
   descricao: string;
-  lote?: string | null;
   quantidade: number;
   dataEntrega: string;
   nfe?: string | null;
@@ -30,14 +35,20 @@ export type MedicamentoCadastroDto = {
   nivelMinimoEstoque: number;
 };
 
-export type MedicamentosFiltroDto = {
-  codMedicamento?: string;
-  nomeComercial?: string;
-  formula?: string;
-  descricaoMedicamento?: string;
-  nfe?: string;
+export type MedicamentoStatusEstoqueFiltro = StatusEstoqueFiltro;
+
+export type MedicamentoFiltro = {
+  /** Busca OR em código, descrição, fórmula, nome comercial, NF-e e lote — server-side */
+  termo?: string;
   prioridade?: number;
   publicoAlvo?: number;
   dataEntrega?: string;
   dataValidade?: string;
+  statusEstoque?: MedicamentoStatusEstoqueFiltro;
 };
+
+export type MedicamentoPaginacaoDto = ItensPaginacaoDto;
+
+export type MedicamentosListaResumoDto = ItemComEstoqueListaResumoDto;
+
+export type MedicamentosListaPaginadaDto = ItemComEstoqueListaPaginadaDto<MedicamentoLeituraDto>;

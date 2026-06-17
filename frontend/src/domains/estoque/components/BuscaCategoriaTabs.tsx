@@ -32,7 +32,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { estilosCampoFiltro } from '../../../shared/theme/estilosCampos';
 import { MARCA } from '../../../shared/theme/tokensTema';
-import { useBuscaCategoria, type CategoriaBusca } from '../hooks/useBuscaCategoria';
+import { useBuscaCategoria, type CategoriaBusca, type FiltrosAvancadosBusca } from '../hooks/useBuscaCategoria';
 import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
 import { corChipStatus, rotuloStatusEstoque } from '../utils/estoqueStatusUi';
 
@@ -45,21 +45,12 @@ const categorias: { id: CategoriaBusca; label: string; placeholder: string }[] =
 ];
 
 type Props = {
-  itens: LinhaOperacionalEstoque[];
   onSelecionarItem: (item: LinhaOperacionalEstoque) => void;
 };
 
-type FiltrosAvancadosBusca = {
-  qtdMin: string;
-  qtdMax: string;
-  validadeInicio: string;
-  validadeFim: string;
-  movInicio: string;
-  movFim: string;
-  status: '' | 'ok' | 'baixo' | 'critico' | 'vencimento';
-};
+type FiltrosAvancadosBuscaLocal = FiltrosAvancadosBusca;
 
-const FILTROS_AVANCADOS_INICIAL: FiltrosAvancadosBusca = {
+const FILTROS_AVANCADOS_INICIAL: FiltrosAvancadosBuscaLocal = {
   qtdMin: '',
   qtdMax: '',
   validadeInicio: '',
@@ -68,51 +59,6 @@ const FILTROS_AVANCADOS_INICIAL: FiltrosAvancadosBusca = {
   movFim: '',
   status: '',
 };
-
-function inicioDiaUtc(isoDate: string): number {
-  return new Date(`${isoDate}T00:00:00`).getTime();
-}
-
-function fimDiaUtc(isoDate: string): number {
-  return new Date(`${isoDate}T23:59:59.999`).getTime();
-}
-
-function aplicarFiltrosAvancadosBusca(
-  lista: LinhaOperacionalEstoque[],
-  f: FiltrosAvancadosBusca,
-): LinhaOperacionalEstoque[] {
-  const minQ = f.qtdMin.trim() === '' ? null : Number(f.qtdMin);
-  const maxQ = f.qtdMax.trim() === '' ? null : Number(f.qtdMax);
-  const vIni = f.validadeInicio ? inicioDiaUtc(f.validadeInicio) : null;
-  const vFim = f.validadeFim ? fimDiaUtc(f.validadeFim) : null;
-  const mIni = f.movInicio ? inicioDiaUtc(f.movInicio) : null;
-  const mFim = f.movFim ? fimDiaUtc(f.movFim) : null;
-
-  const statusAlvo =
-    f.status === '' ? null : f.status === 'vencimento' ? ('proximo_vencimento' as const) : f.status;
-
-  return lista.filter((item) => {
-    if (minQ !== null && !Number.isNaN(minQ) && item.quantidade < minQ) return false;
-    if (maxQ !== null && !Number.isNaN(maxQ) && item.quantidade > maxQ) return false;
-    if (statusAlvo !== null && item.status !== statusAlvo) return false;
-
-    if (vIni !== null || vFim !== null) {
-      const ms = item.validadeMs;
-      if (ms == null) return false;
-      if (vIni !== null && ms < vIni) return false;
-      if (vFim !== null && ms > vFim) return false;
-    }
-
-    if (mIni !== null || mFim !== null) {
-      const ms = item.movimentacaoMs;
-      if (ms == null) return false;
-      if (mIni !== null && ms < mIni) return false;
-      if (mFim !== null && ms > mFim) return false;
-    }
-
-    return true;
-  });
-}
 
 function nivelPercentual(item: LinhaOperacionalEstoque): number {
   if (item.minimo <= 0) return item.quantidade > 0 ? 100 : 0;
@@ -335,7 +281,7 @@ function EmptyPreview() {
   );
 }
 
-export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
+export function BuscaCategoriaTabs({ onSelecionarItem }: Props) {
   const { cores } = useTemaApp();
   const sxCampoFiltro = estilosCampoFiltro(cores);
   const theme = useTheme();
@@ -348,8 +294,16 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
   const [secaoBuscaExpandida, setSecaoBuscaExpandida] = useState(false);
   const [paginaAtual, setPaginaAtual] = useState(1);
   const listaTopoRef = useRef<HTMLDivElement | null>(null);
-  const { searchTerm, setSearchTerm, resultados, termoNomeDebounced } = useBuscaCategoria(itens, selectedTab);
-  const [filtrosAvancados, setFiltrosAvancados] = useState<FiltrosAvancadosBusca>(FILTROS_AVANCADOS_INICIAL);
+  const [filtrosAvancados, setFiltrosAvancados] = useState<FiltrosAvancadosBuscaLocal>(FILTROS_AVANCADOS_INICIAL);
+  const {
+    searchTerm,
+    setSearchTerm,
+    resultados,
+    carregando,
+    totalCount,
+    totalPages,
+    termoNomeDebounced,
+  } = useBuscaCategoria(selectedTab, paginaAtual, ITENS_POR_PAGINA_BUSCA, filtrosAvancados);
 
   useEffect(() => {
     setSearchTerm('');
@@ -362,11 +316,6 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
   useEffect(() => {
     setPaginaAtual(1);
   }, [termoNomeDebounced, filtrosAvancados]);
-
-  const resultadosFiltrados = useMemo(
-    () => aplicarFiltrosAvancadosBusca(resultados, filtrosAvancados),
-    [resultados, filtrosAvancados],
-  );
 
   const temFiltroAvancadoAtivo = useMemo(
     () =>
@@ -391,28 +340,18 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
 
   useEffect(() => {
     if (selectedItemId == null) return;
-    if (!resultadosFiltrados.some((i) => i.id === selectedItemId)) {
+    if (!resultados.some((i) => i.id === selectedItemId)) {
       setSelectedItemId(null);
       setDrawerAberto(false);
     }
-  }, [resultadosFiltrados, selectedItemId]);
+  }, [resultados, selectedItemId]);
 
   const categoriaAtual = useMemo(
     () => categorias.find((categoria) => categoria.id === selectedTab) ?? categorias[0],
     [selectedTab],
   );
 
-  const totalPaginas = useMemo(() => {
-    if (resultadosFiltrados.length === 0) return 1;
-    return Math.ceil(resultadosFiltrados.length / ITENS_POR_PAGINA_BUSCA);
-  }, [resultadosFiltrados.length]);
-
-  const paginaSegura = Math.min(Math.max(1, paginaAtual), totalPaginas);
-
-  const itensPaginados = useMemo(() => {
-    const inicio = (paginaSegura - 1) * ITENS_POR_PAGINA_BUSCA;
-    return resultadosFiltrados.slice(inicio, inicio + ITENS_POR_PAGINA_BUSCA);
-  }, [resultadosFiltrados, paginaSegura]);
+  const paginaSegura = Math.min(Math.max(1, paginaAtual), totalPages);
 
   useEffect(() => {
     if (paginaSegura !== paginaAtual) {
@@ -425,9 +364,10 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
   }, [paginaSegura]);
 
   const mostrarVazio =
-    resultadosFiltrados.length === 0 &&
-    (resultados.length > 0 || Boolean(termoNomeDebounced) || temFiltroAvancadoAtivo);
-  const itemSelecionado = resultadosFiltrados.find((item) => item.id === selectedItemId) ?? null;
+    !carregando &&
+    resultados.length === 0 &&
+    (Boolean(termoNomeDebounced) || temFiltroAvancadoAtivo);
+  const itemSelecionado = resultados.find((item) => item.id === selectedItemId) ?? null;
 
   function categoriaLabel(categoria: LinhaOperacionalEstoque['origem']) {
     if (categoria === 'produto') return 'Produto';
@@ -582,7 +522,7 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
                     onChange={(e) =>
                       setFiltrosAvancados((p) => ({
                         ...p,
-                        status: e.target.value as FiltrosAvancadosBusca['status'],
+                        status: e.target.value as FiltrosAvancadosBuscaLocal['status'],
                       }))
                     }
                     sx={{ borderRadius: 2, color: cores.textPrimary, '& .MuiSvgIcon-root': { color: cores.textMuted } }}
@@ -610,12 +550,15 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
         <Box ref={listaTopoRef} sx={{ scrollMarginTop: 8 }} />
 
         <Stack spacing={1}>
+          {carregando ? (
+            <LinearProgress sx={{ borderRadius: 999 }} />
+          ) : null}
           {mostrarVazio ? (
             <Typography variant="body2" sx={{ color: cores.textMuted, py: 1 }}>
               Nenhum item encontrado.
             </Typography>
           ) : (
-            itensPaginados.map((item) => {
+            resultados.map((item) => {
               const selecionado = item.id === selectedItemId;
               return (
                 <Box
@@ -656,7 +599,7 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
           )}
         </Stack>
 
-        {!mostrarVazio && totalPaginas > 1 ? (
+        {!mostrarVazio && !carregando && totalPages > 1 ? (
           <Box
             sx={{
               mt: 2,
@@ -667,11 +610,10 @@ export function BuscaCategoriaTabs({ itens, onSelecionarItem }: Props) {
             }}
           >
             <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 600 }}>
-              {resultadosFiltrados.length} {resultadosFiltrados.length === 1 ? 'item' : 'itens'} · página {paginaSegura} de{' '}
-              {totalPaginas}
+              {totalCount} {totalCount === 1 ? 'item' : 'itens'} · página {paginaSegura} de {totalPages}
             </Typography>
             <Pagination
-              count={totalPaginas}
+              count={totalPages}
               page={paginaSegura}
               onChange={(_e, value) => setPaginaAtual(value)}
               size={ehMobilePaginacao ? 'small' : 'medium'}

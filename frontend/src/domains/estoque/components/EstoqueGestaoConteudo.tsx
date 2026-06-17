@@ -19,8 +19,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
-import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
-import type { CampoOrdenacaoEstoque } from '../hooks/useListaEstoqueProcessada';
+import type { CampoOrdenacaoEstoque, LinhaOperacionalEstoque } from '../types/tiposEstoque';
 import { corChipStatus, rotuloStatusEstoque } from '../utils/estoqueStatusUi';
 
 type Props = {

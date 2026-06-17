@@ -10,16 +10,14 @@ namespace Backend.DTOs.Produtos
         public string DescricaoSimples { get; set; } = string.Empty;
 
         [Display(Name = "Descrição detalhada")]
-        public string? DescricaoDetalhada { get; set; }
+        [Required(ErrorMessage = "{0} é obrigatória")]
+        public string DescricaoDetalhada { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "{0} é obrigatória")]
         public UnidadeEnum Unidade { get; set; }
 
         [Required(ErrorMessage = "{0} é obrigatória")]
         public CategoriaEnum Categoria { get; set; }
-
-        [Required(ErrorMessage = "{0} é obrigatório")]
-        public string? Lote { get; set; } = string.Empty;
 
         public int Quantidade { get; set; }
 

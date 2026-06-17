@@ -1,5 +1,6 @@
 using Backend.Context;
 using Backend.Data;
+using Backend.Exceptions;
 using Backend.Models;
 using Backend.Repositories;
 using Backend.Repositories.Interfaces;
@@ -182,6 +183,24 @@ public class Program
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                         });
                 });
+
+                options.AddPolicy("codigo-acesso", context =>
+                {
+                    var ip = context.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+                    var userAgent = context.Request.Headers.UserAgent.ToString();
+
+                    var partition = $"{ip}:{userAgent}";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(
+                        partition,
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 4,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0,
+                            AutoReplenishment = true
+                        });
+                });
             });
 
             builder.Services.AddScoped<IMedicamentosRepository, MedicamentosRepository>();
@@ -194,13 +213,18 @@ public class Program
             builder.Services.AddScoped<IInsumosService, InsumosService>();
             builder.Services.AddScoped<IEstoqueItemService, EstoqueItemService>();
             builder.Services.AddScoped<IEstoqueItemRepository, EstoqueItemRepository>();
+            builder.Services.AddScoped<IDashboardService, DashboardService>();
+            builder.Services.AddScoped<IEstoqueConsultaRepository, EstoqueConsultaRepository>();
+            builder.Services.AddScoped<IEstoqueConsultaService, EstoqueConsultaService>();
             builder.Services.AddScoped<IRetiradaEstoqueService, RetiradaEstoqueService>();
             builder.Services.AddScoped<IRetiradaEstoqueHistoricoExportService, RetiradaEstoqueHistoricoExportService>();
             builder.Services.AddScoped<IRetiradaEstoqueRepository, RetiradaEstoqueRepository>();
+            builder.Services.AddScoped<ILoteGeradorService, LoteGeradorService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
             builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             builder.Services.AddScoped<IUserSessionService, UserSessionService>();
+            builder.Services.AddScoped<ICodigoAcessoService, CodigoAcessoService>();
 
             builder.Services.AddHttpContextAccessor();
 
@@ -233,21 +257,38 @@ public class Program
             {
                 exception.Run(async context =>
                 {
-                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                    context.Response.ContentType = "application/json";
                     var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+                    var erro = feature?.Error;
 
-                    var message = app.Environment.IsDevelopment() ?
-                        (feature?.Error?.Message ?? "Erro interno do servidor")
-                        : "Erro interno do servidor";
+                    // Regras de negócio (exceções de domínio) são convertidas em respostas HTTP
+                    // padronizadas. Somente erros realmente inesperados retornam 500.
+                    var (status, titulo, detalhe) = erro switch
+                    {
+                        ExcecaoDeNegocio negocio => (negocio.StatusCode, negocio.Titulo, negocio.Message),
+                        ConflitoDeConcorrenciaEstoqueException concorrencia =>
+                            (StatusCodes.Status409Conflict, "Conflito ao atualizar estoque", concorrencia.Message),
+                        ModelIncompletaException incompleta =>
+                            (StatusCodes.Status400BadRequest, "Dados incompletos", incompleta.Message),
+                        _ => (
+                            StatusCodes.Status500InternalServerError,
+                            "Erro interno do servidor",
+                            app.Environment.IsDevelopment() ? (erro?.Message ?? "Erro interno do servidor") : "Erro interno do servidor")
+                    };
+
+                    context.Response.StatusCode = status;
+                    context.Response.ContentType = "application/json";
+
+                    if (status >= StatusCodes.Status500InternalServerError)
+                        Log.Error(erro, "Erro não tratado");
+                    else
+                        Log.Warning(erro, "Regra de negócio: {Detalhe}", detalhe);
 
                     var response = new ErrorResponse
                     {
-                        Title = "Erro interno do servidor",
-                        Status = context.Response.StatusCode,
-                        Details = message
+                        Title = titulo,
+                        Status = status,
+                        Details = detalhe
                     };
-                    Log.Error(feature?.Error, "Erro não tratado");
                     await context.Response.WriteAsJsonAsync(response);
                 });
             });

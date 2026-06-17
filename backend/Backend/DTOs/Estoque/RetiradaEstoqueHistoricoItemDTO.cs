@@ -28,4 +28,10 @@ public class RetiradaEstoqueHistoricoItemDTO
     public string? Observacao { get; set; }
 
     public string Status { get; set; } = string.Empty;
+
+    /// <summary>Indica que o lote estava vencido no momento da retirada (autorizada pelo retirante).</summary>
+    public bool EstavaVencido { get; set; }
+
+    /// <summary>Data de validade do lote retirado, quando aplicável.</summary>
+    public DateTime? DataValidadeLote { get; set; }
 }

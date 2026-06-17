@@ -9,11 +9,8 @@ namespace Backend.DTOs.Medicamentos
         public PrioridadeEnum Prioridade { get; set; }
 
         [Display(Name = "Descrição")]
-        public string? Descricao { get; set; }
-
-        [Display(Name = "Lote")]
-        [Required(ErrorMessage = "{0} é obrigatório")]
-        public string? Lote { get; set; } = string.Empty;
+        [Required(ErrorMessage = "{0} é obrigatória")]
+        public string Descricao { get; set; } = string.Empty;
 
         public int Quantidade { get; set; }
 

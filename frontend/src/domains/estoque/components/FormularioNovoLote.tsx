@@ -19,6 +19,7 @@ import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { RotuloCampoComDica } from '../../../shared/components/RotuloCampoComDica';
+import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
 import { servicoEstoque } from '../services/servicoEstoque';
@@ -39,6 +40,8 @@ export function FormularioNovoLote() {
   const [carregandoLote, setCarregandoLote] = useState(false);
   const [erroLote, setErroLote] = useState<string | null>(null);
 
+  // Código e lote são gerados/definidos exclusivamente pelo backend (LoteGeradorService),
+  // carregados automaticamente apenas para conferência. O usuário não edita esses campos.
   useEffect(() => {
     if (idItem <= 0) return;
     let ativo = true;
@@ -170,6 +173,7 @@ export function FormularioNovoLote() {
                     }
                     value={codItem}
                     slotProps={{ input: { readOnly: true } }}
+                    helperText="Identificador do item (somente leitura)."
                     sx={campoSx}
                   />
                 </Grid>

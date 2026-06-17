@@ -16,13 +16,17 @@ import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { larguraConteudoPagina, paddingPaginaShell } from '../../../shared/theme/estilosLayoutPagina';
-import { listarInsumosApi } from '../../insumos/api/insumosApi';
-import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
-import { listarTodosProdutosParaEstoqueApi } from '../../produtos/api/produtosApi';
+import { consultarEstoquePaginadoApi, obterContagensEstoqueApi } from '../api/estoqueConsultaApi';
 import { EstoqueGestaoConteudo } from '../components/EstoqueGestaoConteudo';
 import { PainelFiltrosEstoque } from '../components/PainelFiltrosEstoque';
-import { useListaEstoqueProcessada, type CampoOrdenacaoEstoque } from '../hooks/useListaEstoqueProcessada';
-import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
+import {
+  ESTOQUE_ORIGEM_API,
+  ESTOQUE_ORIGEM_POR_NUMERO,
+  type CampoOrdenacaoEstoque,
+  type EstoqueContagemPorOrigemDto,
+  type EstoqueLinhaDto,
+  type LinhaOperacionalEstoque,
+} from '../types/tiposEstoque';
 
 const CHAVE_ABA_ESTOQUE = 'canipapp_estoque_aba_tipo';
 
@@ -37,13 +41,44 @@ function lerAbaEstoqueSalva(): number {
   return 0;
 }
 
+function paraInteiroOuUndefined(valor: string): number | undefined {
+  const t = valor.trim();
+  if (t === '') return undefined;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** Converte a linha agregada do backend no formato consumido pela tabela. */
+function mapearLinha(dto: EstoqueLinhaDto): LinhaOperacionalEstoque {
+  return {
+    id: dto.id,
+    nome: dto.nome,
+    quantidade: dto.quantidade,
+    minimo: dto.minimo,
+    validade: dto.validade,
+    origem: ESTOQUE_ORIGEM_POR_NUMERO[dto.origem] ?? 'produto',
+    status: dto.statusOperacional,
+    ultimaMovimentacao: dto.ultimaMovimentacao,
+    validadeMs: dto.menorValidadeUtc ? new Date(dto.menorValidadeUtc).getTime() : null,
+    movimentacaoMs: dto.ultimaMovimentacaoUtc ? new Date(dto.ultimaMovimentacaoUtc).getTime() : null,
+  };
+}
+
 export function PaginaListagemEstoque() {
   const navigate = useNavigate();
   const { usuario } = useAutenticacao();
   const [abaTipo, setAbaTipo] = useState(lerAbaEstoqueSalva);
+
   const [carregando, setCarregando] = useState(true);
   const [erroCarregamento, setErroCarregamento] = useState<string | null>(null);
-  const [linhasOperacionais, setLinhasOperacionais] = useState<LinhaOperacionalEstoque[]>([]);
+  const [linhas, setLinhas] = useState<LinhaOperacionalEstoque[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [contagemPorOrigem, setContagemPorOrigem] = useState<EstoqueContagemPorOrigemDto>({
+    produtos: 0,
+    medicamentos: 0,
+    insumos: 0,
+  });
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -65,35 +100,58 @@ export function PaginaListagemEstoque() {
   const { cores } = useTemaApp();
   const estilos = useEstilosListagem();
 
+  const origemAlvo: LinhaOperacionalEstoque['origem'] =
+    abaTipo === 0 ? 'produto' : abaTipo === 1 ? 'medicamento' : 'insumo';
+
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 300);
+    const timer = window.setTimeout(() => setDebouncedSearch(search), 300);
     return () => window.clearTimeout(timer);
   }, [search]);
 
   useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFiltro, qtdMin, qtdMax, validadeDe, validadeAte, movDe, movAte, abaTipo]);
+
+  useEffect(() => {
+    let ativo = true;
+    obterContagensEstoqueApi()
+      .then((c) => {
+        if (ativo) setContagemPorOrigem(c);
+      })
+      .catch(() => {
+        /* contagem é acessória; ignora falha */
+      });
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  useEffect(() => {
     let ativo = true;
 
-    async function carregarDados() {
+    async function carregar() {
       setCarregando(true);
       setErroCarregamento(null);
       try {
-        const [produtos, medicamentos, insumos] = await Promise.all([
-          listarTodosProdutosParaEstoqueApi(),
-          listarMedicamentosApi(),
-          listarInsumosApi(),
-        ]);
-
-        const hoje = new Date();
-        const limiteVencimento = new Date();
-        limiteVencimento.setDate(hoje.getDate() + 30);
-
-        const itensComOrigem = [
-          ...produtos.map((item) => ({ ...item, origem: 'produto' as const })),
-          ...medicamentos.map((item) => ({ ...item, origem: 'medicamento' as const })),
-          ...insumos.map((item) => ({ ...item, origem: 'insumo' as const })),
-        ];
+        const resposta = await consultarEstoquePaginadoApi(
+          {
+            origem: ESTOQUE_ORIGEM_API[origemAlvo],
+            termoBusca: debouncedSearch.trim() || undefined,
+            statusOperacional: statusFiltro || undefined,
+            quantidadeMinima: paraInteiroOuUndefined(qtdMin),
+            quantidadeMaxima: paraInteiroOuUndefined(qtdMax),
+            validadeDe: validadeDe || undefined,
+            validadeAte: validadeAte || undefined,
+            movimentacaoDe: movDe || undefined,
+            movimentacaoAte: movAte || undefined,
+          },
+          {
+            pageNumber: page,
+            pageSize: rowsPerPage,
+            orderBy,
+            sortDirection: orderDirection,
+          },
+        );
 
         const itens = itensComOrigem.map((item) => {
           const quantidadeAtual = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
@@ -135,7 +193,9 @@ export function PaginaListagemEstoque() {
         });
 
         if (!ativo) return;
-        setLinhasOperacionais(itens);
+        setLinhas(resposta.items.map(mapearLinha));
+        setTotalCount(resposta.totalCount);
+        setTotalPages(resposta.totalPages);
       } catch {
         if (!ativo) return;
         setErroCarregamento(MSG_ERRO.carregarEstoque);
@@ -144,74 +204,31 @@ export function PaginaListagemEstoque() {
       }
     }
 
-    void carregarDados();
+    void carregar();
     return () => {
       ativo = false;
     };
-  }, []);
-
-  const origemAlvo: LinhaOperacionalEstoque['origem'] =
-    abaTipo === 0 ? 'produto' : abaTipo === 1 ? 'medicamento' : 'insumo';
-
-  const opcoesProcessamento = useMemo(
-    () => ({
-      origemAlvo,
-      debouncedSearch,
-      statusFiltro,
-      qtdMin,
-      qtdMax,
-      validadeDe,
-      validadeAte,
-      movDe,
-      movAte,
-      orderBy,
-      orderDirection,
-      page,
-      rowsPerPage,
-    }),
-    [
-      origemAlvo,
-      debouncedSearch,
-      statusFiltro,
-      qtdMin,
-      qtdMax,
-      validadeDe,
-      validadeAte,
-      movDe,
-      movAte,
-      orderBy,
-      orderDirection,
-      page,
-      rowsPerPage,
-    ],
-  );
-
-  const { dadosPaginados, totalFiltrado, paginaSegura } = useListaEstoqueProcessada(
-    linhasOperacionais,
-    opcoesProcessamento,
-  );
+  }, [
+    origemAlvo,
+    debouncedSearch,
+    statusFiltro,
+    qtdMin,
+    qtdMax,
+    validadeDe,
+    validadeAte,
+    movDe,
+    movAte,
+    orderBy,
+    orderDirection,
+    page,
+    rowsPerPage,
+  ]);
 
   useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, statusFiltro, qtdMin, qtdMax, validadeDe, validadeAte, movDe, movAte, abaTipo]);
-
-  useEffect(() => {
-    if (paginaSegura !== page) {
-      setPage(paginaSegura);
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
     }
-  }, [paginaSegura, page]);
-
-  const contagemPorOrigem = useMemo(() => {
-    let produtos = 0;
-    let medicamentos = 0;
-    let insumos = 0;
-    for (const linha of linhasOperacionais) {
-      if (linha.origem === 'produto') produtos += 1;
-      else if (linha.origem === 'medicamento') medicamentos += 1;
-      else insumos += 1;
-    }
-    return { produtos, medicamentos, insumos };
-  }, [linhasOperacionais]);
+  }, [totalPages, page]);
 
   const filtrosAtivos = useMemo(
     () =>
@@ -341,9 +358,9 @@ export function PaginaListagemEstoque() {
             <EstoqueGestaoConteudo
               isMobile={isMobile}
               carregando={carregando}
-              dadosPaginados={dadosPaginados}
-              totalFiltrado={totalFiltrado}
-              page={paginaSegura}
+              dadosPaginados={linhas}
+              totalFiltrado={totalCount}
+              page={page}
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={(n) => {
                 setRowsPerPage(n);

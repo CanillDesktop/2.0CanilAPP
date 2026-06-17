@@ -10,7 +10,7 @@ public class InsumosModel : ItemComEstoqueBaseModel
 {
     public string Codigo { get; set; } = string.Empty;
     public string DescricaoSimplificada { get; set; } = string.Empty;
-    public string? DescricaoDetalhada { get; set; }
+    public string DescricaoDetalhada { get; set; } = string.Empty;
     public UnidadeInsumosEnum Unidade { get; set; }
 
     private static string GeraIdentificador()
@@ -35,7 +35,6 @@ public class InsumosModel : ItemComEstoqueBaseModel
             Codigo = codigoInsumo,
             DataEntrega = dto.DataEntrega,
             DataValidade = dto.DataValidade,
-            Lote = dto.Lote,
             NFe = dto.NFe,
             Quantidade = dto.Quantidade
         };
@@ -49,7 +48,7 @@ public class InsumosModel : ItemComEstoqueBaseModel
         {
             Codigo = codigoInsumo,
             DescricaoSimplificada = dto.DescricaoSimplificada.ToLower(),
-            DescricaoDetalhada = dto.DescricaoDetalhada?.ToLower(),
+            DescricaoDetalhada = dto.DescricaoDetalhada.ToLower(),
             Unidade = dto.Unidade,
             ItemNivelEstoque = nivelEstoque,
             ItensEstoque = [itemEstoque]

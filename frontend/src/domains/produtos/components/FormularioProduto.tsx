@@ -43,7 +43,6 @@ const estadoInicialFormulario = () => ({
   unidade: 1,
   categoria: 1,
   cadastrarEstoqueInicial: true,
-  lote: '',
   quantidade: 0,
   dataEntrega: new Date().toISOString().slice(0, 10),
   nfe: '',
@@ -64,18 +63,18 @@ export function FormularioProduto() {
   const passoIdentificacaoValido = useMemo(
     () =>
       form.descricaoSimples.trim().length > 0 &&
+      form.descricaoDetalhada.trim().length > 0 &&
       Number.isFinite(form.unidade) &&
       form.unidade > 0 &&
       Number.isFinite(form.categoria) &&
       form.categoria > 0,
-    [form.descricaoSimples, form.unidade, form.categoria],
+    [form.descricaoSimples, form.descricaoDetalhada, form.unidade, form.categoria],
   );
 
   const passoEstoqueValido = useMemo(() => {
     if (!Number.isFinite(form.nivelMinimoEstoque) || form.nivelMinimoEstoque < 0) return false;
     if (!form.cadastrarEstoqueInicial) return true;
     return (
-      form.lote.trim().length > 0 &&
       Number.isFinite(form.quantidade) &&
       form.quantidade > 0 &&
       form.dataEntrega.trim().length > 0
@@ -88,7 +87,6 @@ export function FormularioProduto() {
       descricaoDetalhada: form.descricaoDetalhada,
       unidade: form.unidade,
       categoria: form.categoria,
-      lote: form.cadastrarEstoqueInicial ? form.lote : null,
       quantidade: form.cadastrarEstoqueInicial ? form.quantidade : 0,
       dataEntrega: new Date(form.dataEntrega).toISOString(),
       nfe: form.nfe,
@@ -142,7 +140,7 @@ export function FormularioProduto() {
           onIrParaLista={irParaLista}
         />
       ) : (
-        <Box component="form" onSubmit={aoEnviar}>
+        <Box component="form" onSubmit={aoEnviar} noValidate>
           {passoAtual === 0 ? (
             <SecaoFormularioCadastro
               titulo="Dados do produto"
@@ -165,6 +163,7 @@ export function FormularioProduto() {
                 <Grid size={12}>
                   <TextField
                     fullWidth
+                    required
                     label="Descrição detalhada"
                     placeholder="Detalhes adicionais, marca, observações..."
                     value={form.descricaoDetalhada}
@@ -230,22 +229,18 @@ export function FormularioProduto() {
                   />
                 }
               >
-                <Collapse in={form.cadastrarEstoqueInicial}>
+                <Collapse in={form.cadastrarEstoqueInicial} unmountOnExit>
                   <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        required={form.cadastrarEstoqueInicial}
-                        label="Lote inicial"
-                        value={form.lote}
-                        onChange={(e) => setForm((p) => ({ ...p, lote: e.target.value }))}
-                        sx={sxCampo}
-                      />
+                    <Grid size={12}>
+                      <Typography variant="body2" sx={{ color: estilos.cores.textMuted }}>
+                        O número do lote é gerado automaticamente pelo sistema ao salvar.
+                      </Typography>
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
                         required={form.cadastrarEstoqueInicial}
+                        disabled={!form.cadastrarEstoqueInicial}
                         type="number"
                         label="Quantidade inicial"
                         value={form.quantidade}
@@ -258,6 +253,7 @@ export function FormularioProduto() {
                       <TextField
                         fullWidth
                         required={form.cadastrarEstoqueInicial}
+                        disabled={!form.cadastrarEstoqueInicial}
                         type="date"
                         label="Data de entrada"
                         value={form.dataEntrega}
@@ -269,6 +265,7 @@ export function FormularioProduto() {
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
+                        disabled={!form.cadastrarEstoqueInicial}
                         type="date"
                         label="Data de validade"
                         value={form.dataValidade}
@@ -280,6 +277,7 @@ export function FormularioProduto() {
                     <Grid size={12}>
                       <TextField
                         fullWidth
+                        disabled={!form.cadastrarEstoqueInicial}
                         label="Documento (NF)"
                         value={form.nfe}
                         onChange={(e) => setForm((p) => ({ ...p, nfe: e.target.value }))}

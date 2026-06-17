@@ -1,5 +1,6 @@
 import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { CampoSenha } from '../../../shared/components/CampoSenha';
 import type { UsuarioCriadoDto } from '../types/tiposUsuarios';
 
 function rotuloPermissao(permissao: number) {
@@ -130,9 +131,8 @@ export function FormularioUsuario({
               required
               fullWidth
             />
-            <TextField
+            <CampoSenha
               label="Senha"
-              type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
               required

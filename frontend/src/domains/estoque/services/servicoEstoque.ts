@@ -2,6 +2,7 @@ import {
   atualizarItemEstoqueApi,
   criarItemEstoqueApi,
   excluirItemEstoqueApi,
+  obterItemEstoquePorCodigoELoteApi,
   obterItemEstoquePorIdApi,
   obterProximoLoteEstoqueApi,
 } from '../api/estoqueItensApi';
@@ -26,6 +27,9 @@ export const servicoEstoque = {
   },
   obterProximoLote(itemId: number): Promise<ProximoLoteEstoqueDto> {
     return obterProximoLoteEstoqueApi(itemId);
+  },
+  obterSaldoLote(codigo: string, lote: string): Promise<ItemEstoqueDto> {
+    return obterItemEstoquePorCodigoELoteApi(codigo, lote);
   },
   criarLote(dto: ItemEstoqueDto): Promise<ItemEstoqueDto> {
     return criarItemEstoqueApi(dto);

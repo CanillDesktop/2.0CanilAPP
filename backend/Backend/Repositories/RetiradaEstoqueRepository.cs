@@ -31,7 +31,7 @@ public class RetiradaEstoqueRepository : IRetiradaEstoqueRepository
 
     public async Task<RetiradaEstoqueHistoricoConsulta> ConsultarHistoricoAsync(
         RetiradaEstoqueFiltroConsulta filtros,
-        RetiradaEstoqueParameters parameters,
+        RetiradaEstoquePaginationParameters parameters,
         CancellationToken cancellationToken = default)
     {
         var intersecao = MontarIntersecao(filtros);

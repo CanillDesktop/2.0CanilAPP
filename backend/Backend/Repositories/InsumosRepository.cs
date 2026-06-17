@@ -1,6 +1,8 @@
 ﻿using Backend.Context;
-using Backend.DTOs.Insumos;
+using Backend.Filtro.Helpers;
+using Backend.Filtro.Insumos;
 using Backend.Models.Insumos;
+using Backend.Pagination;
 using Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,33 +12,52 @@ namespace Backend.Repositories
     {
         public InsumosRepository(CanilAppDbContext context) : base(context) { }
 
-        public async Task<IEnumerable<InsumosModel>> GetAsync(InsumosFiltroDTO filtro)
+        public async Task<ConsultaPaginada<InsumosModel>> ConsultarPaginadoAsync(
+        InsumosFiltro filtro,
+        ItensPaginationParameters paginationParameters,
+        int diasDataLimiteVencimento,
+        CancellationToken cancellationToken = default)
         {
-            ArgumentNullException.ThrowIfNull(filtro);
+            var pageNumber = Math.Max(paginationParameters.PageNumber, 1);
+            var pageSize = Math.Max(paginationParameters.PageSize, 1);
 
-            var query = _context.Insumos
-                .Include(i => i.ItensEstoque.Where(e => !e.IsDeleted))
-                .Include(i => i.ItemNivelEstoque)
-                .Where(i => i.IsDeleted == false)
-                .AsQueryable();
+            var filtrada = FiltroHelper.AplicarFiltrosInsumos(
+                FiltroHelper.Base(_context.Insumos.AsQueryable()),
+                filtro);
 
-            if (!string.IsNullOrWhiteSpace(filtro.CodInsumo))
-                query = query.Where(i => i.Codigo!.Contains(filtro.CodInsumo));
+            var hoje = DateTime.UtcNow.Date;
+            var limiteVencimento = hoje.AddDays(diasDataLimiteVencimento);
 
-            if (!string.IsNullOrWhiteSpace(filtro.DescricaoSimplificada))
-                query = query.Where(i => i.DescricaoSimplificada!.Contains(filtro.DescricaoSimplificada));
+            var resumo = new ItemComEstoqueResumoConsulta(
+                TotalNoRecorte: await filtrada.CountAsync(cancellationToken),
+                Ativos: await filtrada.CountAsync(
+                    p => p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
+                         && p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)
+                            >= (p.ItemNivelEstoque != null ? p.ItemNivelEstoque.NivelMinimoEstoque : 0),
+                    cancellationToken),
+                BaixoEstoque: await filtrada.CountAsync(
+                    p => p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
+                         && p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)
+                            < (p.ItemNivelEstoque != null ? p.ItemNivelEstoque.NivelMinimoEstoque : 0),
+                    cancellationToken),
+                SemEstoque: await filtrada.CountAsync(
+                    p => !p.ItensEstoque.Any(e => !e.IsDeleted)
+                         || p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) <= 0,
+                    cancellationToken),
+                AVencer: await filtrada.CountAsync(
+                    p => p.ItensEstoque.Any(e =>
+                        !e.IsDeleted
+                        && e.DataValidade != null
+                        && e.DataValidade >= hoje
+                        && e.DataValidade <= limiteVencimento),
+                    cancellationToken));
 
-            if (!string.IsNullOrWhiteSpace(filtro.NFe))
-                query = query.Where(i => i.ItensEstoque!.Any(e => !e.IsDeleted && !string.IsNullOrWhiteSpace(e.NFe) && e.NFe.Contains(filtro.NFe)));
+            var comStatus = FiltroHelper.AplicarStatusEstoque(filtrada, filtro.StatusEstoque);
+            var totalCount = await comStatus.CountAsync(cancellationToken);
 
-            if (filtro.DataEntrega != null)
-                query = query.Where(i => i.ItensEstoque!.Any(e => !e.IsDeleted && e.DataEntrega == filtro.DataEntrega));
+            var items = await PagedList<InsumosModel>.ToPagedListAsync(comStatus, pageNumber, pageSize, p => p.Id, cancellationToken);
 
-            if (filtro.DataValidade != null)
-                query = query.Where(i => i.ItensEstoque!.Any(e => !e.IsDeleted && e.DataValidade == filtro.DataValidade));
-
-            var insumos = await query.ToListAsync();
-            return insumos;
+            return new ConsultaPaginada<InsumosModel>(items, totalCount, resumo);
         }
     }
 }

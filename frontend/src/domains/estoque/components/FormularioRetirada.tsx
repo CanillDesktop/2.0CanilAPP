@@ -18,19 +18,27 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { listarUsuariosResumoParaRetiradasApi } from '../../usuarios/api/usuariosApi';
 import type { UsuarioResumoFiltroDto } from '../../usuarios/types/tiposUsuarios';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
+import { servicoEstoque } from '../services/servicoEstoque';
+import { lerRetiradaNavegacaoDeQuery } from '../utils/retiradaNavegacao';
 import type { RetiradaEstoqueDto, RetiradaNavegacaoState, RetiradaRequest } from '../types/tiposEstoque';
 
 export function FormularioRetirada() {
   const navegar = useNavigate();
   const location = useLocation();
-  const data = location.state as RetiradaNavegacaoState | undefined;
+  const [searchParams] = useSearchParams();
+  // Item 6: o contexto não depende apenas do location.state; em F5/URL direta é reconstruído pela query string.
+  const data = useMemo<RetiradaNavegacaoState | undefined>(() => {
+    const viaState = location.state as RetiradaNavegacaoState | undefined;
+    if (viaState) return viaState;
+    return lerRetiradaNavegacaoDeQuery(searchParams) ?? undefined;
+  }, [location.state, searchParams]);
   const { registrarRetirada, carregando, erro } = useMutacaoEstoque();
   const { cores } = useTemaApp();
   const estilos = useEstilosListagem();
@@ -50,12 +58,19 @@ export function FormularioRetirada() {
   const [para, setPara] = useState('');
   const [idUsuarioRecebedor, setIdUsuarioRecebedor] = useState<number | undefined>();
   const [usuariosResumo, setUsuariosResumo] = useState<UsuarioResumoFiltroDto[]>([]);
+  const [erroUsuarios, setErroUsuarios] = useState(false);
   const [observacao, setObservacao] = useState('');
   const [quantidade, setQuantidade] = useState(0);
   const [erroValidacao, setErroValidacao] = useState<string | null>(null);
   const [confirmarAberto, setConfirmarAberto] = useState(false);
   const [submitSucesso, setSubmitSucesso] = useState(false);
   const [submitErro, setSubmitErro] = useState(false);
+  const [saldoAtual, setSaldoAtual] = useState<number | null>(null);
+  const [vencidoDialog, setVencidoDialog] = useState<{ aberto: boolean; mensagem: string; dto: RetiradaEstoqueDto | null }>({
+    aberto: false,
+    mensagem: '',
+    dto: null,
+  });
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -66,16 +81,40 @@ export function FormularioRetirada() {
     severity: 'success',
   });
 
-  const quantidadeDisponivel = data?.quantidadeDisponivel ?? 0;
+  // Saldo exibido prioriza o valor revalidado no servidor (item 7); cai para o do contexto enquanto carrega.
+  const quantidadeDisponivel = saldoAtual ?? data?.quantidadeDisponivel ?? 0;
   const produtoNome = data?.produtoNome.trim() ?? '';
   const destinatarioSelecionado =
     idUsuarioRecebedor != null ? usuariosResumo.find((u) => u.id === idUsuarioRecebedor) ?? null : null;
 
   useEffect(() => {
     void listarUsuariosResumoParaRetiradasApi()
-      .then(setUsuariosResumo)
-      .catch(() => setUsuariosResumo([]));
+      .then((usuarios) => {
+        setUsuariosResumo(usuarios);
+        setErroUsuarios(false);
+      })
+      .catch(() => {
+        setUsuariosResumo([]);
+        setErroUsuarios(true);
+      });
   }, []);
+
+  // Item 7: revalida o saldo do lote ao abrir a tela, evitando partir de um valor desatualizado.
+  useEffect(() => {
+    if (!data?.codItem || !data?.loteCodigo) return;
+    let ativo = true;
+    void servicoEstoque
+      .obterSaldoLote(data.codItem, data.loteCodigo)
+      .then((item) => {
+        if (ativo) setSaldoAtual(item.quantidade);
+      })
+      .catch(() => {
+        // Mantém o saldo do contexto se a consulta falhar; a baixa atômica do backend ainda protege.
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [data?.codItem, data?.loteCodigo]);
 
   const retiradaValida = useMemo(() => {
     return Boolean(data) && produtoNome.length > 0 && de.trim().length > 0 && para.trim().length > 0 && quantidade > 0 && quantidade <= quantidadeDisponivel;
@@ -91,6 +130,42 @@ export function FormularioRetirada() {
     return null;
   }
 
+  function aoSucesso() {
+    setSubmitSucesso(true);
+    setSubmitErro(false);
+    setSnackbar({
+      open: true,
+      message: 'Retirada realizada com sucesso.',
+      severity: 'success',
+    });
+    window.setTimeout(() => {
+      if (data?.retornoRota) navegar(`${data.retornoRota}?refresh=${Date.now()}`);
+      else navegar(-1);
+    }, 850);
+  }
+
+  async function enviarRetirada(dto: RetiradaEstoqueDto) {
+    const resultado = await registrarRetirada(dto);
+    if (resultado.ok) {
+      aoSucesso();
+      return;
+    }
+
+    // Item 10: lote vencido -> abre confirmação explícita antes de prosseguir.
+    if (resultado.loteVencido) {
+      setVencidoDialog({ aberto: true, mensagem: resultado.mensagem, dto });
+      return;
+    }
+
+    setSubmitErro(true);
+    setSubmitSucesso(false);
+    setSnackbar({
+      open: true,
+      message: resultado.mensagem,
+      severity: 'error',
+    });
+  }
+
   async function confirmarRetirada() {
     if (carregando) return;
     const validacao = validarFormulario();
@@ -104,6 +179,25 @@ export function FormularioRetirada() {
         severity: 'error',
       });
       return;
+    }
+
+    // Item 7: revalida o saldo imediatamente antes de concluir; aborta em caso de divergência.
+    try {
+      const atual = await servicoEstoque.obterSaldoLote(data!.codItem, data!.loteCodigo);
+      setSaldoAtual(atual.quantidade);
+      if (quantidade > atual.quantidade) {
+        setConfirmarAberto(false);
+        setSubmitErro(true);
+        const msg =
+          atual.quantidade <= 0
+            ? 'O saldo deste lote foi esgotado. Atualize a tela e tente novamente.'
+            : `O saldo do lote mudou para ${atual.quantidade}. Ajuste a quantidade e tente novamente.`;
+        setErroValidacao(msg);
+        setSnackbar({ open: true, message: msg, severity: 'error' });
+        return;
+      }
+    } catch {
+      // Se a consulta de saldo falhar, segue para a baixa (atômica e protegida no backend).
     }
 
     const payloadRetirada: RetiradaRequest = {
@@ -186,6 +280,13 @@ export function FormularioRetirada() {
           </Box>
 
           {(erro || erroValidacao) && <Alert severity="error">{erroValidacao ?? erro}</Alert>}
+
+          {erroUsuarios && (
+            <Alert severity="warning">
+              Não foi possível carregar a lista de usuários cadastrados. Informe o destinatário manualmente no campo
+              "Para quem".
+            </Alert>
+          )}
 
           <TextField label="Produto" value={produtoNome} disabled fullWidth sx={sxCampo} />
           <TextField label="Lote" value={data.loteCodigo} disabled fullWidth sx={sxCampo} />
@@ -323,6 +424,50 @@ export function FormularioRetirada() {
             sx={estilos.botaoPrimario}
           >
             Confirmar
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={vencidoDialog.aberto}
+        onClose={() => setVencidoDialog({ aberto: false, mensagem: '', dto: null })}
+        slotProps={{
+          paper: {
+            sx: {
+              backgroundColor: cores.bgCard,
+              color: cores.textPrimary,
+              border: `1px solid ${cores.border}`,
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: cores.textPrimary, fontWeight: 700 }}>Lote vencido</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: cores.textSecondary }}>
+            {vencidoDialog.mensagem || 'O lote selecionado está vencido.'}
+          </Typography>
+          <Typography variant="body2" sx={{ color: cores.textSecondary, mt: 1 }}>
+            A retirada ficará registrada no histórico como autorizada por você, com a data de vencimento do lote.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setVencidoDialog({ aberto: false, mensagem: '', dto: null })}
+            sx={{ color: cores.textMuted, textTransform: 'none' }}
+          >
+            Cancelar
+          </Button>
+          <LoadingButton
+            loading={carregando}
+            loadingPosition="start"
+            startIcon={<SaveIcon />}
+            variant="contained"
+            color="warning"
+            onClick={confirmarRetiradaVencida}
+            disabled={carregando}
+            sx={estilos.botaoPrimario}
+          >
+            Retirar mesmo assim
           </LoadingButton>
         </DialogActions>
       </Dialog>

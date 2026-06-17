@@ -14,6 +14,18 @@ export async function obterProximoLoteEstoqueApi(itemId: number): Promise<Proxim
   return data;
 }
 
+/** Consulta um lote específico por código + lote (usado para revalidar saldo antes da retirada). */
+export async function obterItemEstoquePorCodigoELoteApi(
+  codigo: string,
+  lote: string,
+): Promise<ItemEstoqueDto> {
+  const cliente = obterClienteHttp();
+  const { data } = await cliente.get<ItemEstoqueDto>(
+    `/api/Estoque/${encodeURIComponent(codigo)}/${encodeURIComponent(lote)}`,
+  );
+  return data;
+}
+
 export async function criarItemEstoqueApi(dto: ItemEstoqueDto): Promise<ItemEstoqueDto> {
   const cliente = obterClienteHttp();
   const { data } = await cliente.post<ItemEstoqueDto>('/api/Estoque', dto);

@@ -50,11 +50,24 @@ type LinhaProduto = {
 
 const MotionAction = motion.div;
 
+const mapaCategoria: Record<number, string> = {
+  1: "Acessórios",
+  2: "Alimentação",
+  3: "Diversos",
+  4: "Eletrônicos",
+  5: "Equipamentos Cirúrgicos",
+  6: "Higiene",
+  7: "Instrumentais",
+  8: "Limpeza",
+  9: "Material Hospitalar",
+  10: "Outros",
+  11: "Outros Equipamentos",
+  12: "Vestuário",
+  13: "Veterinário"
+};
+
 function categoriaNome(categoria: number) {
-  if (categoria === 1) return 'Ração';
-  if (categoria === 2) return 'Higiene';
-  if (categoria === 3) return 'Acessório';
-  return `Categoria ${categoria}`;
+  return mapaCategoria[categoria] || `Categoria ${categoria}`;
 }
 
 function mapearLinha(item: ProdutoLeituraDto): LinhaProduto {

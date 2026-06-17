@@ -1,12 +1,28 @@
 import type { FormEvent } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import PersonAddAlt1OutlinedIcon from '@mui/icons-material/PersonAddAlt1Outlined';
+import MailOutlineOutlinedIcon from '@mui/icons-material/MailOutlineOutlined';
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  InputAdornment,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { Link } from 'react-router-dom';
-import { IndicadorCarregamento } from '../../../shared/components/IndicadorCarregamento';
-import { PainelErro } from '../../../shared/components/PainelErro';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { CampoSenha } from '../../../shared/components/CampoSenha';
+import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useCadastroUsuario } from '../hooks/useCadastroUsuario';
 import type { UsuarioCadastroComConfirmacaoDto } from '../types/tiposUsuarios';
 
 export function FormularioCadastroUsuario() {
+  const { cores } = useTemaApp();
+  const campoSx = estilosCampoFormulario(cores, { semAnelFoco: true });
   const { cadastrar, carregando, erro, errosValidacao, criado } = useCadastroUsuario();
   const [primeiroNome, setPrimeiroNome] = useState('');
   const [sobrenome, setSobrenome] = useState('');
@@ -14,53 +30,197 @@ export function FormularioCadastroUsuario() {
   const [senha, setSenha] = useState('');
   const [senhaConfirmacao, setSenhaConfirmacao] = useState('');
 
+  const senhasDivergem = useMemo(
+    () => senhaConfirmacao.length > 0 && senha !== senhaConfirmacao,
+    [senha, senhaConfirmacao],
+  );
+
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
-    const dto: UsuarioCadastroComConfirmacaoDto = { primeiroNome, sobrenome, email, senha, senhaConfirmacao, permissao: 2 };
+    if (senhasDivergem) return;
+    const dto: UsuarioCadastroComConfirmacaoDto = {
+      primeiroNome,
+      sobrenome,
+      email,
+      senha,
+      senhaConfirmacao,
+      permissao: 2,
+    };
     await cadastrar(dto);
   }
 
   return (
-    <form className="cartao" onSubmit={aoEnviar}>
-      <h1>Cadastro de usuário</h1>
-      <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
-      {criado && (
-        <p className="painel-sucesso" role="status">
-          Usuário criado: {criado.email}
-        </p>
-      )}
-      <label>
-        Nome
-        <input value={primeiroNome} onChange={(e) => setPrimeiroNome(e.target.value)} required />
-      </label>
-      <label>
-        Sobrenome
-        <input value={sobrenome} onChange={(e) => setSobrenome(e.target.value)} />
-      </label>
-      <label>
-        E-mail
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      </label>
-      <label>
-        Senha
-        <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} minLength={6} required />
-      </label>
-      <label>
-        Confirmar senha
-        <input type="password" value={senhaConfirmacao} onChange={(e) => setSenhaConfirmacao(e.target.value)} minLength={6} required />
-      </label>
-      <p className="formulario-rodape" style={{ marginTop: '0.5rem' }}>
-        Enquanto o sistema tiver menos de <strong>dois</strong> usuários cadastrados no total, novas contas recebem
-        permissão de <strong>Administrador</strong> automaticamente. Depois disso, a permissão padrão é{' '}
-        <strong>Leitura</strong>; um administrador pode alterar isso em Usuários.
-      </p>
-      <button type="submit" disabled={carregando}>
-        Salvar
-      </button>
-      <p className="formulario-rodape">
-        Já tem conta? <Link to="/login">Entrar</Link>
-      </p>
-      <IndicadorCarregamento visivel={carregando} rotulo="Salvando…" />
-    </form>
+    <Paper
+      component="form"
+      onSubmit={aoEnviar}
+      elevation={0}
+      sx={{
+        width: '100%',
+        maxWidth: 480,
+        p: { xs: 3, sm: 4.5 },
+        borderRadius: 4,
+        border: `1px solid ${cores.borderForte}`,
+        backgroundColor: cores.bgCard,
+        boxShadow: cores.sombraCard,
+        backdropFilter: 'blur(18px)',
+      }}
+    >
+      <Stack sx={{ gap: 3 }}>
+        <Box>
+          <Box
+            sx={{
+              width: 52,
+              height: 52,
+              display: 'grid',
+              placeItems: 'center',
+              mb: 2,
+              borderRadius: 3,
+              backgroundColor: `${cores.accent}2e`,
+              color: cores.chipIcon,
+            }}
+          >
+            <PersonAddAlt1OutlinedIcon />
+          </Box>
+          <Typography variant="h4" sx={{ color: cores.textPrimary, fontWeight: 800, letterSpacing: -0.5 }}>
+            Criar conta
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, color: cores.textSecondary }}>
+            Preencha seus dados para acessar o painel.
+          </Typography>
+        </Box>
+
+        {(erro || errosValidacao?.length) && (
+          <Alert severity="error" sx={{ borderRadius: 2 }}>
+            {erro}
+            {errosValidacao?.length ? (
+              <Box component="ul" sx={{ pl: 2.2, my: erro ? 1 : 0 }}>
+                {errosValidacao.map((mensagem) => (
+                  <li key={mensagem}>{mensagem}</li>
+                ))}
+              </Box>
+            ) : null}
+          </Alert>
+        )}
+
+        {criado ? (
+          <Alert severity="success" sx={{ borderRadius: 2 }} role="status">
+            Conta criada com sucesso para <strong>{criado.email}</strong>. Já é possível{' '}
+            <Box component={Link} to="/login" sx={{ color: cores.focus, fontWeight: 700 }}>
+              entrar
+            </Box>
+            .
+          </Alert>
+        ) : null}
+
+        <Stack sx={{ gap: 2 }}>
+          <TextField
+            label="Nome"
+            value={primeiroNome}
+            onChange={(e) => setPrimeiroNome(e.target.value)}
+            autoComplete="given-name"
+            required
+            fullWidth
+            sx={campoSx}
+            slotProps={{ htmlInput: { minLength: 2, maxLength: 60 } }}
+          />
+          <TextField
+            label="Sobrenome"
+            value={sobrenome}
+            onChange={(e) => setSobrenome(e.target.value)}
+            autoComplete="family-name"
+            fullWidth
+            sx={campoSx}
+            slotProps={{ htmlInput: { maxLength: 80 } }}
+          />
+          <TextField
+            label="E-mail"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+            fullWidth
+            sx={campoSx}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <MailOutlineOutlinedIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+          <CampoSenha
+            label="Senha"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            autoComplete="new-password"
+            required
+            fullWidth
+            sx={campoSx}
+            helperText="Mínimo 6 caracteres."
+            slotProps={{ htmlInput: { minLength: 6, maxLength: 100 } }}
+          />
+          <CampoSenha
+            label="Confirmar senha"
+            value={senhaConfirmacao}
+            onChange={(e) => setSenhaConfirmacao(e.target.value)}
+            autoComplete="new-password"
+            required
+            fullWidth
+            sx={campoSx}
+            error={senhasDivergem}
+            helperText={senhasDivergem ? 'As senhas não coincidem.' : ' '}
+            slotProps={{ htmlInput: { minLength: 6, maxLength: 100 } }}
+          />
+        </Stack>
+
+        <Typography variant="caption" sx={{ color: cores.textMuted, lineHeight: 1.5 }}>
+          Enquanto o sistema tiver menos de <strong>dois</strong> usuários cadastrados, novas contas recebem
+          permissão de <strong>Administrador</strong> automaticamente. Depois disso, a permissão padrão é{' '}
+          <strong>Leitura</strong>; um administrador pode alterá-la em Usuários.
+        </Typography>
+
+        <Button
+          type="submit"
+          disabled={carregando || senhasDivergem}
+          variant="contained"
+          size="large"
+          startIcon={carregando ? <CircularProgress size={18} color="inherit" /> : <PersonAddAlt1OutlinedIcon />}
+          sx={{
+            minHeight: 48,
+            borderRadius: 2,
+            fontWeight: 800,
+            textTransform: 'none',
+            backgroundColor: cores.accent,
+            color: cores.textOnAccent,
+            '&:hover': { backgroundColor: cores.accentHover },
+            '&:disabled': {
+              backgroundColor: `${cores.accent}6b`,
+              color: `${cores.textOnAccent}b8`,
+            },
+          }}
+        >
+          {carregando ? 'Salvando...' : 'Criar conta'}
+        </Button>
+
+        <Typography variant="body2" sx={{ color: cores.textSecondary, textAlign: 'center' }}>
+          Já tem conta?{' '}
+          <Box
+            component={Link}
+            to="/login"
+            sx={{
+              color: cores.focus,
+              fontWeight: 700,
+              textDecoration: 'none',
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
+            Entrar
+          </Box>
+        </Typography>
+      </Stack>
+    </Paper>
   );
 }

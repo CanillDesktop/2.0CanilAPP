@@ -1,27 +1,105 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { LinhaOperacionalEstoque } from '../types/tiposEstoque';
+import { useEffect, useState } from 'react';
+import { consultarEstoquePaginadoApi } from '../api/estoqueConsultaApi';
+import { ESTOQUE_ORIGEM_API, type LinhaOperacionalEstoque } from '../types/tiposEstoque';
+import { mapearEstoqueLinhaDto } from '../utils/mapearLinhaOperacionalEstoque';
 
 export type CategoriaBusca = 'produto' | 'medicamento' | 'insumo';
 
-export function useBuscaCategoria(itens: LinhaOperacionalEstoque[], categoria: CategoriaBusca) {
+export type FiltrosAvancadosBusca = {
+  qtdMin: string;
+  qtdMax: string;
+  validadeInicio: string;
+  validadeFim: string;
+  movInicio: string;
+  movFim: string;
+  status: '' | 'ok' | 'baixo' | 'critico' | 'vencimento';
+};
+
+function paraInteiroOuUndefined(valor: string): number | undefined {
+  const t = valor.trim();
+  if (t === '') return undefined;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+export function useBuscaCategoria(
+  categoria: CategoriaBusca,
+  pagina: number,
+  pageSize: number,
+  filtrosAvancados: FiltrosAvancadosBusca,
+) {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
+  const [carregando, setCarregando] = useState(false);
+  const [resultados, setResultados] = useState<LinhaOperacionalEstoque[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      setDebouncedTerm(searchTerm.trim().toLowerCase());
+      setDebouncedTerm(searchTerm.trim());
     }, 300);
-
-    return () => {
-      window.clearTimeout(timeout);
-    };
+    return () => window.clearTimeout(timeout);
   }, [searchTerm]);
 
-  const resultados = useMemo(() => {
-    const daCategoria = itens.filter((item) => item.origem === categoria);
-    if (!debouncedTerm) return daCategoria;
-    return daCategoria.filter((item) => item.nome.toLowerCase().includes(debouncedTerm));
-  }, [itens, categoria, debouncedTerm]);
+  useEffect(() => {
+    let ativo = true;
 
-  return { searchTerm, setSearchTerm, resultados, termoNomeDebounced: debouncedTerm };
+    async function carregar() {
+      setCarregando(true);
+      try {
+        const statusOperacional =
+          filtrosAvancados.status === 'vencimento'
+            ? 'proximo_vencimento'
+            : filtrosAvancados.status || undefined;
+
+        const resposta = await consultarEstoquePaginadoApi(
+          {
+            origem: ESTOQUE_ORIGEM_API[categoria],
+            termoBusca: debouncedTerm || undefined,
+            statusOperacional,
+            quantidadeMinima: paraInteiroOuUndefined(filtrosAvancados.qtdMin),
+            quantidadeMaxima: paraInteiroOuUndefined(filtrosAvancados.qtdMax),
+            validadeDe: filtrosAvancados.validadeInicio || undefined,
+            validadeAte: filtrosAvancados.validadeFim || undefined,
+            movimentacaoDe: filtrosAvancados.movInicio || undefined,
+            movimentacaoAte: filtrosAvancados.movFim || undefined,
+          },
+          {
+            pageNumber: pagina,
+            pageSize,
+            orderBy: 'nome',
+            sortDirection: 'asc',
+          },
+        );
+
+        if (!ativo) return;
+        setResultados(resposta.items.map(mapearEstoqueLinhaDto));
+        setTotalCount(resposta.totalCount);
+        setTotalPages(resposta.totalPages > 0 ? resposta.totalPages : 1);
+      } catch {
+        if (!ativo) return;
+        setResultados([]);
+        setTotalCount(0);
+        setTotalPages(1);
+      } finally {
+        if (ativo) setCarregando(false);
+      }
+    }
+
+    void carregar();
+    return () => {
+      ativo = false;
+    };
+  }, [categoria, debouncedTerm, pagina, pageSize, filtrosAvancados]);
+
+  return {
+    searchTerm,
+    setSearchTerm,
+    resultados,
+    carregando,
+    totalCount,
+    totalPages,
+    termoNomeDebounced: debouncedTerm.toLowerCase(),
+  };
 }

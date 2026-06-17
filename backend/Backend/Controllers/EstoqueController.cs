@@ -1,6 +1,8 @@
-﻿using Backend.DTOs.Estoque;
+﻿using Backend.DTOs.Common;
+using Backend.DTOs.Estoque;
 using Backend.Exceptions;
 using Backend.Models;
+using Backend.Pagination;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +15,12 @@ namespace Backend.Controllers
     public class EstoqueController : ControllerBase
     {
         private readonly IEstoqueItemService _service;
+        private readonly IEstoqueConsultaService _consultaService;
 
-        public EstoqueController(IEstoqueItemService service)
+        public EstoqueController(IEstoqueItemService service, IEstoqueConsultaService consultaService)
         {
             _service = service;
+            _consultaService = consultaService;
         }
 
         [HttpGet("{codigo}", Name = "GetItensEstoqueByCodigo")]
@@ -51,29 +55,77 @@ namespace Backend.Controllers
 
             return Ok(itemEstoque);
         }
-
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] ItemEstoqueDTO dto)
+     
+        [HttpGet("pagination")]
+        [ProducesResponseType(typeof(PagedResultDto<EstoqueLinhaLeituraDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<PagedResultDto<EstoqueLinhaLeituraDTO>>> GetPagination(
+            [FromQuery] EstoqueFiltroDTO? filtro,
+            [FromQuery] EstoqueConsultaParameters? parameters,
+            CancellationToken cancellationToken)
         {
             try
             {
-                var novoItemEstoque = await _service.CriarAsync(dto);
+                var resultado = await _consultaService.ConsultarPaginadoAsync(
+                    filtro ?? new EstoqueFiltroDTO(),
+                    parameters ?? new EstoqueConsultaParameters(),
+                    cancellationToken);
 
-                if (novoItemEstoque == null)
-                    throw new ArgumentNullException();
-
-                return new CreatedAtRouteResult("GetItemEstoqueByLote",
-                    new { lote = novoItemEstoque.Lote }, novoItemEstoque);
+                return Ok(resultado);
             }
-            catch (ModelIncompletaException ex)
+            catch (ArgumentException ex)
             {
                 return BadRequest(new ErrorResponse
                 {
-                    Title = "Erro ao adicionar um novo lote ao item",
+                    Title = "Filtros ou paginação inválidos",
                     Status = StatusCodes.Status400BadRequest,
-                    Details = ex.Message ?? "Erro ao adicionar um novo lote ao item"
+                    Details = ex.Message,
                 });
             }
+        }
+
+        [HttpGet("contagens")]
+        [ProducesResponseType(typeof(EstoqueContagemPorOrigemDTO), StatusCodes.Status200OK)]
+        public async Task<ActionResult<EstoqueContagemPorOrigemDTO>> GetContagens(
+            CancellationToken cancellationToken)
+        {
+            var resultado = await _consultaService.ObterContagemPorOrigemAsync(cancellationToken);
+            return Ok(resultado);
+        }
+
+
+        /// <summary>
+        /// Lote (e código do item) gerados pelo backend, apenas para conferência na tela de cadastro.
+        /// O usuário nunca edita esses valores.
+        /// </summary>
+        [HttpGet("proximo-lote/{itemId:int}", Name = "GetProximoLoteEstoque")]
+        [ProducesResponseType(typeof(ProximoLoteEstoqueDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ProximoLoteEstoqueDTO>> GetProximoLote(int itemId)
+        {
+            var proximoLote = await _service.GerarProximoLoteAsync(itemId);
+            return Ok(proximoLote);
+        }
+
+        [HttpPost]
+        [ProducesResponseType(typeof(ItemEstoqueDTO), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Create([FromBody] ItemEstoqueDTO dto)
+        {
+            var novoItemEstoque = await _service.CriarAsync(dto);
+
+            if (novoItemEstoque == null)
+                throw new RecursoNaoEncontradoException("Não foi possível criar o lote.");
+
+            ItemEstoqueDTO itemCriado = novoItemEstoque;
+
+            // Rota nomeada exige código + lote (chave da consulta); informar ambos evita o
+            // "No route matches the supplied values" que retornava 500.
+            return CreatedAtRoute(
+                "GetItemEstoqueByLote",
+                new { codigo = itemCriado.Codigo, lote = itemCriado.Lote },
+                itemCriado);
         }
 
         [HttpDelete("{lote}")]

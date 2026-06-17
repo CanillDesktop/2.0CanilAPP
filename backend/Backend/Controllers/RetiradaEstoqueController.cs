@@ -34,14 +34,14 @@ public class RetiradaEstoqueController : ControllerBase
     [HttpGet("historico")]
     public async Task<ActionResult<RetiradaEstoqueHistoricoListaPaginadaDTO>> GetHistorico(
         [FromQuery] RetiradaEstoqueFiltroDTO? filtro,
-        [FromQuery] RetiradaEstoqueParameters? parameters,
+        [FromQuery] RetiradaEstoquePaginationParameters? parameters,
         CancellationToken cancellationToken)
     {
         try
         {
             var resultado = await _service.ConsultarHistoricoPaginadoAsync(
                 filtro ?? new RetiradaEstoqueFiltroDTO(),
-                parameters ?? new RetiradaEstoqueParameters(),
+                parameters ?? new RetiradaEstoquePaginationParameters(),
                 cancellationToken);
 
             return Ok(resultado);
@@ -121,7 +121,7 @@ public class RetiradaEstoqueController : ControllerBase
     {
         try
         {
-            var logRetirada = await _service.CriarAsync(lote, dto);
+            var logRetirada = await _service.CriarAsync(lote, dto, dto.ConfirmarLoteVencido);
 
             if (logRetirada == null)
                 throw new ArgumentNullException();
@@ -144,6 +144,25 @@ public class RetiradaEstoqueController : ControllerBase
                 Title = "Falha ao salvar log de retirada de estoque",
                 Status = StatusCodes.Status400BadRequest,
                 Details = ex.Message ?? "Item de estoque não encontrado",
+            });
+        }
+        catch (LoteVencidoPrecisaConfirmacaoException ex)
+        {
+            // 409 sinaliza ao frontend que é preciso confirmar a retirada do lote vencido.
+            return Conflict(new ErrorResponse
+            {
+                Title = "Lote vencido",
+                Status = StatusCodes.Status409Conflict,
+                Details = ex.Message,
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Falha ao salvar log de retirada de estoque",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message,
             });
         }
         catch (RegraDeNegocioInfringidaException ex)

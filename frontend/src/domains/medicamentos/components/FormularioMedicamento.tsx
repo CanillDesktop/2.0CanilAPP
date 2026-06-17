@@ -44,7 +44,6 @@ const OPCOES_PUBLICO_ALVO = [
 const estadoInicialFormulario = () => ({
   prioridade: 0,
   descricaoMedicamento: '',
-  lote: '',
   quantidade: 0,
   dataEntrega: new Date().toISOString().slice(0, 10),
   nfe: '',
@@ -78,10 +77,9 @@ export function FormularioMedicamento() {
     if (!Number.isFinite(form.nivelMinimoEstoque) || form.nivelMinimoEstoque < 0) return false;
     if (!form.cadastrarEstoqueInicial) return true;
     return (
-      form.lote.trim().length > 0 &&
       form.dataEntrega.trim().length > 0 &&
       Number.isFinite(form.quantidade) &&
-      form.quantidade >= 0
+      form.quantidade > 0
     );
   }, [form]);
 
@@ -89,7 +87,6 @@ export function FormularioMedicamento() {
     return {
       prioridade: form.prioridade,
       descricao: form.descricaoMedicamento,
-      lote: form.cadastrarEstoqueInicial ? form.lote : null,
       quantidade: form.cadastrarEstoqueInicial ? form.quantidade : 0,
       dataEntrega: new Date(form.dataEntrega).toISOString(),
       nfe: form.nfe,
@@ -146,7 +143,7 @@ export function FormularioMedicamento() {
           onIrParaLista={irParaLista}
         />
       ) : (
-        <Box component="form" onSubmit={aoEnviar}>
+        <Box component="form" onSubmit={aoEnviar} noValidate>
           {passoAtual === 0 ? (
             <SecaoFormularioCadastro
               titulo="Dados do medicamento"
@@ -246,26 +243,23 @@ export function FormularioMedicamento() {
                   />
                 }
               >
-                <Collapse in={form.cadastrarEstoqueInicial}>
+                <Collapse in={form.cadastrarEstoqueInicial} unmountOnExit>
                   <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        required={form.cadastrarEstoqueInicial}
-                        label="Lote inicial"
-                        value={form.lote}
-                        onChange={(e) => setForm((p) => ({ ...p, lote: e.target.value }))}
-                        sx={sxCampo}
-                      />
+                    <Grid size={12}>
+                      <Typography variant="body2" sx={{ color: estilos.cores.textMuted }}>
+                        O número do lote é gerado automaticamente pelo sistema ao salvar.
+                      </Typography>
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
+                        required={form.cadastrarEstoqueInicial}
+                        disabled={!form.cadastrarEstoqueInicial}
                         type="number"
                         label="Quantidade inicial"
                         value={form.quantidade}
                         onChange={(e) => setForm((p) => ({ ...p, quantidade: Number(e.target.value) }))}
-                        slotProps={{ htmlInput: { min: 0 } }}
+                        slotProps={{ htmlInput: { min: 1 } }}
                         sx={sxCampo}
                       />
                     </Grid>
@@ -273,6 +267,7 @@ export function FormularioMedicamento() {
                       <TextField
                         fullWidth
                         required={form.cadastrarEstoqueInicial}
+                        disabled={!form.cadastrarEstoqueInicial}
                         type="date"
                         label="Data de entrega"
                         value={form.dataEntrega}
@@ -284,6 +279,7 @@ export function FormularioMedicamento() {
                     <Grid size={{ xs: 12, md: 6 }}>
                       <TextField
                         fullWidth
+                        disabled={!form.cadastrarEstoqueInicial}
                         type="date"
                         label="Data de validade"
                         value={form.dataValidade}
@@ -295,6 +291,7 @@ export function FormularioMedicamento() {
                     <Grid size={12}>
                       <TextField
                         fullWidth
+                        disabled={!form.cadastrarEstoqueInicial}
                         label="NF-e / documento"
                         value={form.nfe}
                         onChange={(e) => setForm((p) => ({ ...p, nfe: e.target.value }))}
