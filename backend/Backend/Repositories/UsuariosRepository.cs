@@ -44,4 +44,14 @@ public class UsuariosRepository : BaseCRUDRepository<UsuariosModel>, IUsuariosRe
             })
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<UsuariosModel>> ListarTodosIncluindoInativosAsync()
+    {
+        return await _context.Usuarios.AsNoTracking().ToListAsync();
+    }
+
+    public async Task<UsuariosModel?> GetByIdIncluindoInativosAsync(int id)
+    {
+        return await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);
+    }
 }

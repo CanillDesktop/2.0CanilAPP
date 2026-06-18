@@ -1,24 +1,19 @@
 import axios, { type AxiosInstance } from 'axios';
 import { urlBaseApi } from '../config/variaveisAmbiente';
-import { MSG_ERRO } from '../../shared/constants/mensagensErroUsuario';
-import { ErroApi } from './erroApi';
-import type { RespostaErroApi, RespostaErroValidacaoApi } from '../../shared/types/respostaErroApi';
-import { isRespostaErroApi, isRespostaErroValidacaoApi } from '../../shared/types/respostaErroApi';
 import { obterAccessToken } from '../../shared/services/armazenamentoSessao';
 
 /**
  * Fábrica do cliente HTTP centralizado (Axios).
- * Responsável por base URL, credenciais e tratamento básico de falhas.
+ * Responsável por base URL, credenciais e injeção do access token.
+ * O pipeline de resposta (401 → refresh → retry → ErroApi) é registrado no singleton.
  */
 export function criarClienteHttp(): AxiosInstance {
-  /** Só envia credenciais cross-origin quando a API é outra origem (`VITE_URL_BASE_API`). Com base vazia + proxy do Vite, o browser fala só com :5173 (mesma origem) e CORS não se aplica. */
-  const credenciaisCrossOrigin = urlBaseApi.trim().length > 0;
-
   const cliente = axios.create({
     baseURL: urlBaseApi,
     headers: { 'Content-Type': 'application/json' },
-    timeout: 30_000,
-    withCredentials: credenciaisCrossOrigin
+    timeout: 50_000,
+    /** Cookie HttpOnly do refresh token — necessário em dev (proxy) e prod (cross-origin). */
+    withCredentials: true,
   });
 
   cliente.interceptors.request.use((config) => {
@@ -28,51 +23,6 @@ export function criarClienteHttp(): AxiosInstance {
     }
     return config;
   });
-
-  cliente.interceptors.response.use(
-    (resposta) => resposta,
-    async (erro) => {
-      const status = erro.response?.status ?? 0;
-      let dados: unknown = erro.response?.data;
-
-      let mensagem: string = MSG_ERRO.operacao;
-      let erros;
-
-      if (dados instanceof Blob) {
-        try {
-          const texto = await dados.text();
-          dados = JSON.parse(texto) as unknown;
-        } catch {
-          dados = undefined;
-        }
-      }
-
-      if (dados && isRespostaErroValidacaoApi(dados)) {
-        mensagem = MSG_ERRO.validacaoResumo;
-        erros = (dados as RespostaErroValidacaoApi).errors;
-      } else if (dados && isRespostaErroApi(dados)) {
-        const detalhe = (dados as RespostaErroApi).details?.trim();
-        mensagem = detalhe && detalhe.length > 0 ? detalhe : MSG_ERRO.operacao;
-      } else if (erro.message && !/^(network error|timeout|canceled|aborted)$/i.test(erro.message.trim())) {
-        mensagem = erro.message;
-      }
-
-      if (status === 403) {
-        mensagem = MSG_ERRO.semPermissao;
-      } else if (status === 401) {
-        mensagem = MSG_ERRO.login401;
-      } else if (status === 404) {
-        mensagem = MSG_ERRO.naoEncontrado;
-      } else if (status === 408) {
-        mensagem = MSG_ERRO.timeout;
-      } else if (status >= 500) {
-        mensagem = MSG_ERRO.servidor;
-      } else if (status === 0 && /network error/i.test(erro.message ?? '')) {
-        mensagem = MSG_ERRO.rede;
-      }
-      return Promise.reject(new ErroApi(mensagem, status, dados, erros));
-    },
-  );
 
   return cliente;
 }

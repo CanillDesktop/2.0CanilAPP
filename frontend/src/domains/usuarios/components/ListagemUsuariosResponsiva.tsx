@@ -56,8 +56,13 @@ export function ListagemUsuariosResponsiva({
                   <Button size="small" onClick={() => onEditar(usuario)} disabled={carregando}>
                     Editar
                   </Button>
-                  <Button size="small" color="warning" onClick={() => onInativar(usuario)} disabled={carregando || usuario.isDeleted}>
-                    Inativar
+                  <Button
+                    size="small"
+                    color={usuario.isDeleted ? 'success' : 'warning'}
+                    onClick={() => onInativar(usuario)}
+                    disabled={carregando}
+                  >
+                    {usuario.isDeleted ? 'Reativar' : 'Inativar'}
                   </Button>
                   <Button size="small" color="error" onClick={() => onRemover(usuario)} disabled={carregando}>
                     Remover
@@ -96,8 +101,13 @@ export function ListagemUsuariosResponsiva({
                 <Button size="small" onClick={() => onEditar(usuario)} disabled={carregando}>
                   Editar
                 </Button>
-                <Button size="small" color="warning" onClick={() => onInativar(usuario)} disabled={carregando || usuario.isDeleted}>
-                  Inativar
+                <Button
+                  size="small"
+                  color={usuario.isDeleted ? 'success' : 'warning'}
+                  onClick={() => onInativar(usuario)}
+                  disabled={carregando}
+                >
+                  {usuario.isDeleted ? 'Reativar' : 'Inativar'}
                 </Button>
                 <Button size="small" color="error" onClick={() => onRemover(usuario)} disabled={carregando}>
                   Remover

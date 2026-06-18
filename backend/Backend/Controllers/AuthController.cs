@@ -74,15 +74,13 @@ public class AuthController : ControllerBase
                 Details = ex.Message ?? "Usuário inativo. Favor contatar o suporte/administradores."
             });
         }
-        catch (Exception ex)
+        catch (ArgumentNullException ex)
         {
-            _logger.LogError(ex, "Erro interno ao processar login para {Login}.", request.Login);
-
-            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            return BadRequest(new ErrorResponse
             {
-                Title = "Erro interno no servidor",
-                Status = StatusCodes.Status500InternalServerError,
-                Details = "Ocorreu um erro inesperado. Tente novamente mais tarde."
+                Title = "Acesso não autorizado",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message ?? "Usuário ou senha inválidos."
             });
         }
     }
@@ -96,7 +94,12 @@ public class AuthController : ControllerBase
 
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                throw new ArgumentNullException();
+                return Unauthorized(new ErrorResponse
+                {
+                    Title = "Sessão inválida",
+                    Status = StatusCodes.Status401Unauthorized,
+                    Details = "Sessão inválida. Por favor, faça login novamente.",
+                });
             }
 
             var result = await _authService.RefreshTokenAsync(refreshToken, cancellationToken);
@@ -111,7 +114,17 @@ public class AuthController : ControllerBase
             {
                 Title = "Sessão inválida",
                 Status = StatusCodes.Status401Unauthorized,
-                Details = ex.Message ?? "Sessão inválida. Por favor, faça login novamente"
+                Details = ex.Message ?? "Sessão inválida. Por favor, faça login novamente.",
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao renovar sessão.");
+            return Unauthorized(new ErrorResponse
+            {
+                Title = "Sessão inválida",
+                Status = StatusCodes.Status401Unauthorized,
+                Details = "Sessão inválida. Por favor, faça login novamente.",
             });
         }
     }
@@ -148,10 +161,9 @@ public class AuthController : ControllerBase
     {
         var cookieOptions = new CookieOptions
         {
-            HttpOnly = true, 
-            Secure = true, 
-            SameSite = SameSiteMode.None,
-            Expires = refreshToken.ExpiresAt
+            HttpOnly = true,
+            Path = "/",
+            Expires = refreshToken.ExpiresAt,
         };
 
         if (_environment.IsDevelopment())

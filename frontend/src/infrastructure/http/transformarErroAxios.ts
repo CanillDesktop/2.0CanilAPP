@@ -1,5 +1,6 @@
 import type { AxiosError } from 'axios';
 import { MSG_ERRO } from '../../shared/constants/mensagensErroUsuario';
+import { obterAccessToken } from '../../shared/services/armazenamentoSessao';
 import type { RespostaErroApi, RespostaErroValidacaoApi } from '../../shared/types/respostaErroApi';
 import { isRespostaErroApi, isRespostaErroValidacaoApi } from '../../shared/types/respostaErroApi';
 import { ErroApi } from './erroApi';
@@ -34,7 +35,11 @@ export async function transformarErroAxios(erro: AxiosError): Promise<ErroApi> {
   if (status === 403) {
     mensagem = MSG_ERRO.semPermissao;
   } else if (status === 401) {
-    mensagem = MSG_ERRO.login401;
+    const jaTemDetalheApi =
+      Boolean(dados && isRespostaErroApi(dados) && (dados as RespostaErroApi).details?.trim());
+    if (!jaTemDetalheApi) {
+      mensagem = obterAccessToken() ? MSG_ERRO.login401 : MSG_ERRO.sessaoExpirada;
+    }
   } else if (status === 404) {
     mensagem = MSG_ERRO.naoEncontrado;
   } else if (status === 408) {
