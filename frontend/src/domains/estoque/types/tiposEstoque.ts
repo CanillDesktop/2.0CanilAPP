@@ -2,6 +2,7 @@ import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 
 export type { ItemEstoqueDto };
 
+/** Lote e código gerados pelo backend (somente para conferência na tela de cadastro de lote). */
 export type ProximoLoteEstoqueDto = {
   codigo: string;
   lote: string;
@@ -22,6 +23,79 @@ export type LinhaOperacionalEstoque = {
   movimentacaoMs?: number | null;
 };
 
+/** Campos ordenáveis da listagem de estoque (mesmos nomes aceitos pelo backend). */
+export type CampoOrdenacaoEstoque = 'nome' | 'quantidade' | 'validade' | 'status' | 'ultimaMovimentacao';
+
+/** Status operacional aceito pelo backend (igual ao union de LinhaOperacionalEstoque['status']). */
+export type EstoqueStatusOperacional = LinhaOperacionalEstoque['status'];
+
+/** Mapeia a aba/origem para o enum EstoqueOrigem do backend (Produto=0, Medicamento=1, Insumo=2). */
+export const ESTOQUE_ORIGEM_API = {
+  produto: 0,
+  medicamento: 1,
+  insumo: 2,
+} as const satisfies Record<LinhaOperacionalEstoque['origem'], number>;
+
+/** Origem por número do enum (resposta do backend). */
+export const ESTOQUE_ORIGEM_POR_NUMERO: Record<number, LinhaOperacionalEstoque['origem']> = {
+  0: 'produto',
+  1: 'medicamento',
+  2: 'insumo',
+};
+
+/** Linha agregada retornada por GET /api/Estoque/pagination (EstoqueLinhaLeituraDTO). */
+export type EstoqueLinhaDto = {
+  id: number;
+  nome: string;
+  quantidade: number;
+  minimo: number;
+  validade: string;
+  origem: number;
+  statusOperacional: EstoqueStatusOperacional;
+  ultimaMovimentacao: string;
+  menorValidadeUtc?: string | null;
+  ultimaMovimentacaoUtc?: string | null;
+};
+
+/** Filtros de negócio enviados para a listagem paginada de estoque. */
+export type EstoqueFiltroDto = {
+  origem: number;
+  termoBusca?: string;
+  statusOperacional?: EstoqueStatusOperacional | '';
+  quantidadeMinima?: number;
+  quantidadeMaxima?: number;
+  validadeDe?: string;
+  validadeAte?: string;
+  movimentacaoDe?: string;
+  movimentacaoAte?: string;
+};
+
+/** Paginação + ordenação server-side. */
+export type EstoqueConsultaParametros = {
+  pageNumber: number;
+  pageSize: number;
+  orderBy?: CampoOrdenacaoEstoque;
+  sortDirection?: 'asc' | 'desc';
+};
+
+/** Envelope genérico de paginação (PagedResultDto<T>). */
+export type PagedResult<T> = {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasPrevious: boolean;
+  hasNext: boolean;
+};
+
+/** Totais por aba (GET /api/Estoque/contagens). */
+export type EstoqueContagemPorOrigemDto = {
+  produtos: number;
+  medicamentos: number;
+  insumos: number;
+};
+
 export type RetiradaEstoqueDto = {
   codigo: string;
   nomeOuDescricaoSimples: string;
@@ -32,6 +106,8 @@ export type RetiradaEstoqueDto = {
   dataHoraRetirada: string;
   observacao?: string;
   idUsuarioRecebedor?: number;
+  /** Confirmação explícita do usuário para retirar mesmo com o lote vencido. */
+  confirmarLoteVencido?: boolean;
 };
 
 export type PeriodoRapidoRetiradasDto = 'HOJE' | 'ULTIMOS_7_DIAS' | 'ULTIMOS_30_DIAS';
@@ -66,6 +142,10 @@ export type RetiradaHistoricoItemDto = {
   idUsuarioRecebedor?: number | null;
   observacao?: string | null;
   status: string;
+  /** Indica que o lote estava vencido no momento da retirada (autorizada pelo retirante). */
+  estavaVencido?: boolean;
+  /** Data de validade do lote retirado, quando aplicável. */
+  dataValidadeLote?: string | null;
 };
 
 export type RetiradaHistoricoListaPaginadaDto = {

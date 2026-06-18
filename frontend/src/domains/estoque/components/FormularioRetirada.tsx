@@ -218,29 +218,16 @@ export function FormularioRetirada() {
       observacao: observacao.trim() || undefined,
       idUsuarioRecebedor,
     };
-    const resultado = await registrarRetirada(dto);
+
     setConfirmarAberto(false);
-    if (resultado.ok) {
-      setSubmitSucesso(true);
-      setSubmitErro(false);
-      setSnackbar({
-        open: true,
-        message: 'Retirada realizada com sucesso.',
-        severity: 'success',
-      });
-      window.setTimeout(() => {
-        if (data?.retornoRota) navegar(`${data.retornoRota}?refresh=${Date.now()}`);
-        else navegar(-1);
-      }, 850);
-      return;
-    }
-    setSubmitErro(true);
-    setSubmitSucesso(false);
-    setSnackbar({
-      open: true,
-      message: resultado.mensagem,
-      severity: 'error',
-    });
+    await enviarRetirada(dto);
+  }
+
+  async function confirmarRetiradaVencida() {
+    if (carregando || !vencidoDialog.dto) return;
+    const dto = { ...vencidoDialog.dto, confirmarLoteVencido: true };
+    setVencidoDialog({ aberto: false, mensagem: '', dto: null });
+    await enviarRetirada(dto);
   }
 
   if (!data || !produtoNome) {

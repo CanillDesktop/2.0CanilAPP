@@ -21,9 +21,6 @@ import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { larguraConteudoPagina, paddingPaginaShell } from '../../../shared/theme/estilosLayoutPagina';
-import { listarInsumosApi } from '../../insumos/api/insumosApi';
-import { listarMedicamentosApi } from '../../medicamentos/api/medicamentosApi';
-import { listarProdutosPaginadosApi } from '../../produtos/api/produtosApi';
 import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { listarAlertasDashboardApi, obterResumoDashboardApi } from '../api/dashboardApi';
 import { AlertaCard } from '../components/AlertaCard';
@@ -99,59 +96,7 @@ export function DashboardPage() {
           medicamentos: resumo.medicamentos,
           insumos: resumo.insumos,
         });
-        setTotalItens(produtos.length + medicamentos.length + insumos.length);
-
-        const hoje = new Date();
-        const limiteVencimento = new Date();
-        limiteVencimento.setDate(hoje.getDate() + 30);
-
-        const itensComOrigem = [
-          ...produtos.map((item) => ({ ...item, origem: 'produto' as const })),
-          ...medicamentos.map((item) => ({ ...item, origem: 'medicamento' as const })),
-          ...insumos.map((item) => ({ ...item, origem: 'insumo' as const })),
-        ];
-
-        const itens = itensComOrigem.map((item) => {
-          const quantidadeAtual = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
-          const minimo = item.itemNivelEstoque?.nivelMinimoEstoque ?? 0;
-          const temValidadeProxima = item.itensEstoque.some((lote) => {
-            if (!lote.dataValidade) return false;
-            const validade = new Date(lote.dataValidade);
-            if (Number.isNaN(validade.getTime())) return false;
-            return validade >= hoje && validade <= limiteVencimento;
-          });
-          const maiorDataMovimentacao = item.itensEstoque
-            .map((lote) => new Date(lote.dataEntrega))
-            .filter((data) => !Number.isNaN(data.getTime()))
-            .sort((a, b) => b.getTime() - a.getTime())[0];
-          const menorValidade = item.itensEstoque
-            .map((lote) => (lote.dataValidade ? new Date(lote.dataValidade) : null))
-            .filter((data): data is Date => data !== null && !Number.isNaN(data.getTime()))
-            .sort((a, b) => a.getTime() - b.getTime())[0];
-
-          let status: LinhaOperacionalEstoque['status'] = 'ok';
-          if (quantidadeAtual <= 0) status = 'critico';
-          else if (temValidadeProxima) status = 'proximo_vencimento';
-          else if (quantidadeAtual < minimo) status = 'baixo';
-
-          return {
-            id: item.id,
-            nome: item.nomeOuDescricaoSimples,
-            quantidade: quantidadeAtual,
-            minimo,
-            validade: menorValidade ? menorValidade.toLocaleDateString('pt-BR') : 'Sem validade',
-            origem: item.origem,
-            status,
-            ultimaMovimentacao: maiorDataMovimentacao
-              ? maiorDataMovimentacao.toLocaleDateString('pt-BR')
-              : 'Sem movimentação',
-            validadeMs: menorValidade ? menorValidade.getTime() : null,
-            movimentacaoMs: maiorDataMovimentacao ? maiorDataMovimentacao.getTime() : null,
-          } satisfies LinhaOperacionalEstoque;
-        });
-
-        if (!ativo) return;
-        setLinhasOperacionais(itens);
+        setTotalItens(resumo.totalItens);
       } catch {
         if (!ativo) return;
         setErroCarregamento(MSG_ERRO.carregarEstoque);
