@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Backend.DTOs.Estoque;
+using Backend.Filtro.Helpers;
 using Backend.Models.Estoque;
 using Backend.Models.Insumos;
 using Backend.Models.Medicamentos;
@@ -89,38 +90,35 @@ internal static class EstoqueConsultaQueryable
         IQueryable<ProdutosModel> query,
         EstoqueFiltroDTO filtro)
     {
-        if (string.IsNullOrWhiteSpace(filtro.TermoBusca)) return query;
+        if (!TermoBuscaQueryable.TryNormalizar(filtro.TermoBusca, out var termo)) return query;
 
-        var termo = filtro.TermoBusca.Trim();
         return query.Where(p =>
-            (p.Codigo != null && p.Codigo.Contains(termo))
-            || (p.DescricaoSimples != null && p.DescricaoSimples.Contains(termo)));
+            (p.Codigo != null && p.Codigo.ToLower().Contains(termo))
+            || (p.DescricaoSimples != null && p.DescricaoSimples.ToLower().Contains(termo)));
     }
 
     public static IQueryable<MedicamentosModel> AplicarTermoBuscaMedicamentos(
         IQueryable<MedicamentosModel> query,
         EstoqueFiltroDTO filtro)
     {
-        if (string.IsNullOrWhiteSpace(filtro.TermoBusca)) return query;
+        if (!TermoBuscaQueryable.TryNormalizar(filtro.TermoBusca, out var termo)) return query;
 
-        var termo = filtro.TermoBusca.Trim();
         return query.Where(m =>
-            (m.Codigo != null && m.Codigo.Contains(termo))
-            || (m.NomeComercial != null && m.NomeComercial.Contains(termo))
-            || (m.Formula != null && m.Formula.Contains(termo))
-            || (m.Descricao != null && m.Descricao.Contains(termo)));
+            (m.Codigo != null && m.Codigo.ToLower().Contains(termo))
+            || (m.NomeComercial != null && m.NomeComercial.ToLower().Contains(termo))
+            || (m.Formula != null && m.Formula.ToLower().Contains(termo))
+            || (m.Descricao != null && m.Descricao.ToLower().Contains(termo)));
     }
 
     public static IQueryable<InsumosModel> AplicarTermoBuscaInsumos(
         IQueryable<InsumosModel> query,
         EstoqueFiltroDTO filtro)
     {
-        if (string.IsNullOrWhiteSpace(filtro.TermoBusca)) return query;
+        if (!TermoBuscaQueryable.TryNormalizar(filtro.TermoBusca, out var termo)) return query;
 
-        var termo = filtro.TermoBusca.Trim();
         return query.Where(i =>
-            (i.Codigo != null && i.Codigo.Contains(termo))
-            || (i.DescricaoSimplificada != null && i.DescricaoSimplificada.Contains(termo)));
+            (i.Codigo != null && i.Codigo.ToLower().Contains(termo))
+            || (i.DescricaoSimplificada != null && i.DescricaoSimplificada.ToLower().Contains(termo)));
     }
 
     public static IQueryable<ProdutosModel> AplicarOrdenacaoProdutos(

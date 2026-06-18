@@ -1,5 +1,6 @@
 using Backend.Context;
 using Backend.DTOs.Estoque;
+using Backend.Filtro.Helpers;
 using Backend.Models.Estoque;
 using Backend.Models.Usuarios;
 using Microsoft.EntityFrameworkCore;
@@ -16,9 +17,8 @@ internal static class RetiradaEstoqueConsultaQueryable
             r.DataHoraRetirada >= filt.IntervaloIniUtcInclusive
             && r.DataHoraRetirada <= filt.IntervaloFimUtcInclusive);
 
-        if (!string.IsNullOrWhiteSpace(filt.TermoBusca))
+        if (TermoBuscaQueryable.TryNormalizar(filt.TermoBusca, out var t))
         {
-            var t = filt.TermoBusca.Trim().ToLowerInvariant();
             var idParsavel = int.TryParse(t, out var idParsado);
             q = q.Where(r =>
                 r.Codigo.ToLower().Contains(t)

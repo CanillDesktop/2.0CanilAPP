@@ -16,6 +16,7 @@ using Serilog.Events;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Text;
+using Backend.Serialization;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
@@ -56,6 +57,8 @@ public class Program
                 .AddJsonOptions(options =>
                 {
                     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+                    options.JsonSerializerOptions.Converters.Add(new UtcDateTimeJsonConverter());
+                    options.JsonSerializerOptions.Converters.Add(new NullableUtcDateTimeJsonConverter());
                 });
 
             builder.Services.AddEndpointsApiExplorer();
