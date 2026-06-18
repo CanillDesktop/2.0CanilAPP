@@ -23,10 +23,27 @@ export function tentarRenovarAccessToken(): Promise<boolean> {
   return promessaRenovacao;
 }
 
+/** Extrai o access token da resposta do endpoint de refresh. */
+function extrairAccessTokenResposta(data: unknown): string | null {
+  if (typeof data === 'string' && data.trim().length > 0) {
+    return data.trim();
+  }
+
+  if (data && typeof data === 'object') {
+    const candidato = (data as { accessToken?: unknown }).accessToken;
+    if (typeof candidato === 'string' && candidato.trim().length > 0) {
+      return candidato.trim();
+    }
+  }
+
+  return null;
+}
+
 async function executarRenovacaoAccessToken(): Promise<boolean> {
   try {
-    const accessToken = await solicitarRenovacaoTokenDiretoApi();
-    if (typeof accessToken !== 'string' || accessToken.trim().length === 0) return false;
+    const resposta = await solicitarRenovacaoTokenDiretoApi();
+    const accessToken = extrairAccessTokenResposta(resposta);
+    if (!accessToken) return false;
     atualizarAccessToken(accessToken);
     return true;
   } catch {

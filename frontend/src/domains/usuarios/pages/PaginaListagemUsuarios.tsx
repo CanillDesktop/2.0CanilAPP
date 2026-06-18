@@ -160,11 +160,16 @@ export function PaginaListagemUsuarios() {
     }
     if (!confirmacao.usuarioAlvo?.id) return;
     const tipoAcao = confirmacao.acao as 'inativar' | 'remover';
+    const reativando = tipoAcao === 'inativar' && confirmacao.usuarioAlvo.isDeleted;
     const sucessoAcao = await executarAcaoCritica(
       tipoAcao,
       confirmacao.usuarioAlvo.id,
       { senhaConfirmacao },
-      tipoAcao === 'inativar' ? 'Usuário inativado com sucesso.' : 'Usuário removido com sucesso.',
+      tipoAcao === 'inativar'
+        ? reativando
+          ? 'Usuário reativado com sucesso.'
+          : 'Usuário inativado com sucesso.'
+        : 'Usuário removido com sucesso.',
     );
     if (sucessoAcao) setConfirmacao({ aberto: false, acao: null });
   }
@@ -434,7 +439,15 @@ export function PaginaListagemUsuarios() {
       <ModalConfirmacaoSenha
         aberto={confirmacao.aberto}
         titulo="Confirmação obrigatória"
-        descricao="Informe a senha do usuário logado para concluir esta ação crítica."
+        descricao={
+          confirmacao.acao === 'inativar' && confirmacao.usuarioAlvo?.isDeleted
+            ? 'Informe sua senha para reativar este usuário.'
+            : confirmacao.acao === 'inativar'
+              ? 'Informe sua senha para inativar este usuário.'
+              : confirmacao.acao === 'remover'
+                ? 'Informe sua senha para remover este usuário permanentemente.'
+                : 'Informe a senha do usuário logado para concluir esta ação crítica.'
+        }
         carregando={carregandoAcao}
         erro={erro}
         errosValidacao={errosValidacao}

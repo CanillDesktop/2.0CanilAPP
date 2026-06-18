@@ -153,7 +153,9 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
 
         setUsuarios((atual) => {
           if (acao === 'remover') return atual.filter((item) => item.id !== id);
-          return atual.map((item) => (item.id === id ? { ...item, isDeleted: true } : item));
+          return atual.map((item) =>
+            item.id === id ? { ...item, isDeleted: !item.isDeleted } : item,
+          );
         });
         setSucesso(descricaoSucesso);
         return true;

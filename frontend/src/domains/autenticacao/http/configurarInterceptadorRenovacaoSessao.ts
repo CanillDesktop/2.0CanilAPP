@@ -10,7 +10,7 @@ type ConfigComRetry = InternalAxiosRequestConfig & {
   _retryAposRenovacao?: boolean;
 };
 
-const ROTAS_SEM_RENOVACAO = ['/api/Auth/login', '/api/Auth/refresh'];
+const ROTAS_SEM_RENOVACAO = ['/api/Auth/login', '/api/Auth/refresh', '/api/Auth/logout'];
 
 const clientesConfigurados = new WeakSet<AxiosInstance>();
 

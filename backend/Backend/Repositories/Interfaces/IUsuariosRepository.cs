@@ -12,4 +12,8 @@ public interface IUsuariosRepository : ICRUDRepository<UsuariosModel>
 
     Task<IReadOnlyList<UsuarioResumoFiltroDTO>> ListarResumoParaFiltrosAsync(
         CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<UsuariosModel>> ListarTodosIncluindoInativosAsync();
+
+    Task<UsuariosModel?> GetByIdIncluindoInativosAsync(int id);
 }

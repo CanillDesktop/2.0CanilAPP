@@ -18,7 +18,8 @@ public class UsuariosService : IUsuariosService
         _userSessionService = userSessionService;
     }
 
-    public async Task<IEnumerable<UsuariosModel>> BuscarTodosAsync() => await _repository.GetAsync();
+    public async Task<IEnumerable<UsuariosModel>> BuscarTodosAsync() =>
+        await _repository.ListarTodosIncluindoInativosAsync();
 
     public async Task<UsuariosModel?> BuscarPorIdAsync(int id) => await _repository.GetByIdAsync(id);
 
@@ -175,20 +176,28 @@ public class UsuariosService : IUsuariosService
         if (usuario == null)
             throw new ArgumentNullException(null, "Usuário não encontrado");
 
-        var usuarioInativar = await _repository.GetByIdAsync(id);
+        var usuarioInativar = await _repository.GetByIdIncluindoInativosAsync(id);
         if (usuarioInativar == null)
-            throw new ArgumentNullException(null, "Usuário a inativar não encontrado");
+            throw new ArgumentNullException(null, "Usuário não encontrado");
 
         if (!await ConfirmarSenhaUsuario(usuario, senha))
             throw new ArgumentException("Senha incorreta");
 
-        await GarantirNaoEhUltimoAdminAsync(usuarioInativar);
+        if (usuarioInativar.IsDeleted)
+        {
+            usuarioInativar.IsDeleted = false;
+        }
+        else
+        {
+            await GarantirNaoEhUltimoAdminAsync(usuarioInativar);
+            usuarioInativar.IsDeleted = true;
+        }
 
-        usuarioInativar.IsDeleted = true;
         usuarioInativar.DataHoraAtualizacao = DateTime.UtcNow;
         usuarioInativar.EditadorPor = _userSessionService?.EditedBy ?? string.Empty;
 
-        return (await _repository.UpdateAsync(usuarioInativar))?.IsDeleted;
+        var atualizado = await _repository.UpdateAsync(usuarioInativar);
+        return atualizado != null ? atualizado.IsDeleted : null;
     }
 
 
