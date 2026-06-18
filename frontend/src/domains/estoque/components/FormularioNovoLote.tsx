@@ -19,7 +19,6 @@ import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { RotuloCampoComDica } from '../../../shared/components/RotuloCampoComDica';
-import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
 import { servicoEstoque } from '../services/servicoEstoque';

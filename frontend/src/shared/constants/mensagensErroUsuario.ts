@@ -7,6 +7,7 @@ export const MSG_ERRO = {
   validacaoResumo: 'Corrija os campos destacados abaixo.',
   semPermissao: 'Você não tem permissão para acessar este recurso.',
   login401: 'E-mail ou senha incorretos. Verifique os dados e tente novamente.',
+  sessaoExpirada: 'Sua sessão expirou. Faça login novamente para continuar.',
   loginIncompleto: 'Não foi possível concluir o login. Tente novamente; se persistir, contate o suporte.',
   naoEncontrado: 'Registro não encontrado. Atualize a página e tente novamente.',
   servidor: 'Ocorreu um problema no servidor. Tente novamente em instantes.',
