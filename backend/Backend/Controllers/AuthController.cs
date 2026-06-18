@@ -49,10 +49,10 @@ public class AuthController : ControllerBase
 
             if (result?.TokenResponse == null)
             {
-                return BadRequest(new ErrorResponse
+                return Unauthorized(new ErrorResponse
                 {
                     Title = "Acesso não autorizado",
-                    Status = StatusCodes.Status400BadRequest,
+                    Status = StatusCodes.Status401Unauthorized,
                     Details = "Usuário ou senha inválidos."
                 });
             }
@@ -65,13 +65,24 @@ public class AuthController : ControllerBase
                 result.Usuario
             });
         }
-        catch (ArgumentNullException ex)
+        catch (UnauthorizedAccessException ex)
         {
-            return BadRequest(new ErrorResponse
+            return Unauthorized(new ErrorResponse
             {
                 Title = "Acesso não autorizado",
-                Status = StatusCodes.Status400BadRequest,
-                Details = ex.Message
+                Status = StatusCodes.Status401Unauthorized,
+                Details = ex.Message ?? "Usuário inativo. Favor contatar o suporte/administradores."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro interno ao processar login para {Login}.", request.Login);
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            {
+                Title = "Erro interno no servidor",
+                Status = StatusCodes.Status500InternalServerError,
+                Details = "Ocorreu um erro inesperado. Tente novamente mais tarde."
             });
         }
     }
@@ -137,9 +148,10 @@ public class AuthController : ControllerBase
     {
         var cookieOptions = new CookieOptions
         {
-            HttpOnly = true,
-            Path = "/",
-            Expires = refreshToken.ExpiresAt,
+            HttpOnly = true, 
+            Secure = true, 
+            SameSite = SameSiteMode.None,
+            Expires = refreshToken.ExpiresAt
         };
 
         if (_environment.IsDevelopment())

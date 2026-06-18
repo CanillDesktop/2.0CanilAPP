@@ -128,26 +128,26 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
 
         try
         {
-            // Busca por chave única (Código + Lote), ignorando registros logicamente excluídos.
+            // Lote é único globalmente; o código do item pai é a referência autoritativa.
             var chave = await _context.ItensEstoque.AsNoTracking()
-                .Where(e => e.Lote == dto.Lote && e.Codigo == dto.Codigo && !e.IsDeleted)
+                .Where(e => e.Lote == dto.Lote && !e.IsDeleted)
                 .Select(e => new { e.Id, e.Lote, e.Codigo, e.DataValidade })
                 .FirstOrDefaultAsync();
 
             if (chave == null)
             {
-                // Item 15: se o lote existe mas o código diverge, a operação é cancelada.
-                var loteExisteComOutroCodigo = await _context.ItensEstoque.AsNoTracking()
-                    .AnyAsync(e => e.Lote == dto.Lote && !e.IsDeleted);
-
-                if (loteExisteComOutroCodigo)
-                {
-                    throw new RegraDeNegocioInfringidaException(
-                        "O código informado não corresponde ao item do lote. Operação cancelada.");
-                }
-
                 throw new ArgumentNullException(null,
                     $"Item de estoque de lote {dto.Lote} não encontrado");
+            }
+
+            var codigoEsperado = await ResolverCodigoItemAsync(chave.Id);
+            var codigoReferencia = !string.IsNullOrWhiteSpace(chave.Codigo) ? chave.Codigo : codigoEsperado;
+
+            if (string.IsNullOrWhiteSpace(codigoReferencia)
+                || !string.Equals(dto.Codigo, codigoReferencia, StringComparison.Ordinal))
+            {
+                throw new RegraDeNegocioInfringidaException(
+                    "O código informado não corresponde ao item do lote. Operação cancelada.");
             }
 
             var now = DateTime.UtcNow;
@@ -187,7 +187,8 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
                     .SetProperty(e => e.Quantidade, e => e.Quantidade - dto.Quantidade)
                     .SetProperty(e => e.Versao, e => e.Versao + 1)
                     .SetProperty(e => e.DataHoraAtualizacao, _ => now)
-                    .SetProperty(e => e.EditadorPor, _ => editor));
+                    .SetProperty(e => e.EditadorPor, _ => editor)
+                    .SetProperty(e => e.Codigo, _ => codigoReferencia));
 
             if (linhasBaixa != 1)
             {
@@ -258,5 +259,27 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
             await transaction.RollbackAsync();
             throw;
         }
+    }
+
+    private async Task<string?> ResolverCodigoItemAsync(int itemId)
+    {
+        var codigoProduto = await _context.Produtos.AsNoTracking()
+            .Where(p => p.Id == itemId && !p.IsDeleted)
+            .Select(p => p.Codigo)
+            .FirstOrDefaultAsync();
+        if (!string.IsNullOrWhiteSpace(codigoProduto))
+            return codigoProduto;
+
+        var codigoMedicamento = await _context.Medicamentos.AsNoTracking()
+            .Where(m => m.Id == itemId && !m.IsDeleted)
+            .Select(m => m.Codigo)
+            .FirstOrDefaultAsync();
+        if (!string.IsNullOrWhiteSpace(codigoMedicamento))
+            return codigoMedicamento;
+
+        return await _context.Insumos.AsNoTracking()
+            .Where(i => i.Id == itemId && !i.IsDeleted)
+            .Select(i => i.Codigo)
+            .FirstOrDefaultAsync();
     }
 }

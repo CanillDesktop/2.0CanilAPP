@@ -19,6 +19,7 @@ import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
 import { PainelErro } from '../../../shared/components/PainelErro';
+import { AbaCodigoAtualLeitura } from '../components/AbaCodigoAtualLeitura';
 import { AbaCodigoSegurancaAdmin } from '../components/AbaCodigoSegurancaAdmin';
 import { FormularioUsuario } from '../components/FormularioUsuario';
 import { ListagemUsuariosResponsiva } from '../components/ListagemUsuariosResponsiva';
@@ -33,6 +34,7 @@ import type { UsuarioCriadoDto } from '../types/tiposUsuarios';
 import { descreverPermissao, formatarTempoCadastro } from '../utils/exibirPerfilUsuario';
 
 type AbaAdmin = 'meus-dados' | 'gestao' | 'codigo-seguranca';
+type AbaLeitura = 'meus-dados' | 'codigo-atual';
 
 export function PaginaListagemUsuarios() {
   const { usuario, recarregarSessao } = useAutenticacao();
@@ -61,6 +63,7 @@ export function PaginaListagemUsuarios() {
   const [pagina, setPagina] = useState(1);
   const [filtrosGestaoExpandidos, setFiltrosGestaoExpandidos] = useState(false);
   const [abaAdmin, setAbaAdmin] = useState<AbaAdmin>('meus-dados');
+  const [abaLeitura, setAbaLeitura] = useState<AbaLeitura>('meus-dados');
   const [dialogEditarAberto, setDialogEditarAberto] = useState(false);
   const [dialogTrocarSenhaAberto, setDialogTrocarSenhaAberto] = useState(false);
   const [dialogNovoAberto, setDialogNovoAberto] = useState(false);
@@ -344,7 +347,7 @@ export function PaginaListagemUsuarios() {
           >
             <Tab value="meus-dados" label="Meus dados" />
             <Tab value="gestao" label="Gestão de usuários" />
-            <Tab value="codigo-seguranca" label="Código de acesso" />
+            <Tab value="codigo-seguranca" label="Código de segurança" />
           </Tabs>
 
           {abaAdmin === 'meus-dados' ? cardMeusDados : null}
@@ -352,7 +355,28 @@ export function PaginaListagemUsuarios() {
           {abaAdmin === 'codigo-seguranca' ? <AbaCodigoSegurancaAdmin /> : null}
         </>
       ) : (
-        cardMeusDados
+        <>
+          <Tabs
+            value={abaLeitura}
+            onChange={(_, v) => setAbaLeitura(v as AbaLeitura)}
+            textColor="inherit"
+            indicatorColor="primary"
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{
+              mb: 2,
+              borderBottom: `1px solid ${cores.border}`,
+              '& .MuiTab-root': { color: cores.textMuted, textTransform: 'none', fontWeight: 600 },
+              '& .Mui-selected': { color: cores.textPrimary },
+            }}
+          >
+            <Tab value="meus-dados" label="Meus dados" />
+            <Tab value="codigo-atual" label="Código atual" />
+          </Tabs>
+
+          {abaLeitura === 'meus-dados' ? cardMeusDados : null}
+          {abaLeitura === 'codigo-atual' ? <AbaCodigoAtualLeitura /> : null}
+        </>
       )}
 
       {!ehAdmin && erro && !dialogTrocarSenhaAberto ? (

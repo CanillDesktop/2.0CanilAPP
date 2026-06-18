@@ -7,10 +7,12 @@ export const MSG_ERRO = {
   validacaoResumo: 'Corrija os campos destacados abaixo.',
   semPermissao: 'Você não tem permissão para acessar este recurso.',
   login401: 'E-mail ou senha incorretos. Verifique os dados e tente novamente.',
+  sessaoExpirada: 'Sua sessão expirou. Faça login novamente para continuar.',
   loginIncompleto: 'Não foi possível concluir o login. Tente novamente; se persistir, contate o suporte.',
   naoEncontrado: 'Registro não encontrado. Atualize a página e tente novamente.',
   servidor: 'Ocorreu um problema no servidor. Tente novamente em instantes.',
   carregarEstoque: 'Não foi possível carregar o estoque. Atualize a página e tente novamente.',
+  buscaGlobal: 'Não foi possível buscar itens agora. Tente novamente em instantes.',
   retirada: 'Não foi possível registrar a retirada. Verifique os dados e tente novamente.',
   lote: 'Não foi possível salvar o lote. Verifique os dados e tente novamente.',
   excluirProduto: 'Não foi possível excluir o produto. Tente novamente.',
@@ -21,7 +23,6 @@ export const MSG_ERRO = {
   exportacaoArquivo: 'Não foi possível gerar o arquivo. Tente novamente em instantes.',
   logoutParcial: 'Você saiu deste dispositivo, mas não foi possível confirmar o encerramento no servidor.',
   sessaoEncerrada: 'Sessão encerrada com sucesso.',
-  sessaoExpirada: 'Sua sessão expirou. Faça login novamente para continuar.',
 } as const;
 
 export type ResultadoMutacao<T = void> = { ok: true; dados?: T } | { ok: false; mensagem: string };

@@ -16,8 +16,9 @@ import type { FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
-import { PainelErro } from '../../../shared/components/PainelErro';
 import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
+import { PainelErro } from '../../../shared/components/PainelErro';
+import { RotuloCampoComDica } from '../../../shared/components/RotuloCampoComDica';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
 import { servicoEstoque } from '../services/servicoEstoque';
@@ -30,7 +31,6 @@ export function FormularioNovoLote() {
   const campoSx = estilosCampoFormulario(cores);
   const { criarLote, carregando, erro, errosValidacao } = useMutacaoEstoque();
 
-  // O Id do item vem da navegação e é mantido apenas no estado da aplicação — nunca exibido ao usuário.
   const idItem = useMemo(() => Number(params.get('idItem')) || 0, [params]);
   const inicialCodItem = useMemo(() => params.get('codItem') ?? '', [params]);
 
@@ -164,7 +164,12 @@ export function FormularioNovoLote() {
                   <TextField
                     fullWidth
                     variant="outlined"
-                    label="Código do item"
+                    label={
+                      <RotuloCampoComDica
+                        rotulo="Código do item"
+                        dica="Identificador do item (somente leitura)."
+                      />
+                    }
                     value={codItem}
                     slotProps={{ input: { readOnly: true } }}
                     helperText="Identificador do item (somente leitura)."
@@ -175,10 +180,14 @@ export function FormularioNovoLote() {
                   <TextField
                     fullWidth
                     variant="outlined"
-                    label="Lote"
+                    label={
+                      <RotuloCampoComDica
+                        rotulo="Lote"
+                        dica="Gerado automaticamente pelo sistema (somente leitura)."
+                      />
+                    }
                     value={carregandoLote ? 'Gerando lote…' : lote}
                     slotProps={{ input: { readOnly: true } }}
-                    helperText="Gerado automaticamente pelo sistema (somente leitura)."
                     sx={campoSx}
                   />
                 </Grid>

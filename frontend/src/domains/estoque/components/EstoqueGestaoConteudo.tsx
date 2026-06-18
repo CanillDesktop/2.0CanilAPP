@@ -15,6 +15,8 @@ import {
   TableRow,
   Typography,
   Chip,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import type { CampoOrdenacaoEstoque, LinhaOperacionalEstoque } from '../types/tiposEstoque';
@@ -91,6 +93,8 @@ function BarraPaginacao({
   onPageChange: (page: number) => void;
   onRowsPerPageChange: (rows: number) => void;
 }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { paginacao } = useEstilosListagem();
   return (
     <TablePagination
@@ -102,7 +106,7 @@ function BarraPaginacao({
       page={page - 1}
       onPageChange={(_, newPage) => onPageChange(newPage + 1)}
       onRowsPerPageChange={(e) => onRowsPerPageChange(Number.parseInt(e.target.value, 10))}
-      labelRowsPerPage="Itens por página"
+      labelRowsPerPage={isMobile ? 'Por página' : 'Itens por página'}
       labelDisplayedRows={({ from, to, count }) => (count === 0 ? '0–0 de 0' : `${from}–${to} de ${count}`)}
     />
   );
@@ -182,13 +186,15 @@ export function EstoqueGestaoConteudo({
             </Card>
           ))}
         </Stack>
-        <BarraPaginacao
-          totalFiltrado={totalFiltrado}
-          page={page}
-          rowsPerPage={rowsPerPage}
-          onPageChange={onPageChange}
-          onRowsPerPageChange={onRowsPerPageChange}
-        />
+        <Card sx={{ ...cardTabela, overflow: 'hidden' }}>
+          <BarraPaginacao
+            totalFiltrado={totalFiltrado}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={onPageChange}
+            onRowsPerPageChange={onRowsPerPageChange}
+          />
+        </Card>
       </Stack>
     );
   }

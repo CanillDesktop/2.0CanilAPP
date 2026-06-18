@@ -190,11 +190,6 @@ function PaginacaoHistorico({
           borderTopLeftRadius: 2,
           borderTopRightRadius: 2,
           ...sxPaper,
-          '& .MuiTablePagination-toolbar': {
-            flexWrap: 'wrap',
-            gap: 1,
-            px: { xs: 1, sm: 2 },
-          },
         }}
       />
     </>
@@ -256,13 +251,7 @@ export function HistoricoRetiradasListaConteudo({
           <Paper sx={{ borderRadius: 2, overflow: 'hidden', ...sxPaper }}>
             <TablePagination
               component="div"
-              sx={{
-                ...paginacao,
-                '& .MuiTablePagination-toolbar': { flexWrap: 'wrap', gap: 0.5, px: 1, minHeight: 48 },
-                '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                  fontSize: '0.8rem',
-                },
-              }}
+              sx={paginacao}
               rowsPerPageOptions={[10, 20, 50]}
               count={totalCount}
               rowsPerPage={rowsPerPage}

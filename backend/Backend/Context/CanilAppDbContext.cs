@@ -98,6 +98,14 @@ public class CanilAppDbContext : DbContext
         modelBuilder.Entity<ProdutosModel>()
             .HasBaseType<ItemComEstoqueBaseModel>();
 
+        modelBuilder.Entity<MedicamentosModel>()
+            .HasBaseType<ItemComEstoqueBaseModel>();
+
+        modelBuilder.Entity<InsumosModel>()
+            .HasBaseType<ItemComEstoqueBaseModel>();
+
+        AplicarConversoresUtc(modelBuilder);
+
         modelBuilder.Entity<RetiradaEstoqueModel>()
             .HasKey(r => r.Id);
 
@@ -138,5 +146,19 @@ public class CanilAppDbContext : DbContext
                 DataHoraAtualizacao = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 EditadoPor = "Sistema"
             });
+    }
+
+    private static void AplicarConversoresUtc(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime))
+                    property.SetValueConverter(new UtcDateTimeValueConverter());
+                else if (property.ClrType == typeof(DateTime?))
+                    property.SetValueConverter(new NullableUtcDateTimeValueConverter());
+            }
+        }
     }
 }

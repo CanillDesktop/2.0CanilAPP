@@ -7,10 +7,10 @@ import {
   DialogContent,
   DialogTitle,
   Stack,
+  TextField,
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { CampoSenha } from '../../../shared/components/CampoSenha';
 import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 
 type Props = {
@@ -60,8 +60,9 @@ export function ModalConfirmacaoSenha({
               ) : null}
             </Alert>
           ) : null}
-          <CampoSenha
+          <TextField
             label="Senha do usuário logado"
+            type="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
             autoFocus
