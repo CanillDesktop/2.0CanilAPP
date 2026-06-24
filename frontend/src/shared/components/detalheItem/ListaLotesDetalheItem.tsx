@@ -1,8 +1,12 @@
-import { Box, Button, Card, CardContent, Grid, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Grid, Stack, TablePagination, Typography } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { LoteDetalhe } from '../../types/loteDetalhe';
 import { useEstilosListagem } from '../../theme/useEstilosListagem';
 import { LinhaLoteDetalheItem } from './LinhaLoteDetalheItem';
+
+const LOTES_POR_PAGINA_PADRAO = 5;
+const LOTES_POR_PAGINA_OPCOES = [5, 10, 25];
 
 type Props = {
   idItem: number;
@@ -25,9 +29,24 @@ export function ListaLotesDetalheItem({
   onRetirar,
   onExcluir,
 }: Props) {
-  const { cores } = useEstilosListagem();
   const estilos = useEstilosListagem();
+  const { cores, paginacao } = estilos;
   const total = lotes.length;
+
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(LOTES_POR_PAGINA_PADRAO);
+
+  useEffect(() => {
+    setPage(0);
+  }, [idItem, total]);
+
+  const paginaMaxima = Math.max(0, Math.ceil(total / rowsPerPage) - 1);
+  const pageSegura = Math.min(page, paginaMaxima);
+
+  const lotesPagina = useMemo(() => {
+    const inicio = pageSegura * rowsPerPage;
+    return lotes.slice(inicio, inicio + rowsPerPage);
+  }, [lotes, pageSegura, rowsPerPage]);
 
   return (
     <Card
@@ -93,11 +112,31 @@ export function ListaLotesDetalheItem({
               {mensagemVazio}
             </Typography>
           ) : (
-            lotes.map((lote) => (
+            lotesPagina.map((lote) => (
               <LinhaLoteDetalheItem key={lote.id} lote={lote} isMobile={isMobile} onRetirar={onRetirar} />
             ))
           )}
         </Stack>
+
+        {total > rowsPerPage ? (
+          <TablePagination
+            component="div"
+            sx={{ ...paginacao, mt: 1 }}
+            rowsPerPageOptions={LOTES_POR_PAGINA_OPCOES}
+            count={total}
+            rowsPerPage={rowsPerPage}
+            page={pageSegura}
+            onPageChange={(_, novaPagina) => setPage(novaPagina)}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(Number.parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            labelRowsPerPage="Lotes por página"
+            labelDisplayedRows={({ from, to, count }) =>
+              count === 0 ? '0–0 de 0' : `${from}–${to} de ${count}`
+            }
+          />
+        ) : null}
 
         <Stack
           direction={{ xs: 'column', sm: 'row' }}

@@ -115,7 +115,7 @@ export function FormularioNovoLote() {
     <Box sx={{ backgroundColor: cores.bgConteudo, width: '100%', minHeight: '100%', py: { xs: 2, sm: 3 }, px: { xs: 1.5, sm: 2 } }}>
       <Card sx={{ width: '100%', maxWidth: 780, mx: 'auto', backgroundColor: cores.bgCard, border: `1px solid ${cores.border}`, borderRadius: 3, p: 3, boxShadow: cores.sombraCard }}>
         <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
-          <Box component="form" onSubmit={aoEnviar}>
+          <Box component="form" onSubmit={aoEnviar} noValidate>
             <Stack spacing={2}>
               <Box>
                 <Typography variant="h5" sx={{ fontWeight: 800, color: cores.textPrimary }}>

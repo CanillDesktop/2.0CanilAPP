@@ -63,17 +63,16 @@ internal static class FiltroHelper
         ProdutosFiltro filtro,
         int idUnidadeEstoque)
     {
-        if (!string.IsNullOrWhiteSpace(filtro.Termo))
+        if (TermoBuscaQueryable.TryNormalizar(filtro.Termo, out var termo))
         {
-            var termo = filtro.Termo.Trim();
             query = query.Where(p =>
-                (p.Codigo != null && p.Codigo.Contains(termo))
-                || (p.DescricaoSimples != null && p.DescricaoSimples.Contains(termo))
-                || (p.DescricaoDetalhada != null && p.DescricaoDetalhada.Contains(termo))
+                (p.Codigo != null && p.Codigo.ToLower().Contains(termo))
+                || (p.DescricaoSimples != null && p.DescricaoSimples.ToLower().Contains(termo))
+                || (p.DescricaoDetalhada != null && p.DescricaoDetalhada.ToLower().Contains(termo))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.NFe != null && e.NFe.Contains(termo)))
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.NFe != null && e.NFe.ToLower().Contains(termo)))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.Lote != null && e.Lote.Contains(termo))));
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.Lote != null && e.Lote.ToLower().Contains(termo))));
         }
 
         if (filtro.Categoria.HasValue && Enum.IsDefined(typeof(CategoriaEnum), filtro.Categoria.Value))
@@ -95,18 +94,17 @@ internal static class FiltroHelper
         MedicamentosFiltro filtro,
         int idUnidadeEstoque)
     {
-        if (!string.IsNullOrWhiteSpace(filtro.Termo))
+        if (TermoBuscaQueryable.TryNormalizar(filtro.Termo, out var termo))
         {
-            var termo = filtro.Termo.Trim();
             query = query.Where(p =>
-                (p.Codigo != null && p.Codigo.Contains(termo))
-                || (p.Descricao != null && p.Descricao.Contains(termo))
-                || (p.Formula != null && p.Formula.Contains(termo))
-                || (p.NomeComercial != null && p.NomeComercial.Contains(termo))
+                (p.Codigo != null && p.Codigo.ToLower().Contains(termo))
+                || (p.Descricao != null && p.Descricao.ToLower().Contains(termo))
+                || (p.Formula != null && p.Formula.ToLower().Contains(termo))
+                || (p.NomeComercial != null && p.NomeComercial.ToLower().Contains(termo))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.NFe != null && e.NFe.Contains(termo)))
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.NFe != null && e.NFe.ToLower().Contains(termo)))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.Lote != null && e.Lote.Contains(termo))));
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.Lote != null && e.Lote.ToLower().Contains(termo))));
         }
 
         if (filtro.Prioridade.HasValue && Enum.IsDefined(typeof(PrioridadeEnum), filtro.Prioridade.Value))
@@ -131,17 +129,16 @@ internal static class FiltroHelper
         InsumosFiltro filtro,
         int idUnidadeEstoque)
     {
-        if (!string.IsNullOrWhiteSpace(filtro.Termo))
+        if (TermoBuscaQueryable.TryNormalizar(filtro.Termo, out var termo))
         {
-            var termo = filtro.Termo.Trim();
             query = query.Where(p =>
-                (p.Codigo != null && p.Codigo.Contains(termo))
-                || (p.DescricaoSimplificada != null && p.DescricaoSimplificada.Contains(termo))
-                || (p.DescricaoDetalhada != null && p.DescricaoDetalhada.Contains(termo))
+                (p.Codigo != null && p.Codigo.ToLower().Contains(termo))
+                || (p.DescricaoSimplificada != null && p.DescricaoSimplificada.ToLower().Contains(termo))
+                || (p.DescricaoDetalhada != null && p.DescricaoDetalhada.ToLower().Contains(termo))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.NFe != null && e.NFe.Contains(termo)))
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.NFe != null && e.NFe.ToLower().Contains(termo)))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.Lote != null && e.Lote.Contains(termo))));
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.Lote != null && e.Lote.ToLower().Contains(termo))));
         }
 
         if (filtro.Unidade.HasValue && Enum.IsDefined(typeof(UnidadeInsumosEnum), filtro.Unidade.Value))

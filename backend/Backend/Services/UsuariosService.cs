@@ -316,9 +316,9 @@ public class UsuariosService : IUsuariosService
         GarantirNaoEhAutoAcao(id);
         await ConfirmarSenhaAdminAsync(senha);
 
-        var usuarioInativar = await _repository.GetByIdAsync(id);
+        var usuarioInativar = await _repository.GetByIdGestaoAsync(id);
         if (usuarioInativar == null)
-            throw new ArgumentNullException(null, "Usuário a inativar não encontrado");
+            throw new ArgumentNullException(null, "Usuário não encontrado");
 
         await GarantirNaoEhUltimoAdminAsync(usuarioInativar);
 

@@ -20,7 +20,6 @@ export async function buscarGlobalApi(termo: string): Promise<BuscaGlobalItem[]>
   const { data } = await cliente.get<BuscaItemRespostaApi[]>('/api/Busca', {
     params: { q: termo },
   });
-  // Item 16: o backend usa nomeOuDescricaoSimples; mapeamos para o modelo do SearchGlobal.
   return data.map((item) => ({
     id: item.id,
     nome: item.nomeOuDescricaoSimples,

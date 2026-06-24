@@ -200,13 +200,31 @@ public class UsuariosController : ControllerBase
 
             return NoContent();
         }
+        catch (ArgumentNullException ex)
+        {
+            return NotFound(new ErrorResponse
+            {
+                Title = "Usuário não encontrado",
+                Status = StatusCodes.Status404NotFound,
+                Details = ex.Message ?? "Usuário não encontrado"
+            });
+        }
         catch (ArgumentException ex)
         {
             return BadRequest(new ErrorResponse
             {
-                Title = "Falha ao inativar usuário",
+                Title = "Falha ao alterar status do usuário",
                 Status = StatusCodes.Status400BadRequest,
-                Details = ex.Message ?? "Falha ao inativar usuário"
+                Details = ex.Message ?? "Falha ao alterar status do usuário"
+            });
+        }
+        catch (ConflitoDeNegocioException ex)
+        {
+            return Conflict(new ErrorResponse
+            {
+                Title = "Não é possível alterar o status do usuário",
+                Status = StatusCodes.Status409Conflict,
+                Details = ex.Message ?? "Não é possível alterar o status do usuário"
             });
         }
     }

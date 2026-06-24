@@ -2,7 +2,7 @@ namespace Backend.DTOs.Estoque;
 
 /// <summary>
 /// Filtros de negócio da listagem de estoque (/estoque).
-/// Espelha os filtros que hoje rodam client-side em useListaEstoqueProcessada.
+/// Espelha os filtros da listagem operacional de estoque (/estoque).
 /// </summary>
 public class EstoqueFiltroDTO
 {

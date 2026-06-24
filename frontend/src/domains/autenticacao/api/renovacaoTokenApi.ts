@@ -13,7 +13,7 @@ const clienteRenovacao = axios.create({
 });
 
 /** Renova o access token usando o refresh token HttpOnly (cookie). */
-export async function solicitarRenovacaoTokenDiretoApi(): Promise<string> {
-  const { data } = await clienteRenovacao.post<string>('/api/Auth/refresh');
+export async function solicitarRenovacaoTokenDiretoApi(): Promise<unknown> {
+  const { data } = await clienteRenovacao.post<unknown>('/api/Auth/refresh');
   return data;
 }

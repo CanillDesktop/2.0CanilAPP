@@ -28,13 +28,13 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<LoginResponseModel> AuthenticateAsync(string login, string senha, CancellationToken cancellationToken = default)
+    public async Task<LoginResponseModel?> AuthenticateAsync(string login, string senha, CancellationToken cancellationToken = default)
     {
         var usuario = await _usuariosService.ValidarUsuarioAsync(login, senha);
         if (usuario == null)
         {
             _logger.LogWarning("Falha de autenticação para {Login}.", login);
-            throw new ArgumentNullException(null, "Usuário ou senha inválidos");
+            throw new ArgumentNullException(null, "Usuário ou senha inválidos.");
         }
 
         var refreshTokenHash = GenerateOpaqueRefreshToken();

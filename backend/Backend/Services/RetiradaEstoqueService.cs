@@ -155,6 +155,16 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
                     $"Item de estoque de lote {dto.Lote} não encontrado");
             }
 
+            var codigoEsperado = await ResolverCodigoItemAsync(chave.Id);
+            var codigoReferencia = !string.IsNullOrWhiteSpace(chave.Codigo) ? chave.Codigo : codigoEsperado;
+
+            if (string.IsNullOrWhiteSpace(codigoReferencia)
+                || !string.Equals(dto.Codigo, codigoReferencia, StringComparison.Ordinal))
+            {
+                throw new RegraDeNegocioInfringidaException(
+                    "O código informado não corresponde ao item do lote. Operação cancelada.");
+            }
+
             var now = DateTime.UtcNow;
             var editor = _userSessionService.EditedBy ?? string.Empty;
 
@@ -194,7 +204,8 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
                     .SetProperty(e => e.Quantidade, e => e.Quantidade - dto.Quantidade)
                     .SetProperty(e => e.Versao, e => e.Versao + 1)
                     .SetProperty(e => e.DataHoraAtualizacao, _ => now)
-                    .SetProperty(e => e.EditadorPor, _ => editor));
+                    .SetProperty(e => e.EditadorPor, _ => editor)
+                    .SetProperty(e => e.Codigo, _ => codigoReferencia));
 
             if (linhasBaixa != 1)
             {
@@ -285,5 +296,27 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
             await transaction.RollbackAsync();
             throw;
         }
+    }
+
+    private async Task<string?> ResolverCodigoItemAsync(int itemId)
+    {
+        var codigoProduto = await _context.Produtos.AsNoTracking()
+            .Where(p => p.Id == itemId && !p.IsDeleted)
+            .Select(p => p.Codigo)
+            .FirstOrDefaultAsync();
+        if (!string.IsNullOrWhiteSpace(codigoProduto))
+            return codigoProduto;
+
+        var codigoMedicamento = await _context.Medicamentos.AsNoTracking()
+            .Where(m => m.Id == itemId && !m.IsDeleted)
+            .Select(m => m.Codigo)
+            .FirstOrDefaultAsync();
+        if (!string.IsNullOrWhiteSpace(codigoMedicamento))
+            return codigoMedicamento;
+
+        return await _context.Insumos.AsNoTracking()
+            .Where(i => i.Id == itemId && !i.IsDeleted)
+            .Select(i => i.Codigo)
+            .FirstOrDefaultAsync();
     }
 }

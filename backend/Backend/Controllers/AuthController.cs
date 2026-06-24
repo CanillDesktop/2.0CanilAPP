@@ -50,10 +50,10 @@ public class AuthController : ControllerBase
 
             if (result?.TokenResponse == null)
             {
-                return BadRequest(new ErrorResponse
+                return Unauthorized(new ErrorResponse
                 {
                     Title = "Acesso não autorizado",
-                    Status = StatusCodes.Status400BadRequest,
+                    Status = StatusCodes.Status401Unauthorized,
                     Details = "Usuário ou senha inválidos."
                 });
             }
@@ -66,13 +66,22 @@ public class AuthController : ControllerBase
                 result.Usuario
             });
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new ErrorResponse
+            {
+                Title = "Acesso não autorizado",
+                Status = StatusCodes.Status401Unauthorized,
+                Details = ex.Message ?? "Usuário inativo. Favor contatar o suporte/administradores."
+            });
+        }
         catch (ArgumentNullException ex)
         {
             return BadRequest(new ErrorResponse
             {
                 Title = "Acesso não autorizado",
                 Status = StatusCodes.Status400BadRequest,
-                Details = ex.Message
+                Details = ex.Message ?? "Usuário ou senha inválidos."
             });
         }
         catch (AcessoNegadoException ex)
@@ -95,7 +104,12 @@ public class AuthController : ControllerBase
 
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                throw new ArgumentNullException();
+                return Unauthorized(new ErrorResponse
+                {
+                    Title = "Sessão inválida",
+                    Status = StatusCodes.Status401Unauthorized,
+                    Details = "Sessão inválida. Por favor, faça login novamente.",
+                });
             }
 
             var result = await _authService.RefreshTokenAsync(refreshToken, cancellationToken);
@@ -110,7 +124,17 @@ public class AuthController : ControllerBase
             {
                 Title = "Sessão inválida",
                 Status = StatusCodes.Status401Unauthorized,
-                Details = ex.Message ?? "Sessão inválida. Por favor, faça login novamente"
+                Details = ex.Message ?? "Sessão inválida. Por favor, faça login novamente.",
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao renovar sessão.");
+            return Unauthorized(new ErrorResponse
+            {
+                Title = "Sessão inválida",
+                Status = StatusCodes.Status401Unauthorized,
+                Details = "Sessão inválida. Por favor, faça login novamente.",
             });
         }
     }

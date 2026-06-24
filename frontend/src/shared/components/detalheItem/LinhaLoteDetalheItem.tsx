@@ -13,8 +13,10 @@ export function LinhaLoteDetalheItem({ lote, isMobile, onRetirar }: Props) {
   const estilos = useEstilosListagem();
   const { cores } = estilos;
   const status = obterStatusValidade(lote.validade);
-  const validade = new Date(lote.validade);
-  const validadeFormatada = validade.toLocaleDateString('pt-BR');
+  const validadeFormatada = lote.validade
+    ? new Date(lote.validade).toLocaleDateString('pt-BR')
+    : 'Sem validade';
+  const tooltipValidade = lote.validade ? new Date(lote.validade).toLocaleString('pt-BR') : 'Sem data de validade';
 
   if (isMobile) {
     return (
@@ -40,7 +42,7 @@ export function LinhaLoteDetalheItem({ lote, isMobile, onRetirar }: Props) {
                 {lote.quantidade}
               </Typography>
             </Typography>
-            <Tooltip title={validade.toLocaleString('pt-BR')}>
+            <Tooltip title={tooltipValidade}>
               <Typography variant="body2" sx={{ color: cores.textSecondary }}>
                 Validade:{' '}
                 <Typography component="span" sx={{ fontWeight: 700, color: cores.textPrimary }}>
@@ -93,7 +95,7 @@ export function LinhaLoteDetalheItem({ lote, isMobile, onRetirar }: Props) {
         <Typography variant="body2" sx={{ color: cores.textMuted, fontWeight: 600 }}>
           Validade
         </Typography>
-        <Tooltip title={validade.toLocaleString('pt-BR')}>
+        <Tooltip title={tooltipValidade}>
           <Typography sx={{ fontWeight: 600, color: cores.textPrimary }}>{validadeFormatada}</Typography>
         </Tooltip>
       </Grid>

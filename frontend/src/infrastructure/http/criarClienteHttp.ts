@@ -7,7 +7,7 @@ import { obterUnidadeAtivaId } from '../../shared/services/armazenamentoUnidadeE
 /**
  * Fábrica do cliente HTTP centralizado (Axios).
  * Responsável por base URL, credenciais e injeção do access token.
- * O pipeline de resposta (401/refresh + ErroApi) é registrado no singleton.
+ * O pipeline de resposta (401 → refresh → retry → ErroApi) é registrado no singleton.
  */
 export function criarClienteHttp(): AxiosInstance {
   const cliente = axios.create({

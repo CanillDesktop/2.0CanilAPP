@@ -1,7 +1,9 @@
-export function obterStatusValidade(validadeIso: string): {
+export function obterStatusValidade(validadeIso?: string | null): {
   label: string;
-  color: 'success' | 'warning' | 'error';
+  color: 'success' | 'warning' | 'error' | 'default';
 } {
+  if (!validadeIso) return { label: 'Sem validade', color: 'default' };
+
   const validade = new Date(validadeIso);
   const hoje = new Date();
   const limite = new Date();

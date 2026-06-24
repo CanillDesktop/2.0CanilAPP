@@ -24,7 +24,7 @@ namespace Backend.Repositories
             await _unidadeContext.GarantirConsultaAsync(idUnidade, cancellationToken);
 
             var pageNumber = Math.Max(paginationParameters.PageNumber, 1);
-            var pageSize = paginationParameters.PageSize;
+            var pageSize = Math.Max(paginationParameters.PageSize, 1);
 
             var filtrada = FiltroHelper.AplicarFiltrosMedicamentos(
                 FiltroHelper.Base(_context.Medicamentos.AsQueryable(), idUnidade),

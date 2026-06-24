@@ -114,7 +114,7 @@ export function FormularioInsumo() {
           onIrParaLista={irParaLista}
         />
       ) : (
-        <Box component="form" onSubmit={aoEnviar}>
+        <Box component="form" onSubmit={aoEnviar} noValidate>
           {passoAtual === 0 ? (
             <SecaoFormularioCadastro
               titulo="Dados do insumo"
