@@ -5,7 +5,11 @@ import {
   Box,
   Card,
   CardContent,
+  FormControl,
   Grid,
+  InputLabel,
+  MenuItem,
+  Select,
   Snackbar,
   Stack,
   TextField,
@@ -13,79 +17,61 @@ import {
 } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import type { FormEvent } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { PainelErro } from '../../../shared/components/PainelErro';
-import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
-import { servicoEstoque } from '../services/servicoEstoque';
-import type { ItemEstoqueDto } from '../types/tiposEstoque';
+import { TipoEntradaEstoque } from '../types/tiposEntradaEstoque';
+import type { TipoEntradaEstoqueValor } from '../types/tiposEntradaEstoque';
 
 export function FormularioNovoLote() {
   const [params] = useSearchParams();
   const navegar = useNavigate();
   const { cores } = useTemaApp();
+  const { permissoesAtivas, contexto } = useUnidadeEstoque();
   const campoSx = estilosCampoFormulario(cores);
-  const { criarLote, carregando, erro, errosValidacao } = useMutacaoEstoque();
+  const { registrarEntrada, carregando, erro, errosValidacao } = useMutacaoEstoque();
 
-  // O Id do item vem da navegação e é mantido apenas no estado da aplicação — nunca exibido ao usuário.
   const idItem = useMemo(() => Number(params.get('idItem')) || 0, [params]);
-  const inicialCodItem = useMemo(() => params.get('codItem') ?? '', [params]);
+  const codItem = useMemo(() => params.get('codItem') ?? '', [params]);
 
-  const [codItem, setCodItem] = useState(inicialCodItem);
-  const [lote, setLote] = useState('');
-  const [carregandoLote, setCarregandoLote] = useState(false);
-  const [erroLote, setErroLote] = useState<string | null>(null);
-
-  // Código e lote são gerados/definidos exclusivamente pelo backend (LoteGeradorService),
-  // carregados automaticamente apenas para conferência. O usuário não edita esses campos.
-  useEffect(() => {
-    if (idItem <= 0) return;
-    let ativo = true;
-    const carregarLote = async () => {
-      setCarregandoLote(true);
-      setErroLote(null);
-      try {
-        const dados = await servicoEstoque.obterProximoLote(idItem);
-        if (!ativo) return;
-        setLote(dados.lote);
-        setCodItem((atual) => atual || dados.codigo);
-      } catch (e) {
-        if (ativo) setErroLote(extrairMensagemErroApi(e));
-      } finally {
-        if (ativo) setCarregandoLote(false);
-      }
-    };
-    void carregarLote();
-    return () => {
-      ativo = false;
-    };
-  }, [idItem]);
-
-  const itemInvalido = idItem <= 0;
-  const mensagemErro = erro ?? erroLote ?? (itemInvalido ? 'Item inválido. Volte à listagem e selecione o item novamente.' : null);
-
+  const [tipoEntrada, setTipoEntrada] = useState<TipoEntradaEstoqueValor>(TipoEntradaEstoque.Compra);
   const [quantidade, setQuantidade] = useState(0);
   const [dataEntrega, setDataEntrega] = useState(new Date().toISOString().slice(0, 10));
-  const [nfe, setNfe] = useState('');
   const [dataValidade, setDataValidade] = useState('');
+  const [nfe, setNfe] = useState('');
+  const [fornecedorNome, setFornecedorNome] = useState('');
+  const [fornecedorDocumento, setFornecedorDocumento] = useState('');
+  const [doadorNome, setDoadorNome] = useState('');
+  const [doadorDocumento, setDoadorDocumento] = useState('');
+  const [observacao, setObservacao] = useState('');
+  const [nivelMinimo, setNivelMinimo] = useState<number | ''>('');
   const [submitSucesso, setSubmitSucesso] = useState(false);
   const [submitErro, setSubmitErro] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
     severity: 'success' | 'error';
-  }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
+  }>({ open: false, message: '', severity: 'success' });
+
+  const itemInvalido = idItem <= 0;
+  const semPermissao = !permissoesAtivas?.podeEntrada;
+  const unidadeNome = contexto?.unidadesDisponiveis.find((u) => u.id === contexto.unidadeAtivaId)?.nome ?? 'unidade ativa';
+
+  const mensagemErro =
+    erro ?? (itemInvalido ? 'Item inválido. Volte à listagem e selecione o item novamente.' : null) ??
+    (semPermissao ? 'Você não tem permissão de entrada nesta unidade.' : null);
 
   const formularioValido = useMemo(() => {
-    return idItem > 0 && lote.trim().length > 0 && quantidade > 0 && dataEntrega.trim().length > 0;
-  }, [idItem, lote, quantidade, dataEntrega]);
+    if (itemInvalido || semPermissao) return false;
+    if (quantidade <= 0 || !dataEntrega.trim()) return false;
+    if (tipoEntrada === TipoEntradaEstoque.Compra && !fornecedorNome.trim()) return false;
+    if (tipoEntrada === TipoEntradaEstoque.Doacao && !doadorNome.trim()) return false;
+    return true;
+  }, [itemInvalido, semPermissao, quantidade, dataEntrega, tipoEntrada, fornecedorNome, doadorNome]);
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
@@ -93,31 +79,31 @@ export function FormularioNovoLote() {
     setSubmitErro(false);
     setSubmitSucesso(false);
 
-    const dto: ItemEstoqueDto = {
-      id: idItem,
-      codigo: codItem,
-      lote,
+    const resultado = await registrarEntrada({
+      idItem,
+      tipoEntrada,
       quantidade,
       dataEntrega: new Date(dataEntrega).toISOString(),
-      nfe,
       dataValidade: dataValidade ? new Date(dataValidade).toISOString() : null,
-    };
-    const resultado = await criarLote(dto);
+      nfe: nfe || null,
+      fornecedorNome: tipoEntrada === TipoEntradaEstoque.Compra ? fornecedorNome : null,
+      fornecedorDocumento: tipoEntrada === TipoEntradaEstoque.Compra ? fornecedorDocumento || null : null,
+      doadorNome: tipoEntrada === TipoEntradaEstoque.Doacao ? doadorNome : null,
+      doadorDocumento: tipoEntrada === TipoEntradaEstoque.Doacao ? doadorDocumento || null : null,
+      observacao: observacao || null,
+      nivelMinimoEstoque: nivelMinimo === '' ? null : Number(nivelMinimo),
+    });
+
     if (!resultado.ok) {
       setSubmitErro(true);
-      setSnackbar({
-        open: true,
-        message: resultado.mensagem,
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: resultado.mensagem, severity: 'error' });
       return;
     }
 
-    const loteCadastrado = resultado.dados?.lote ?? lote;
     setSubmitSucesso(true);
     setSnackbar({
       open: true,
-      message: `Lote ${loteCadastrado} cadastrado com sucesso.`,
+      message: 'Entrada registrada com sucesso.',
       severity: 'success',
     });
     window.setTimeout(() => navegar('/estoque'), 1200);
@@ -126,66 +112,39 @@ export function FormularioNovoLote() {
   const botaoPrimario = !submitSucesso && !submitErro;
 
   return (
-    <Box
-      sx={{
-        backgroundColor: cores.bgConteudo,
-        width: '100%',
-        minHeight: '100%',
-        py: { xs: 2, sm: 3 },
-        px: { xs: 1.5, sm: 2 },
-      }}
-    >
-      <Card
-        sx={{
-          width: '100%',
-          maxWidth: 780,
-          mx: 'auto',
-          backgroundColor: cores.bgCard,
-          border: `1px solid ${cores.border}`,
-          borderRadius: 3,
-          p: 3,
-          boxShadow: cores.sombraCard,
-        }}
-      >
+    <Box sx={{ backgroundColor: cores.bgConteudo, width: '100%', minHeight: '100%', py: { xs: 2, sm: 3 }, px: { xs: 1.5, sm: 2 } }}>
+      <Card sx={{ width: '100%', maxWidth: 780, mx: 'auto', backgroundColor: cores.bgCard, border: `1px solid ${cores.border}`, borderRadius: 3, p: 3, boxShadow: cores.sombraCard }}>
         <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
           <Box component="form" onSubmit={aoEnviar}>
             <Stack spacing={2}>
               <Box>
                 <Typography variant="h5" sx={{ fontWeight: 800, color: cores.textPrimary }}>
-                  Novo lote no estoque
+                  Entrada de estoque
                 </Typography>
                 <Typography variant="caption" sx={{ color: cores.textSecondary, display: 'block', mt: 0.5 }}>
-                  Campos obrigatórios: item, lote, quantidade e data de entrega.
+                  Unidade: {unidadeNome}
+                  {codItem ? ` · Item ${codItem}` : ''}
                 </Typography>
               </Box>
               <PainelErro mensagem={mensagemErro} errosValidacao={errosValidacao} />
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
-                    label="Código do item"
-                    value={codItem}
-                    slotProps={{ input: { readOnly: true } }}
-                    helperText="Identificador do item (somente leitura)."
-                    sx={campoSx}
-                  />
+                  <FormControl fullWidth sx={campoSx}>
+                    <InputLabel id="tipo-entrada-label">Tipo de entrada</InputLabel>
+                    <Select
+                      labelId="tipo-entrada-label"
+                      label="Tipo de entrada"
+                      value={tipoEntrada}
+                      onChange={(e) => setTipoEntrada(Number(e.target.value) as TipoEntradaEstoqueValor)}
+                    >
+                      <MenuItem value={TipoEntradaEstoque.Compra}>Compra</MenuItem>
+                      <MenuItem value={TipoEntradaEstoque.Doacao}>Doação</MenuItem>
+                    </Select>
+                  </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     fullWidth
-                    variant="outlined"
-                    label="Lote"
-                    value={carregandoLote ? 'Gerando lote…' : lote}
-                    slotProps={{ input: { readOnly: true } }}
-                    helperText="Gerado automaticamente pelo sistema (somente leitura)."
-                    sx={campoSx}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <TextField
-                    fullWidth
-                    variant="outlined"
                     type="number"
                     label="Quantidade"
                     value={quantidade}
@@ -197,7 +156,6 @@ export function FormularioNovoLote() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     fullWidth
-                    variant="outlined"
                     type="date"
                     label="Data de entrega"
                     value={dataEntrega}
@@ -209,7 +167,6 @@ export function FormularioNovoLote() {
                 <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     fullWidth
-                    variant="outlined"
                     type="date"
                     label="Data de validade"
                     value={dataValidade}
@@ -218,13 +175,73 @@ export function FormularioNovoLote() {
                     sx={campoSx}
                   />
                 </Grid>
+                {tipoEntrada === TipoEntradaEstoque.Compra ? (
+                  <>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Fornecedor"
+                        value={fornecedorNome}
+                        onChange={(e) => setFornecedorNome(e.target.value)}
+                        sx={campoSx}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        label="Documento do fornecedor"
+                        value={fornecedorDocumento}
+                        onChange={(e) => setFornecedorDocumento(e.target.value)}
+                        sx={campoSx}
+                      />
+                    </Grid>
+                    <Grid size={12}>
+                      <TextField fullWidth label="NF-e" value={nfe} onChange={(e) => setNfe(e.target.value)} sx={campoSx} />
+                    </Grid>
+                  </>
+                ) : (
+                  <>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Doador"
+                        value={doadorNome}
+                        onChange={(e) => setDoadorNome(e.target.value)}
+                        sx={campoSx}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <TextField
+                        fullWidth
+                        label="Documento do doador"
+                        value={doadorDocumento}
+                        onChange={(e) => setDoadorDocumento(e.target.value)}
+                        sx={campoSx}
+                      />
+                    </Grid>
+                  </>
+                )}
                 <Grid size={12}>
                   <TextField
                     fullWidth
-                    variant="outlined"
-                    label="Documento (NF-e)"
-                    value={nfe}
-                    onChange={(e) => setNfe(e.target.value)}
+                    label="Observação"
+                    value={observacao}
+                    onChange={(e) => setObservacao(e.target.value)}
+                    multiline
+                    minRows={2}
+                    sx={campoSx}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Nível mínimo (opcional)"
+                    value={nivelMinimo}
+                    onChange={(e) => setNivelMinimo(e.target.value === '' ? '' : Number(e.target.value))}
+                    slotProps={{ htmlInput: { min: 0 } }}
                     sx={campoSx}
                   />
                 </Grid>
@@ -242,37 +259,21 @@ export function FormularioNovoLote() {
                   mt: 3,
                   fontWeight: 'bold',
                   borderRadius: 2,
-                  transition: '0.2s',
                   ...(botaoPrimario && {
                     backgroundColor: cores.accent,
                     color: cores.textOnAccent,
-                    '&:hover': {
-                      backgroundColor: cores.accentHover,
-                      transform: 'scale(1.02)',
-                    },
+                    '&:hover': { backgroundColor: cores.accentHover, transform: 'scale(1.02)' },
                   }),
-                  ...(!botaoPrimario && {
-                    '&:hover': { transform: 'scale(1.02)' },
-                  }),
-                  '&:active': { transform: 'scale(0.98)' },
                 }}
               >
-                {submitSucesso ? 'Lote criado com sucesso' : 'Salvar lote'}
+                {submitSucesso ? 'Entrada registrada' : 'Registrar entrada'}
               </LoadingButton>
             </Stack>
           </Box>
         </CardContent>
       </Card>
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar((estado) => ({ ...estado, open: false }))}
-      >
-        <Alert
-          severity={snackbar.severity}
-          variant="filled"
-          onClose={() => setSnackbar((estado) => ({ ...estado, open: false }))}
-        >
+      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar((s) => ({ ...s, open: false }))}>
+        <Alert severity={snackbar.severity} variant="filled" onClose={() => setSnackbar((s) => ({ ...s, open: false }))}>
           {snackbar.message}
         </Alert>
       </Snackbar>

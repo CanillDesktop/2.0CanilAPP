@@ -1,4 +1,5 @@
 using Backend.Models.Enums;
+using Backend.DTOs.Estoque;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -61,5 +62,7 @@ public class UsuarioCriacaoComConfirmacaoRequestDTO
 
     [DisplayName("Permissão")]
     public PermissoesEnum Permissao { get; set; } = PermissoesEnum.LEITURA;
+
+    public List<UsuarioUnidadeEstoqueAtribuicaoDTO> UnidadesEstoque { get; set; } = [];
 
 }

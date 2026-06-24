@@ -1,4 +1,5 @@
 using Backend.Models.Enums;
+using Backend.DTOs.Estoque;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -39,4 +40,6 @@ public class AtualizarUsuarioRequestDTO
 
     [DisplayName("Permissão")]
     public PermissoesEnum? Permissao { get; set; }
+
+    public List<UsuarioUnidadeEstoqueAtribuicaoDTO>? UnidadesEstoque { get; set; }
 }

@@ -17,19 +17,19 @@ namespace Backend.Services
     {
         private readonly IProdutosRepository _repository;
         private readonly IUserSessionService _userSessionService;
+        private readonly IUnidadeEstoqueContextService _unidadeContext;
         private readonly IConfiguration _configuration;
-        private readonly ILoteGeradorService _loteGerador;
 
         public ProdutosService(
             IProdutosRepository repository,
             IUserSessionService userSessionService,
-            IConfiguration configuration,
-            ILoteGeradorService loteGerador)
+            IUnidadeEstoqueContextService unidadeContext,
+            IConfiguration configuration)
         {
             _repository = repository;
             _userSessionService = userSessionService;
+            _unidadeContext = unidadeContext;
             _configuration = configuration;
-            _loteGerador = loteGerador;
         }
 
         private static void ValidarCamposObrigatorios(ProdutosModel model)
@@ -51,17 +51,20 @@ namespace Backend.Services
         {
             ValidarCamposObrigatorios(model);
 
-            // Estoque inicial é opcional. Só geramos lote (no backend) quando há quantidade.
-            var itemInicial = model.ItensEstoque?.FirstOrDefault();
-            if (itemInicial != null && itemInicial.Quantidade > 0)
+            model.ItensEstoque = [];
+            var nivelMinimo = model.ItensNivelEstoque.FirstOrDefault()?.NivelMinimoEstoque ?? 0;
+            model.ItensNivelEstoque = [];
+
+            var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
+            await _unidadeContext.GarantirConsultaAsync(idUnidade);
+
+            if (nivelMinimo > 0)
             {
-                itemInicial.Codigo = model.Codigo;
-                itemInicial.Lote = await _loteGerador.GerarLoteProdutoAsync(model.Categoria, model.DescricaoSimples);
-                model.ItensEstoque = new List<ItemEstoqueModel> { itemInicial };
-            }
-            else
-            {
-                model.ItensEstoque = new List<ItemEstoqueModel>();
+                model.ItensNivelEstoque.Add(new ItemNivelEstoqueModel
+                {
+                    IdUnidadeEstoque = idUnidade,
+                    NivelMinimoEstoque = nivelMinimo,
+                });
             }
 
             model.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
@@ -82,43 +85,37 @@ namespace Backend.Services
 
                 ValidarCamposObrigatorios(model);
 
+                var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
+                await _unidadeContext.GarantirConsultaAsync(idUnidade);
+
                 produtoExistente.DescricaoSimples = model.DescricaoSimples;
                 produtoExistente.DescricaoDetalhada = model.DescricaoDetalhada;
                 produtoExistente.Unidade = model.Unidade;
                 produtoExistente.Categoria = model.Categoria;
 
-                // Entrada de novo estoque na edição: o lote é sempre gerado pelo backend.
-                var itemEstoque = model.ItensEstoque?.FirstOrDefault();
-                if (itemEstoque != null && itemEstoque.Quantidade > 0)
+                var nivelInformado = model.ItensNivelEstoque.FirstOrDefault()?.NivelMinimoEstoque;
+                if (nivelInformado is int minimo)
                 {
-                    var novoLote = new ItemEstoqueModel
+                    var nivelExistente = produtoExistente.ObterNivelEstoque(idUnidade);
+                    if (nivelExistente is null)
                     {
-                        Id = produtoExistente.Id,
-                        Codigo = produtoExistente.Codigo,
-                        Lote = await _loteGerador.GerarLoteProdutoAsync(
-                            produtoExistente.Categoria,
-                            produtoExistente.DescricaoSimples),
-                        Quantidade = itemEstoque.Quantidade,
-                        DataEntrega = itemEstoque.DataEntrega,
-                        DataValidade = itemEstoque.DataValidade,
-                        NFe = itemEstoque.NFe,
-                        DataHoraCriacao = DateTime.UtcNow
-                    };
-
-                    produtoExistente.ItensEstoque ??= new List<ItemEstoqueModel>();
-                    produtoExistente.ItensEstoque.Add(novoLote);
-                }
-
-                if (produtoExistente.ItemNivelEstoque != null)
-                {
-                    produtoExistente.ItemNivelEstoque.NivelMinimoEstoque = model.ItemNivelEstoque.NivelMinimoEstoque;
+                        produtoExistente.ItensNivelEstoque.Add(new ItemNivelEstoqueModel
+                        {
+                            Id = produtoExistente.Id,
+                            IdUnidadeEstoque = idUnidade,
+                            NivelMinimoEstoque = minimo,
+                        });
+                    }
+                    else
+                    {
+                        nivelExistente.NivelMinimoEstoque = minimo;
+                    }
                 }
 
                 produtoExistente.DataHoraAtualizacao = DateTime.UtcNow;
                 produtoExistente.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
 
-                var resultado = await _repository.UpdateAsync(produtoExistente);
-                return resultado;
+                return await _repository.UpdateAsync(produtoExistente);
             }
             catch (ArgumentNullException ex)
             {

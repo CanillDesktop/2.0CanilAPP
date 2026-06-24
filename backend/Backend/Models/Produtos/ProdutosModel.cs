@@ -51,28 +51,17 @@ public class ProdutosModel : ItemComEstoqueBaseModel
             DescricaoDetalhada = dto.DescricaoDetalhada.ToLower(),
             Unidade = dto.Unidade,
             Categoria = dto.Categoria,
-            ItemNivelEstoque = new()
-            {
-                NivelMinimoEstoque = dto.NivelMinimoEstoque
-            },
-            ItensEstoque =
-            [
-                new ItemEstoqueModel()
-                {
-                    Codigo = codigoProduto,
-                    DataEntrega = dto.DataEntrega,
-                    DataValidade = dto.DataValidade,
-                    NFe = dto.NFe,
-                    Quantidade = dto.Quantidade
-                }
-            ]
+            ItensNivelEstoque = dto.NivelMinimoEstoque > 0
+                ? [new ItemNivelEstoqueModel { NivelMinimoEstoque = dto.NivelMinimoEstoque }]
+                : [],
+            ItensEstoque = [],
         };
     }
 
     public static implicit operator ProdutosLeituraDTO(ProdutosModel model)
     {
         var itensEstoque = model.ItensEstoque ?? [];
-        var nivelEstoque = model.ItemNivelEstoque;
+        var nivelEstoque = model.ItensNivelEstoque.FirstOrDefault();
 
         return new ProdutosLeituraDTO()
         {

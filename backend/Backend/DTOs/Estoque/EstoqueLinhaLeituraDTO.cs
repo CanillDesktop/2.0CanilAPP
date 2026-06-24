@@ -30,4 +30,6 @@ public class EstoqueLinhaLeituraDTO
 
     /// <summary>Maior data de entrega entre lotes (UTC).</summary>
     public DateTime? UltimaMovimentacaoUtc { get; set; }
+
+    public int IdUnidadeEstoque { get; set; }
 }

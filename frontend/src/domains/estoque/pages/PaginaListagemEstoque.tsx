@@ -12,6 +12,7 @@ import {
 import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
@@ -67,6 +68,7 @@ function mapearLinha(dto: EstoqueLinhaDto): LinhaOperacionalEstoque {
 export function PaginaListagemEstoque() {
   const navigate = useNavigate();
   const { usuario } = useAutenticacao();
+  const { unidadeAtivaId } = useUnidadeEstoque();
   const [abaTipo, setAbaTipo] = useState(lerAbaEstoqueSalva);
 
   const [carregando, setCarregando] = useState(true);
@@ -124,7 +126,7 @@ export function PaginaListagemEstoque() {
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [unidadeAtivaId]);
 
   useEffect(() => {
     let ativo = true;
@@ -186,6 +188,7 @@ export function PaginaListagemEstoque() {
     orderDirection,
     page,
     rowsPerPage,
+    unidadeAtivaId,
   ]);
 
   useEffect(() => {

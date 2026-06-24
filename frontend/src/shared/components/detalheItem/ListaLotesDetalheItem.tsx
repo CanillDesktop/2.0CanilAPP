@@ -106,7 +106,7 @@ export function ListaLotesDetalheItem({
         >
           <Button
             component={Link}
-            to={`/estoque/lotes/novo?idItem=${idItem}&codItem=${encodeURIComponent(codItem)}`}
+            to={`/estoque/entradas/novo?idItem=${idItem}&codItem=${encodeURIComponent(codItem)}`}
             variant="contained"
             size="large"
             sx={estilos.botaoPrimario}

@@ -19,6 +19,9 @@ import { CampoSenha } from '../../../shared/components/CampoSenha';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useCadastroUsuario } from '../hooks/useCadastroUsuario';
 import type { UsuarioCadastroComConfirmacaoDto } from '../types/tiposUsuarios';
+import type { EscolhaUnidadeCadastro } from '../../estoque/constants/unidadesEstoque';
+import { montarUnidadesEstoqueCadastro } from '../../estoque/constants/unidadesEstoque';
+import { CampoEscolhaUnidadeCadastro } from './CampoEscolhaUnidadeCadastro';
 
 export function FormularioCadastroUsuario() {
   const { cores } = useTemaApp();
@@ -29,6 +32,7 @@ export function FormularioCadastroUsuario() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [senhaConfirmacao, setSenhaConfirmacao] = useState('');
+  const [unidadeCadastro, setUnidadeCadastro] = useState<EscolhaUnidadeCadastro>('secretaria');
 
   const senhasDivergem = useMemo(
     () => senhaConfirmacao.length > 0 && senha !== senhaConfirmacao,
@@ -45,6 +49,7 @@ export function FormularioCadastroUsuario() {
       senha,
       senhaConfirmacao,
       permissao: 2,
+      unidadesEstoque: montarUnidadesEstoqueCadastro(unidadeCadastro),
     };
     await cadastrar(dto);
   }
@@ -150,6 +155,11 @@ export function FormularioCadastroUsuario() {
                 ),
               },
             }}
+          />
+          <CampoEscolhaUnidadeCadastro
+            valor={unidadeCadastro}
+            onChange={setUnidadeCadastro}
+            helperText="Indique se você atuará na Secretaria ou no Canil."
           />
           <CampoSenha
             label="Senha"

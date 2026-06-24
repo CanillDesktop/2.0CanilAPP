@@ -31,20 +31,6 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
     {
         var codigoMedicamento = GeraIdentificador();
 
-        var itemEstoque = new ItemEstoqueModel()
-        {
-            Codigo = codigoMedicamento,
-            DataEntrega = dto.DataEntrega,
-            DataValidade = dto.DataValidade,
-            NFe = dto.NFe,
-            Quantidade = dto.Quantidade
-        };
-
-        var nivelEstoque = new ItemNivelEstoqueModel()
-        {
-            NivelMinimoEstoque = dto.NivelMinimoEstoque
-        };
-
         return new MedicamentosModel()
         {
             Codigo = codigoMedicamento,
@@ -53,15 +39,17 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
             Formula = dto.Formula,
             NomeComercial = dto.NomeComercial.ToUpper(),
             PublicoAlvo = dto.PublicoAlvo,
-            ItemNivelEstoque = nivelEstoque,
-            ItensEstoque = [itemEstoque]
+            ItensNivelEstoque = dto.NivelMinimoEstoque > 0
+                ? [new ItemNivelEstoqueModel { NivelMinimoEstoque = dto.NivelMinimoEstoque }]
+                : [],
+            ItensEstoque = [],
         };
     }
 
     public static implicit operator MedicamentoLeituraDTO(MedicamentosModel model)
     {
         var itensEstoque = model.ItensEstoque ?? [];
-        var nivelEstoque = model.ItemNivelEstoque;
+        var nivelEstoque = model.ItensNivelEstoque.FirstOrDefault();
 
         return new MedicamentoLeituraDTO()
         {

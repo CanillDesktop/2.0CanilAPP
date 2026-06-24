@@ -1,6 +1,7 @@
 ﻿using Backend.Context;
 using Backend.Models.Estoque;
 using Backend.Repositories.Interfaces;
+using Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Repositories
@@ -8,17 +9,22 @@ namespace Backend.Repositories
     public abstract class BaseCRUDEstoqueRepository<T> : ICRUDEstoqueRepository<T> where T : ItemComEstoqueBaseModel
     {
         protected readonly CanilAppDbContext _context;
+        protected readonly IUnidadeEstoqueContextService _unidadeContext;
 
-        public BaseCRUDEstoqueRepository(CanilAppDbContext context)
+        public BaseCRUDEstoqueRepository(CanilAppDbContext context, IUnidadeEstoqueContextService unidadeContext)
         {
             _context = context;
+            _unidadeContext = unidadeContext;
         }
 
         public async Task<IEnumerable<T>> GetAsync()
         {
+            var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
+            await _unidadeContext.GarantirConsultaAsync(idUnidade);
+
             var registros = await _context.Set<T>()
-                .Include(p => p.ItemNivelEstoque)
-                .Include(p => p.ItensEstoque.Where(e => !e.IsDeleted))
+                .Include(p => p.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidade && !n.IsDeleted))
+                .Include(p => p.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidade && !e.IsDeleted))
                 .Where(p => p.IsDeleted == false)
                 .ToListAsync();
 
@@ -27,9 +33,12 @@ namespace Backend.Repositories
 
         public async Task<T?> GetByIdAsync(int id)
         {
+            var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
+            await _unidadeContext.GarantirConsultaAsync(idUnidade);
+
             var registro = await _context.Set<T>()
-                .Include(p => p.ItensEstoque.Where(e => !e.IsDeleted))
-                .Include(p => p.ItemNivelEstoque)
+                .Include(p => p.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidade && !e.IsDeleted))
+                .Include(p => p.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidade && !n.IsDeleted))
                 .Where(p => p.IsDeleted == false)
                 .FirstOrDefaultAsync(p => p.Id == id);
 

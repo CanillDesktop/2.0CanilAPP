@@ -1,19 +1,14 @@
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import {
   Box,
-  Collapse,
   FormControl,
-  FormControlLabel,
   Grid,
   InputLabel,
   MenuItem,
   Select,
-  Switch,
   TextField,
-  Typography,
 } from '@mui/material';
 import type { FormEvent } from 'react';
 import { useMemo, useState } from 'react';
@@ -29,18 +24,13 @@ import { useMutacaoInsumo } from '../hooks/useInsumos';
 import { OPCOES_UNIDADE_INSUMO } from '../constants/opcoesUnidadeInsumo';
 import type { InsumoCadastroDto } from '../types/tiposInsumos';
 
-const PASSOS = ['Identificação', 'Estoque e configurações'] as const;
+const PASSOS = ['Identificação', 'Configurações'] as const;
 
 const estadoInicialFormulario = () => ({
   descricaoSimplificada: '',
   descricaoDetalhada: '',
-  quantidade: 0,
-  dataEntrega: new Date().toISOString().slice(0, 10),
-  nfe: '',
   unidade: 1,
-  dataValidade: '',
   nivelMinimoEstoque: 0,
-  cadastrarEstoqueInicial: false,
 });
 
 export function FormularioInsumo() {
@@ -62,32 +52,26 @@ export function FormularioInsumo() {
     [form.descricaoSimplificada, form.descricaoDetalhada, form.unidade],
   );
 
-  const passoEstoqueValido = useMemo(() => {
-    if (!Number.isFinite(form.nivelMinimoEstoque) || form.nivelMinimoEstoque < 0) return false;
-    if (!form.cadastrarEstoqueInicial) return true;
-    return (
-      form.dataEntrega.trim().length > 0 &&
-      Number.isFinite(form.quantidade) &&
-      form.quantidade > 0
-    );
-  }, [form]);
+  const passoConfigValido = useMemo(() => {
+    return Number.isFinite(form.nivelMinimoEstoque) && form.nivelMinimoEstoque >= 0;
+  }, [form.nivelMinimoEstoque]);
 
   function montarDto(): InsumoCadastroDto {
     return {
       descricaoSimplificada: form.descricaoSimplificada,
       descricaoDetalhada: form.descricaoDetalhada,
-      quantidade: form.cadastrarEstoqueInicial ? form.quantidade : 0,
-      dataEntrega: new Date(form.dataEntrega).toISOString(),
-      nfe: form.nfe,
+      quantidade: 0,
+      dataEntrega: new Date().toISOString(),
+      nfe: '',
       unidade: form.unidade,
-      dataValidade: form.dataValidade ? new Date(form.dataValidade).toISOString() : null,
+      dataValidade: null,
       nivelMinimoEstoque: form.nivelMinimoEstoque,
     };
   }
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
-    if (!passoEstoqueValido || carregando) return;
+    if (!passoConfigValido || carregando) return;
 
     const resultado = await criar(montarDto());
     if (!resultado.ok) return;
@@ -183,106 +167,26 @@ export function FormularioInsumo() {
               </Grid>
             </SecaoFormularioCadastro>
           ) : (
-            <>
-              <SecaoFormularioCadastro
-                titulo="Estoque inicial"
-                descricao="Opcional — você pode registrar o primeiro lote agora ou depois na ficha do item."
-                variante="estoque"
-                icone={<WarehouseOutlinedIcon />}
-                acaoCabecalho={
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={form.cadastrarEstoqueInicial}
-                        onChange={(e) => setForm((p) => ({ ...p, cadastrarEstoqueInicial: e.target.checked }))}
-                      />
-                    }
-                    label="Cadastrar estoque inicial"
-                    sx={{ color: estilos.cores.textPrimary, m: 0 }}
+            <SecaoFormularioCadastro
+              titulo="Configurações"
+              descricao="Alertas de estoque baixo usam este mínimo como referência na unidade ativa."
+              variante="config"
+              icone={<SettingsOutlinedIcon />}
+            >
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Nível mínimo de estoque"
+                    value={form.nivelMinimoEstoque}
+                    onChange={(e) => setForm((p) => ({ ...p, nivelMinimoEstoque: Number(e.target.value) }))}
+                    slotProps={{ htmlInput: { min: 0 } }}
+                    sx={sxCampo}
                   />
-                }
-              >
-                <Collapse in={form.cadastrarEstoqueInicial}>
-                  <Grid container spacing={2}>
-                    <Grid size={12}>
-                      <Typography variant="body2" sx={{ color: estilos.cores.textMuted }}>
-                        O número do lote é gerado automaticamente pelo sistema ao salvar.
-                      </Typography>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        required={form.cadastrarEstoqueInicial}
-                        type="number"
-                        label="Quantidade inicial"
-                        value={form.quantidade}
-                        onChange={(e) => setForm((p) => ({ ...p, quantidade: Number(e.target.value) }))}
-                        slotProps={{ htmlInput: { min: 0 } }}
-                        sx={sxCampo}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        required={form.cadastrarEstoqueInicial}
-                        type="date"
-                        label="Data de entrega"
-                        value={form.dataEntrega}
-                        onChange={(e) => setForm((p) => ({ ...p, dataEntrega: e.target.value }))}
-                        slotProps={{ inputLabel: { shrink: true } }}
-                        sx={sxCampo}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        type="date"
-                        label="Data de validade"
-                        value={form.dataValidade}
-                        onChange={(e) => setForm((p) => ({ ...p, dataValidade: e.target.value }))}
-                        slotProps={{ inputLabel: { shrink: true } }}
-                        sx={sxCampo}
-                      />
-                    </Grid>
-                    <Grid size={12}>
-                      <TextField
-                        fullWidth
-                        label="NF-e / documento"
-                        value={form.nfe}
-                        onChange={(e) => setForm((p) => ({ ...p, nfe: e.target.value }))}
-                        sx={sxCampo}
-                      />
-                    </Grid>
-                  </Grid>
-                </Collapse>
-                {!form.cadastrarEstoqueInicial ? (
-                  <Typography variant="body2" sx={{ color: estilos.cores.textMuted }}>
-                    O insumo será criado sem lote. Registre estoque depois na ficha do item.
-                  </Typography>
-                ) : null}
-              </SecaoFormularioCadastro>
-
-              <SecaoFormularioCadastro
-                titulo="Configurações"
-                descricao="Alertas de estoque baixo usam este mínimo como referência."
-                variante="config"
-                icone={<SettingsOutlinedIcon />}
-              >
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Nível mínimo de estoque"
-                      value={form.nivelMinimoEstoque}
-                      onChange={(e) => setForm((p) => ({ ...p, nivelMinimoEstoque: Number(e.target.value) }))}
-                      slotProps={{ htmlInput: { min: 0 } }}
-                      sx={sxCampo}
-                    />
-                  </Grid>
                 </Grid>
-              </SecaoFormularioCadastro>
-            </>
+              </Grid>
+            </SecaoFormularioCadastro>
           )}
 
           <BarraAcoesFormulario
@@ -290,7 +194,7 @@ export function FormularioInsumo() {
             totalPassos={PASSOS.length}
             carregando={carregando}
             podeAvancar={passoIdentificacaoValido}
-            podeSalvar={passoEstoqueValido}
+            podeSalvar={passoConfigValido}
             rotuloSalvar="Criar insumo"
             onCancelar={() => navegar('/insumos')}
             onPassoAnterior={() => setPassoAtual((p) => Math.max(0, p - 1))}

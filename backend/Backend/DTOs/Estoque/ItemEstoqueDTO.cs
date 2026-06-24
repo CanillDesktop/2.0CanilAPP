@@ -1,10 +1,19 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Backend.Models.Estoque;
 
 namespace Backend.DTOs.Estoque
 {
     public class ItemEstoqueDTO
     {
-        public ItemEstoqueDTO(int id, string codigo, string? lote, int quantidade, DateTime dataEntrega, string? nfe, DateTime? dataValidade)
+        public ItemEstoqueDTO(
+            int id,
+            string codigo,
+            string? lote,
+            int quantidade,
+            DateTime dataEntrega,
+            string? nfe,
+            DateTime? dataValidade,
+            int idUnidadeEstoque = UnidadeEstoqueIds.Secretaria)
         {
             Id = id;
             Codigo = codigo;
@@ -13,13 +22,18 @@ namespace Backend.DTOs.Estoque
             DataEntrega = dataEntrega;
             NFe = nfe;
             DataValidade = dataValidade;
+            IdUnidadeEstoque = idUnidadeEstoque;
         }
+
+        public ItemEstoqueDTO() { }
+
         public int Id { get; set; }
 
         [Display(Name = "Código do item")]
         public string Codigo { get; set; } = string.Empty;
         public string? Lote { get; set; }
         public int Quantidade { get; set; }
+        public int IdUnidadeEstoque { get; set; } = UnidadeEstoqueIds.Secretaria;
 
         [Display(Name = "Data de entrega")]
         public DateTime DataEntrega { get; set; }

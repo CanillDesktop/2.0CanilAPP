@@ -12,6 +12,7 @@ import {
   exportarHistoricoRetiradasXlsxApi,
 } from '../api/retiradaHistoricoApi';
 import { registrarRetiradaApi } from '../api/retiradaEstoqueApi';
+import { registrarEntradaEstoqueApi } from '../api/entradaEstoqueApi';
 import type {
   ItemEstoqueDto,
   ProximoLoteEstoqueDto,
@@ -20,6 +21,7 @@ import type {
   RetiradaHistoricoListaPaginadaDto,
   RetiradaPaginacaoDto,
 } from '../types/tiposEstoque';
+import type { EntradaEstoqueDto } from '../types/tiposEntradaEstoque';
 
 export const servicoEstoque = {
   obterItemPorId(id: number): Promise<ItemEstoqueDto> {
@@ -33,6 +35,9 @@ export const servicoEstoque = {
   },
   criarLote(dto: ItemEstoqueDto): Promise<ItemEstoqueDto> {
     return criarItemEstoqueApi(dto);
+  },
+  registrarEntrada(dto: EntradaEstoqueDto): Promise<void> {
+    return registrarEntradaEstoqueApi(dto);
   },
   atualizarLote(lote: string, dto: ItemEstoqueDto): Promise<void> {
     return atualizarItemEstoqueApi(lote, dto);

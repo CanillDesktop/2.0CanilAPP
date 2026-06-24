@@ -1,3 +1,4 @@
+using Backend.Exceptions;
 using Backend.Models;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -71,6 +72,15 @@ public class AuthController : ControllerBase
             {
                 Title = "Acesso não autorizado",
                 Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message
+            });
+        }
+        catch (AcessoNegadoException ex)
+        {
+            return StatusCode(ex.StatusCode, new ErrorResponse
+            {
+                Title = ex.Titulo,
+                Status = ex.StatusCode,
                 Details = ex.Message
             });
         }

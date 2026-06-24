@@ -1,6 +1,9 @@
+using Backend.DTOs.Common;
 using Backend.DTOs.Usuario;
 using Backend.Exceptions;
+using Backend.DTOs.Estoque;
 using Backend.Models;
+using Backend.Pagination;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +23,6 @@ public class UsuariosController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>Listagem compacta para filtros do histórico de retiradas (qualquer usuário autenticado).</summary>
     [Authorize]
     [HttpGet("resumo-filtro-retiradas")]
     public async Task<ActionResult<IReadOnlyList<UsuarioResumoFiltroDTO>>> GetResumoFiltroRetiradas(
@@ -32,11 +34,12 @@ public class UsuariosController : ControllerBase
 
     [Authorize(Roles = "ADMIN")]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UsuarioResponseDTO>>> Get()
+    public async Task<ActionResult<PagedResultDto<UsuarioResponseDTO>>> Get(
+        [FromQuery] UsuarioListagemParameters parameters,
+        CancellationToken cancellationToken)
     {
-        var usuarios = await _service.BuscarTodosAsync();
-
-        return Ok(usuarios);
+        var resultado = await _service.ListarPaginadoAsync(parameters, cancellationToken);
+        return Ok(resultado);
     }
 
     [Authorize]
@@ -53,6 +56,14 @@ public class UsuariosController : ControllerBase
             });
 
         return Ok(usuario);
+    }
+
+    [Authorize]
+    [HttpGet("{id}/unidades-estoque")]
+    public async Task<ActionResult<IReadOnlyList<UsuarioUnidadeEstoqueDTO>>> GetUnidadesEstoque(int id, CancellationToken cancellationToken)
+    {
+        var unidades = await _service.ObterUnidadesEstoqueAsync(id, cancellationToken);
+        return Ok(unidades);
     }
 
     [HttpPost]
@@ -86,7 +97,6 @@ public class UsuariosController : ControllerBase
         try
         {
             var usuarioAtualizado = await _service.AtualizarAsync(id, dto);
-
             return Ok(usuarioAtualizado);
         }
         catch (ArgumentNullException ex)
@@ -111,20 +121,35 @@ public class UsuariosController : ControllerBase
 
     [Authorize(Roles = "ADMIN")]
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id, [FromQuery] bool hardDelete = false)
+    public async Task<IActionResult> Delete(
+        int id,
+        [FromQuery] bool hardDelete = false,
+        [FromBody] ConfirmacaoSenhaRequestDTO? dto = null)
     {
-        var sucesso = await _service.DeletarAsync(id, hardDelete);
-        if (!sucesso)
+        try
         {
-            return NotFound(new ErrorResponse
+            var sucesso = await _service.DeletarAsync(id, dto?.SenhaConfirmacao ?? string.Empty, hardDelete);
+            if (!sucesso)
             {
-                Title = "Recurso não encontrado",
-                Status = StatusCodes.Status404NotFound,
-                Details = $"Usuário de id {id} não encontrado"
+                return NotFound(new ErrorResponse
+                {
+                    Title = "Recurso não encontrado",
+                    Status = StatusCodes.Status404NotFound,
+                    Details = $"Usuário de id {id} não encontrado"
+                });
+            }
+
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Falha ao excluir usuário",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message ?? "Falha ao excluir usuário"
             });
         }
-
-        return NoContent();
     }
 
     [Authorize]
@@ -145,6 +170,15 @@ public class UsuariosController : ControllerBase
                 Details = ex.Message ?? "Falha ao alterar senha"
             });
         }
+        catch (AcessoNegadoException ex)
+        {
+            return StatusCode(ex.StatusCode, new ErrorResponse
+            {
+                Title = ex.Titulo,
+                Status = ex.StatusCode,
+                Details = ex.Message
+            });
+        }
     }
 
     [Authorize(Roles = "ADMIN")]
@@ -153,14 +187,13 @@ public class UsuariosController : ControllerBase
     {
         try
         {
-            var result = (await _service.InativarAsync(id, dto.SenhaConfirmacao));
-            var inativado = result != null && result != false;
-            if (!inativado)
+            var result = await _service.InativarAsync(id, dto.SenhaConfirmacao);
+            if (result != true)
             {
                 return NotFound(new ErrorResponse
                 {
                     Title = "Falha ao inativar usuário",
-                    Status = StatusCodes.Status400BadRequest,
+                    Status = StatusCodes.Status404NotFound,
                     Details = "Usuário não encontrado"
                 });
             }
@@ -177,5 +210,43 @@ public class UsuariosController : ControllerBase
             });
         }
     }
-}
 
+    [Authorize(Roles = "ADMIN")]
+    [HttpPatch("{id}/reativar")]
+    public async Task<IActionResult> Reativar(int id, [FromBody] ConfirmacaoSenhaRequestDTO dto)
+    {
+        try
+        {
+            var result = await _service.ReativarAsync(id, dto.SenhaConfirmacao);
+            if (result != true)
+            {
+                return NotFound(new ErrorResponse
+                {
+                    Title = "Falha ao reativar usuário",
+                    Status = StatusCodes.Status404NotFound,
+                    Details = "Usuário não encontrado"
+                });
+            }
+
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Falha ao reativar usuário",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message ?? "Falha ao reativar usuário"
+            });
+        }
+        catch (RegraDeNegocioInfringidaException ex)
+        {
+            return UnprocessableEntity(new ErrorResponse
+            {
+                Title = "Falha ao reativar usuário",
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Details = ex.Message
+            });
+        }
+    }
+}

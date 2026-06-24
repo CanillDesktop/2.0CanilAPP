@@ -235,7 +235,7 @@ export function PaginaListagemInsumos() {
                   onVisualizar={(id) => navigate(`/insumos/${id}`)}
                   onEditar={(id) => navigate(`/insumos/${id}`)}
                   onExcluir={(id) => setIdExclusao(id)}
-                  onMovimentar={(id) => navigate(`/estoque/lotes/novo?idItem=${id}`)}
+                  onMovimentar={(id) => navigate(`/estoque/entradas/novo?idItem=${id}`)}
                   onRegistrarRetirada={(insumo: InsumoLeituraDto, lote: ItemEstoqueDto) => {
                     if (!lote.lote?.trim()) {
                       setSnackbar({ open: true, mensagem: MENSAGEM_LOTE_INVALIDO_RETIRADA, tipo: 'error' });

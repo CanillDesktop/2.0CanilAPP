@@ -240,7 +240,7 @@ export function PaginaListagemMedicamentos() {
                   onVisualizar={(id) => navigate(`/medicamentos/${id}`)}
                   onEditar={(id) => navigate(`/medicamentos/${id}`)}
                   onExcluir={(id) => setIdExclusao(id)}
-                  onMovimentar={(id) => navigate(`/estoque/lotes/novo?idItem=${id}`)}
+                  onMovimentar={(id) => navigate(`/estoque/entradas/novo?idItem=${id}`)}
                   onRegistrarRetirada={(medicamento: MedicamentoLeituraDto, lote: ItemEstoqueDto) => {
                     if (!lote.lote?.trim()) {
                       setSnackbar({ open: true, mensagem: MENSAGEM_LOTE_INVALIDO_RETIRADA, tipo: 'error' });

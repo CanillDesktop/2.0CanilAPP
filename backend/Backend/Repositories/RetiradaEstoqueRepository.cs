@@ -3,6 +3,7 @@ using Backend.DTOs.Estoque;
 using Backend.Models.Estoque;
 using Backend.Pagination;
 using Backend.Repositories.Interfaces;
+using Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Repositories;
@@ -10,14 +11,21 @@ namespace Backend.Repositories;
 public class RetiradaEstoqueRepository : IRetiradaEstoqueRepository
 {
     private readonly CanilAppDbContext _context;
+    private readonly IUnidadeEstoqueContextService _unidadeContext;
 
-    public RetiradaEstoqueRepository(CanilAppDbContext context)
+    public RetiradaEstoqueRepository(CanilAppDbContext context, IUnidadeEstoqueContextService unidadeContext)
     {
         _context = context;
+        _unidadeContext = unidadeContext;
     }
 
-    public async Task<IEnumerable<RetiradaEstoqueModel>> GetAsync() =>
-        await _context.RetiradaEstoque.AsNoTracking().ToListAsync();
+    public async Task<IEnumerable<RetiradaEstoqueModel>> GetAsync()
+    {
+        var unidades = await _unidadeContext.ObterUnidadesPermitidasAsync();
+        return await _context.RetiradaEstoque.AsNoTracking()
+            .Where(r => unidades.Contains(r.IdUnidadeEstoque))
+            .ToListAsync();
+    }
 
     public async Task<RetiradaEstoqueModel?> CreateAsync(RetiradaEstoqueModel model, bool saveChanges = true)
     {
@@ -34,7 +42,7 @@ public class RetiradaEstoqueRepository : IRetiradaEstoqueRepository
         RetiradaEstoquePaginationParameters parameters,
         CancellationToken cancellationToken = default)
     {
-        var intersecao = MontarIntersecao(filtros);
+        var intersecao = await MontarIntersecaoAsync(filtros, cancellationToken);
         var totalIntersec = await intersecao.CountAsync(cancellationToken);
         var sumQtd = await intersecao.SumQuantidadeAsync(cancellationToken);
 
@@ -81,7 +89,7 @@ public class RetiradaEstoqueRepository : IRetiradaEstoqueRepository
         int limiteLinhas,
         CancellationToken cancellationToken = default)
     {
-        var intersecao = MontarIntersecao(filtros);
+        var intersecao = await MontarIntersecaoAsync(filtros, cancellationToken);
         var totalIntersec = await intersecao.CountAsync(cancellationToken);
         var sumQtd = await intersecao.SumQuantidadeAsync(cancellationToken);
 
@@ -95,9 +103,16 @@ public class RetiradaEstoqueRepository : IRetiradaEstoqueRepository
         return new RetiradaEstoqueHistoricoExportacaoConsulta(linhas, totalIntersec, sumQtd);
     }
 
-    private IQueryable<RetiradaEstoqueModel> MontarIntersecao(RetiradaEstoqueFiltroConsulta filtros)
+    private async Task<IQueryable<RetiradaEstoqueModel>> MontarIntersecaoAsync(
+        RetiradaEstoqueFiltroConsulta filtros,
+        CancellationToken cancellationToken)
     {
-        var baseQ = _context.RetiradaEstoque.AsNoTracking().FiltrarDataETermo(filtros);
+        var unidades = await _unidadeContext.ObterUnidadesPermitidasAsync(cancellationToken);
+        var idUnidadeAtiva = await _unidadeContext.ObterUnidadeAtivaIdAsync(cancellationToken);
+
+        var baseQ = _context.RetiradaEstoque.AsNoTracking()
+            .Where(r => r.IdUnidadeEstoque == idUnidadeAtiva && unidades.Contains(r.IdUnidadeEstoque))
+            .FiltrarDataETermo(filtros);
 
         if (filtros.IdUsuarioRetiranteLista is > 0)
             baseQ = baseQ.Where(r => r.IdUsuarioRetirante == filtros.IdUsuarioRetiranteLista);

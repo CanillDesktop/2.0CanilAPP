@@ -43,21 +43,10 @@ namespace Backend.Services
             };
         }
 
-        public async Task<ItemEstoqueModel?> CriarAsync(ItemEstoqueModel model)
+        public Task<ItemEstoqueModel?> CriarAsync(ItemEstoqueModel model)
         {
-            var itemBase = await _repository.ObterItemBasePorIdAsync(model.Id)
-                ?? throw new RecursoNaoEncontradoException("Item não encontrado para adicionar o lote.");
-
-            if (model.Quantidade <= 0)
-                throw new ModelIncompletaException("Informe uma quantidade maior que zero para o lote.");
-
-            // Código e lote são responsabilidade exclusiva do backend: o código vem do item e o
-            // lote é sempre gerado pelo LoteGeradorService, ignorando qualquer valor enviado pelo cliente.
-            model.Codigo = ObterCodigoItem(itemBase);
-            model.Lote = await GerarLoteAsync(itemBase);
-            model.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
-
-            return await _repository.CreateAsync(model);
+            throw new RegraDeNegocioInfringidaException(
+                "Use POST /api/Estoque/entradas para registrar compra ou doação na unidade ativa.");
         }
 
         private Task<string> GerarLoteAsync(ItemComEstoqueBaseModel itemBase) => itemBase switch

@@ -26,8 +26,25 @@ public class UsuariosModel : BaseModel
 
     [EnumDataType(typeof(PermissoesEnum))]
     public PermissoesEnum Permissao { get; set; }
+
+    [EnumDataType(typeof(StatusUsuario))]
+    public StatusUsuario Status { get; set; } = StatusUsuario.Ativo;
+
+    public DateTime? InactivatedAt { get; set; }
+    public string? InactivatedBy { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
+    public DateTime? ReactivatedAt { get; set; }
+    public string? ReactivatedBy { get; set; }
+
+    /// <summary>
+    /// Incrementado a cada evento que deve invalidar JWTs em circulação.
+    /// </summary>
+    public int TokenVersion { get; set; } = 1;
+
     public ICollection<RefreshToken> RefreshTokens { get; set; } = [];
 
+    public void SincronizarIsDeleted() => IsDeleted = Status != StatusUsuario.Ativo;
 
     public static implicit operator UsuarioResponseDTO(UsuariosModel model)
     {
@@ -40,7 +57,15 @@ public class UsuariosModel : BaseModel
             Permissao = model.Permissao,
             DataHoraCriacao = model.DataHoraCriacao,
             DataHoraAtualizacao = model.DataHoraAtualizacao,
-            IsDeleted = model.IsDeleted
+            IsDeleted = model.IsDeleted,
+            Status = model.Status,
+            InactivatedAt = model.InactivatedAt,
+            InactivatedBy = model.InactivatedBy,
+            DeletedAt = model.DeletedAt,
+            DeletedBy = model.DeletedBy,
+            ReactivatedAt = model.ReactivatedAt,
+            ReactivatedBy = model.ReactivatedBy,
+            TokenVersion = model.TokenVersion
         };
     }
 

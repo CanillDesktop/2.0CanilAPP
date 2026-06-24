@@ -30,35 +30,23 @@ public class InsumosModel : ItemComEstoqueBaseModel
     {
         var codigoInsumo = GeraIdentificador();
 
-        var itemEstoque = new ItemEstoqueModel()
-        {
-            Codigo = codigoInsumo,
-            DataEntrega = dto.DataEntrega,
-            DataValidade = dto.DataValidade,
-            NFe = dto.NFe,
-            Quantidade = dto.Quantidade
-        };
-
-        var nivelEstoque = new ItemNivelEstoqueModel()
-        {
-            NivelMinimoEstoque = dto.NivelMinimoEstoque
-        };
-
         return new InsumosModel()
         {
             Codigo = codigoInsumo,
             DescricaoSimplificada = dto.DescricaoSimplificada.ToLower(),
             DescricaoDetalhada = dto.DescricaoDetalhada.ToLower(),
             Unidade = dto.Unidade,
-            ItemNivelEstoque = nivelEstoque,
-            ItensEstoque = [itemEstoque]
+            ItensNivelEstoque = dto.NivelMinimoEstoque > 0
+                ? [new ItemNivelEstoqueModel { NivelMinimoEstoque = dto.NivelMinimoEstoque }]
+                : [],
+            ItensEstoque = [],
         };
     }
 
     public static implicit operator InsumosLeituraDTO(InsumosModel model)
     {
         var itensEstoque = model.ItensEstoque ?? [];
-        var nivelEstoque = model.ItemNivelEstoque;
+        var nivelEstoque = model.ItensNivelEstoque.FirstOrDefault();
 
         return new InsumosLeituraDTO()
         {

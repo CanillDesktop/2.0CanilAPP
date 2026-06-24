@@ -13,24 +13,28 @@ import {
 } from '@mui/material';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { estilosCampoFiltro } from '../../../shared/theme/estilosCampos';
+import type { FiltrosUsuariosListagem } from '../types/tiposUsuarios';
+
+type StatusFiltro = NonNullable<FiltrosUsuariosListagem['status']>;
 
 type Props = {
   expandido: boolean;
   onExpandidoChange: (expandido: boolean) => void;
   buscaInput: string;
   onBuscaInputChange: (valor: string) => void;
-  status: 'todos' | 'ativos' | 'inativos';
-  onStatusChange: (valor: 'todos' | 'ativos' | 'inativos') => void;
+  status: StatusFiltro;
+  onStatusChange: (valor: StatusFiltro) => void;
   filtrosAtivos: number;
   carregandoLista: boolean;
   carregandoAcao: boolean;
-  onCadastrar: () => void;
+  onCadastrar?: () => void;
+  tituloAccordion?: string;
 };
 
-export function contarFiltrosGestaoUsuariosAtivos(busca: string, status: 'todos' | 'ativos' | 'inativos') {
+export function contarFiltrosGestaoUsuariosAtivos(busca: string, status: StatusFiltro) {
   let n = 0;
   if (busca.trim()) n += 1;
-  if (status !== 'todos') n += 1;
+  if (status !== 'ativos') n += 1;
   return n;
 }
 
@@ -45,6 +49,7 @@ export function PainelFiltrosGestaoUsuarios({
   carregandoLista,
   carregandoAcao,
   onCadastrar,
+  tituloAccordion = 'Filtros e cadastro',
 }: Props) {
   const { cores } = useTemaApp();
   const sxCampo = estilosCampoFiltro(cores);
@@ -73,7 +78,7 @@ export function PainelFiltrosGestaoUsuarios({
       >
         <FilterListIcon sx={{ color: cores.focus, fontSize: 20 }} />
         <Typography sx={{ fontWeight: 700, color: cores.textPrimary, flex: 1 }}>
-          Filtros e cadastro
+          {tituloAccordion}
         </Typography>
         {filtrosAtivos > 0 ? (
           <Chip
@@ -97,23 +102,26 @@ export function PainelFiltrosGestaoUsuarios({
             <TextField
               label="Status"
               value={status}
-              onChange={(e) => onStatusChange(e.target.value as 'todos' | 'ativos' | 'inativos')}
+              onChange={(e) => onStatusChange(e.target.value as StatusFiltro)}
               select
               sx={{ minWidth: { xs: '100%', md: 200 }, ...sxCampo }}
               disabled={carregandoLista}
             >
-              <MenuItem value="todos">Todos</MenuItem>
               <MenuItem value="ativos">Ativos</MenuItem>
               <MenuItem value="inativos">Inativos</MenuItem>
+              <MenuItem value="todos">Todos (ativos + inativos)</MenuItem>
+              <MenuItem value="excluidos">Excluídos</MenuItem>
             </TextField>
-            <Button
-              variant="contained"
-              onClick={onCadastrar}
-              disabled={carregandoAcao || carregandoLista}
-              sx={{ whiteSpace: 'nowrap', alignSelf: { xs: 'stretch', md: 'center' } }}
-            >
-              Cadastrar usuário
-            </Button>
+            {onCadastrar ? (
+              <Button
+                variant="contained"
+                onClick={onCadastrar}
+                disabled={carregandoAcao || carregandoLista}
+                sx={{ whiteSpace: 'nowrap', alignSelf: { xs: 'stretch', md: 'center' } }}
+              >
+                Cadastrar usuário
+              </Button>
+            ) : null}
           </Stack>
         </Stack>
       </AccordionDetails>

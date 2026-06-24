@@ -5,7 +5,9 @@ export type UsuarioSessao = {
   primeiroNome: string;
   sobrenome: string;
   permissao: number;
-  dataHoraCriacao: Date,
-  dataHoraAtualizacao: Date,
-  isDeleted: boolean
+  dataHoraCriacao: Date;
+  dataHoraAtualizacao: Date;
+  isDeleted: boolean;
+  /** 1=Ativo, 2=Inativo, 3=Excluido */
+  status?: number;
 };

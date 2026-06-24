@@ -4,6 +4,7 @@ import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
 import { useEstadoAssincrono } from '../../../shared/hooks/useEstadoAssincrono';
 import { servicoEstoque } from '../services/servicoEstoque';
 import type { ItemEstoqueDto, RetiradaEstoqueDto } from '../types/tiposEstoque';
+import type { EntradaEstoqueDto } from '../types/tiposEntradaEstoque';
 
 /** Resultado de uma retirada, indicando se houve necessidade de confirmar lote vencido. */
 export type ResultadoRetirada = ResultadoMutacao & { loteVencido?: boolean };
@@ -41,6 +42,25 @@ export function useMutacaoEstoque() {
     }
   }, []);
 
+  const registrarEntrada = useCallback(async (dto: EntradaEstoqueDto): Promise<ResultadoMutacao> => {
+    setCarregando(true);
+    setErro(null);
+    setErrosValidacao(null);
+    try {
+      await servicoEstoque.registrarEntrada(dto);
+      return { ok: true };
+    } catch (e) {
+      const falha = capturarErroMutacao(e, 'Não foi possível registrar a entrada.');
+      if (!falha.ok) setErro(falha.mensagem);
+      if (e instanceof ErroApi && e.errors) {
+        setErrosValidacao(e.extrairMensagemErros());
+      }
+      return falha;
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
   const registrarRetirada = useCallback(
     async (dto: RetiradaEstoqueDto): Promise<ResultadoRetirada> => {
       setCarregando(true);
@@ -65,5 +85,5 @@ export function useMutacaoEstoque() {
     [],
   );
 
-  return { criarLote, registrarRetirada, carregando, erro, errosValidacao };
+  return { criarLote, registrarEntrada, registrarRetirada, carregando, erro, errosValidacao };
 }

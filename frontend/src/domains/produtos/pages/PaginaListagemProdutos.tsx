@@ -236,7 +236,7 @@ export function PaginaListagemProdutos() {
                   onVisualizar={(id) => navigate(`/produtos/${id}`)}
                   onEditar={(id) => navigate(`/produtos/${id}`)}
                   onExcluir={(id) => setIdExclusao(id)}
-                  onMovimentar={(id) => navigate(`/estoque/lotes/novo?idItem=${id}`)}
+                  onMovimentar={(id) => navigate(`/estoque/entradas/novo?idItem=${id}`)}
                   onRegistrarRetirada={(produto: ProdutoLeituraDto, lote: ItemEstoqueDto) => {
                     if (!lote.lote?.trim()) {
                       setSnackbar({ open: true, mensagem: MENSAGEM_LOTE_INVALIDO_RETIRADA, tipo: 'error' });

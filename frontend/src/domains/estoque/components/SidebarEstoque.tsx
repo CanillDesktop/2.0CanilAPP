@@ -1,4 +1,6 @@
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
+import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
+import InputOutlinedIcon from '@mui/icons-material/InputOutlined';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicationOutlinedIcon from '@mui/icons-material/MedicationOutlined';
@@ -34,8 +36,10 @@ const itensNavegacao: ItemNavegacao[] = [
   { titulo: 'Medicamentos', rota: '/medicamentos', icone: <MedicationOutlinedIcon /> },
   { titulo: 'Insumos', rota: '/insumos', icone: <ScienceOutlinedIcon /> },
   { titulo: 'Histórico retiradas', rota: '/estoque/historico-retiradas', icone: <HistoryOutlinedIcon /> },
+  { titulo: 'Transferências', rota: '/estoque/transferencias', icone: <SwapHorizOutlinedIcon /> },
   { titulo: 'Estoque', rota: '/estoque', icone: <WarehouseOutlinedIcon /> },
   { titulo: 'Usuários', rota: '/usuarios', icone: <PeopleOutlinedIcon /> },
+  { titulo: 'Permissões', rota: '/usuarios/permissoes', icone: <InputOutlinedIcon />, papeis: ['ADMIN'] },
 ];
 
 function itensVisiveisParaPapel(papel: PapelUsuarioApp): ItemNavegacao[] {
