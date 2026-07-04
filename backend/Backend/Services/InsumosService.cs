@@ -18,17 +18,20 @@ namespace Backend.Services
         public readonly IInsumosRepository _repository;
         public readonly IUserSessionService _userSessionService;
         private readonly IUnidadeEstoqueContextService _unidadeContext;
+        private readonly IUnidadeMedidaService _unidadeMedidaService;
         private readonly IConfiguration _configuration;
 
         public InsumosService(
             IInsumosRepository repository,
             IUserSessionService userSessionService,
             IUnidadeEstoqueContextService unidadeContext,
+            IUnidadeMedidaService unidadeMedidaService,
             IConfiguration configuration)
         {
             _repository = repository;
             _userSessionService = userSessionService;
             _unidadeContext = unidadeContext;
+            _unidadeMedidaService = unidadeMedidaService;
             _configuration = configuration;
         }
 
@@ -36,7 +39,7 @@ namespace Backend.Services
         {
             if (string.IsNullOrWhiteSpace(model.DescricaoSimplificada)
                 || string.IsNullOrWhiteSpace(model.DescricaoDetalhada)
-                || !Enum.IsDefined(typeof(UnidadeInsumosEnum), (int)model.Unidade))
+                || model.Unidade <= 0)
             {
                 throw new ModelIncompletaException("Um ou mais campos obrigatórios não foram preenchidos");
             }
@@ -49,6 +52,7 @@ namespace Backend.Services
         public async Task<InsumosModel?> CriarAsync(InsumosModel model)
         {
             ValidarCamposObrigatorios(model);
+            await _unidadeMedidaService.GarantirAplicavelAsync(model.Unidade, TipoItemUnidadeMedida.Insumo);
 
             model.ItensEstoque = [];
             var nivelMinimo = model.ItensNivelEstoque.FirstOrDefault()?.NivelMinimoEstoque ?? 0;
@@ -57,14 +61,12 @@ namespace Backend.Services
             var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
             await _unidadeContext.GarantirConsultaAsync(idUnidade);
 
-            if (nivelMinimo > 0)
+            // Presença na unidade ativa (mesmo com nível 0): cadastro não afeta outras unidades.
+            model.ItensNivelEstoque.Add(new ItemNivelEstoqueModel
             {
-                model.ItensNivelEstoque.Add(new ItemNivelEstoqueModel
-                {
-                    IdUnidadeEstoque = idUnidade,
-                    NivelMinimoEstoque = nivelMinimo,
-                });
-            }
+                IdUnidadeEstoque = idUnidade,
+                NivelMinimoEstoque = nivelMinimo,
+            });
 
             model.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
 
@@ -83,6 +85,7 @@ namespace Backend.Services
                 }
 
                 ValidarCamposObrigatorios(model);
+                await _unidadeMedidaService.GarantirAplicavelAsync(model.Unidade, TipoItemUnidadeMedida.Insumo);
 
                 var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
                 await _unidadeContext.GarantirConsultaAsync(idUnidade);
@@ -134,13 +137,8 @@ namespace Backend.Services
 
         public async Task<bool> DeletarAsync(int id)
         {
-            var insumo = await BuscarPorIdAsync(id);
-            if (insumo == null) return false;
-
-            insumo.IsDeleted = true;
-            insumo.DataHoraAtualizacao = DateTime.UtcNow;
-
-            return await _repository.DeleteAsync(insumo);
+            var editor = _userSessionService.EditedBy ?? string.Empty;
+            return await _repository.DeleteNaUnidadeAtivaAsync(id, editor);
         }
 
         public async Task<ItemComEstoqueListaPaginadaDTO<InsumosLeituraDTO>> BuscarPaginadoAsync(

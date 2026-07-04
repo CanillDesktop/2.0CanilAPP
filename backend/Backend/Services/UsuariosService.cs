@@ -64,6 +64,9 @@ public class UsuariosService : IUsuariosService
         if (usuario.Permissao != PermissoesEnum.ADMIN && deveSerAdmin)
             usuario.Permissao = PermissoesEnum.ADMIN;
 
+        if (usuario.Permissao == PermissoesEnum.ADMIN)
+            usuario.PodeGerenciarUnidadesMedida = true;
+
         usuario.HashSenha = BCrypt.Net.BCrypt.HashPassword(usuario.HashSenha);
         usuario.Status = StatusUsuario.Ativo;
         usuario.SincronizarIsDeleted();
@@ -89,8 +92,21 @@ public class UsuariosService : IUsuariosService
         UsuariosModel model = dto;
         var atualizado = await AtualizarAsync(id, model);
 
-        if (atualizado is not null && IsAdmin() && dto.UnidadesEstoque is not null)
-            await SincronizarUnidadesEstoqueAsync(id, dto.UnidadesEstoque, atualizado.Permissao);
+        if (atualizado is not null && IsAdmin())
+        {
+            if (dto.PodeGerenciarUnidadesMedida is bool podeGerenciar)
+            {
+                // Admin sempre pode gerenciar o catálogo; a flag só restringe usuários comuns.
+                atualizado.PodeGerenciarUnidadesMedida =
+                    atualizado.Permissao == PermissoesEnum.ADMIN || podeGerenciar;
+                atualizado.DataHoraAtualizacao = DateTime.UtcNow;
+                atualizado.EditadorPor = Executor;
+                await _repository.UpdateAsync(atualizado);
+            }
+
+            if (dto.UnidadesEstoque is not null)
+                await SincronizarUnidadesEstoqueAsync(id, dto.UnidadesEstoque, atualizado.Permissao);
+        }
 
         return atualizado;
     }
@@ -218,6 +234,8 @@ public class UsuariosService : IUsuariosService
             }
 
             usuarioExistente.Permissao = model.Permissao;
+            if (usuarioExistente.Permissao == PermissoesEnum.ADMIN)
+                usuarioExistente.PodeGerenciarUnidadesMedida = true;
         }
 
         if (!string.IsNullOrEmpty(model.HashSenha))
@@ -227,6 +245,17 @@ public class UsuariosService : IUsuariosService
         usuarioExistente.EditadorPor = Executor;
 
         return await _repository.UpdateAsync(usuarioExistente);
+    }
+
+    public async Task<bool> UsuarioPodeGerenciarUnidadesMedidaAsync(
+        int idUsuario,
+        CancellationToken cancellationToken = default)
+    {
+        var usuario = await _repository.GetByIdAsync(idUsuario)
+            ?? await _repository.GetByIdGestaoAsync(idUsuario);
+        if (usuario is null || usuario.Status != StatusUsuario.Ativo)
+            return false;
+        return usuario.Permissao == PermissoesEnum.ADMIN || usuario.PodeGerenciarUnidadesMedida;
     }
 
     async Task<bool> ICRUDService<UsuariosModel>.DeletarAsync(int id, bool hardDelete)

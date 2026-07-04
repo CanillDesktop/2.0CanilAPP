@@ -32,10 +32,9 @@ public class LoteGeradorService : ILoteGeradorService
         => PrefixoProduto(categoria, descricaoSimples) + await ProximoSequencialAsync("PRO", cancellationToken);
 
     public async Task<string> GerarLoteInsumoAsync(
-        UnidadeInsumosEnum unidade,
         string descricaoSimplificada,
         CancellationToken cancellationToken = default)
-        => PrefixoInsumo(unidade, descricaoSimplificada) + await ProximoSequencialAsync("INS", cancellationToken);
+        => PrefixoInsumo(descricaoSimplificada) + await ProximoSequencialAsync("INS", cancellationToken);
 
     public async Task<string> GerarLoteMedicamentoAsync(
         PublicoAlvoMedicamentoEnum publicoAlvo,
@@ -50,10 +49,9 @@ public class LoteGeradorService : ILoteGeradorService
         => PrefixoProduto(categoria, descricaoSimples) + await PreverProximoSequencialAsync("PRO", cancellationToken);
 
     public async Task<string> PreverProximoLoteInsumoAsync(
-        UnidadeInsumosEnum unidade,
         string descricaoSimplificada,
         CancellationToken cancellationToken = default)
-        => PrefixoInsumo(unidade, descricaoSimplificada) + await PreverProximoSequencialAsync("INS", cancellationToken);
+        => PrefixoInsumo(descricaoSimplificada) + await PreverProximoSequencialAsync("INS", cancellationToken);
 
     public async Task<string> PreverProximoLoteMedicamentoAsync(
         PublicoAlvoMedicamentoEnum publicoAlvo,
@@ -66,10 +64,8 @@ public class LoteGeradorService : ILoteGeradorService
         + TextoNormalizador.PrimeirasLetras(DescricaoOuNome(categoria), 2)
         + TextoNormalizador.PrimeirasLetras(descricaoSimples, 3);
 
-    private static string PrefixoInsumo(UnidadeInsumosEnum unidade, string descricaoSimplificada) =>
-        "INS"
-        + TextoNormalizador.PrimeirasLetras(DescricaoOuNome(unidade), 3)
-        + TextoNormalizador.PrimeirasLetras(descricaoSimplificada, 3);
+    private static string PrefixoInsumo(string descricaoSimplificada) =>
+        "INS" + TextoNormalizador.PrimeirasLetras(descricaoSimplificada, 6);
 
     private static string PrefixoMedicamento(PublicoAlvoMedicamentoEnum publicoAlvo, string nomeComercial) =>
         "MED"

@@ -64,7 +64,11 @@ namespace Backend.Repositories
             var comStatus = FiltroHelper.AplicarStatusEstoque(filtrada, filtro.StatusEstoque, idUnidade);
             var totalCount = await comStatus.CountAsync(cancellationToken);
 
-            var items = await PagedList<MedicamentosModel>.ToPagedListAsync(comStatus, pageNumber, pageSize, p => p.Id, cancellationToken);
+            var items = await FiltroHelper.ComNavegacoesUnidade(comStatus, idUnidade)
+                .OrderBy(p => p.Id)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
 
             return new ConsultaPaginada<MedicamentosModel>(items, totalCount, resumo);
         }

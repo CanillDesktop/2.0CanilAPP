@@ -18,6 +18,8 @@ export type MedicamentoLeituraDto = {
   descricao: string;
   formula: string;
   publicoAlvo: number;
+  unidade: number;
+  unidadeRotulo?: string | null;
   itemNivelEstoque: ItemNivelEstoqueDto;
   itensEstoque: ItemEstoqueDto[];
 };
@@ -31,6 +33,7 @@ export type MedicamentoCadastroDto = {
   formula: string;
   nomeComercial: string;
   publicoAlvo: number;
+  unidade: number;
   dataValidade?: string | null;
   nivelMinimoEstoque: number;
 };

@@ -11,7 +11,8 @@ namespace Backend.DTOs.Insumos
 
         public string NomeOuDescricaoSimples { get; set; } = string.Empty;
         public string? DescricaoDetalhada { get; set; }
-        public UnidadeInsumosEnum Unidade { get; set; }
+        public int Unidade { get; set; }
+        public string? UnidadeRotulo { get; set; }
         public ItemNivelEstoqueDTO? ItemNivelEstoque { get; set; } = new();
         public ItemEstoqueDTO[]? ItensEstoque { get; set; } = [];
     }

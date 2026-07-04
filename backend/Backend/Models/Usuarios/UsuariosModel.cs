@@ -27,6 +27,12 @@ public class UsuariosModel : BaseModel
     [EnumDataType(typeof(PermissoesEnum))]
     public PermissoesEnum Permissao { get; set; }
 
+    /// <summary>
+    /// Permite cadastrar/editar o catálogo de unidades de medida (Kg, Comprimido, etc.).
+    /// Administradores sempre têm acesso; usuários comuns só com esta flag.
+    /// </summary>
+    public bool PodeGerenciarUnidadesMedida { get; set; }
+
     [EnumDataType(typeof(StatusUsuario))]
     public StatusUsuario Status { get; set; } = StatusUsuario.Ativo;
 
@@ -55,6 +61,7 @@ public class UsuariosModel : BaseModel
             PrimeiroNome = model.PrimeiroNome,
             Sobrenome = model.Sobrenome,
             Permissao = model.Permissao,
+            PodeGerenciarUnidadesMedida = model.PodeGerenciarUnidadesMedida || model.Permissao == PermissoesEnum.ADMIN,
             DataHoraCriacao = model.DataHoraCriacao,
             DataHoraAtualizacao = model.DataHoraAtualizacao,
             IsDeleted = model.IsDeleted,

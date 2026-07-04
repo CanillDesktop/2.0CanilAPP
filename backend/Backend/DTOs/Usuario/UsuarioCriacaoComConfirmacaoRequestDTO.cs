@@ -38,7 +38,7 @@ public class UsuarioCriacaoComConfirmacaoRequestDTO
     public string? Email
     {
         get => _email;
-        set => _email = string.IsNullOrWhiteSpace(value) ? null : value;
+        set => _email = string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();
     }
 
     [Required(ErrorMessage = "{0}} é obrigatória")]

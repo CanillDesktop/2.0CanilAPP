@@ -3,6 +3,7 @@ import { LeiautePrincipal } from '../../shared/components/LeiautePrincipal';
 import { GuardaPreLogin } from '../../shared/components/GuardaPreLogin';
 import { RotaProtegida } from '../../shared/components/RotaProtegida';
 import { RotaProtegidaPorPapel } from '../../shared/components/RotaProtegidaPorPapel';
+import { RotaProtegidaCatalogoMedidas } from '../../shared/components/RotaProtegidaCatalogoMedidas';
 import { PaginaAcessoNegado } from '../../shared/pages/PaginaAcessoNegado';
 import { PaginaDetalheSessao } from '../../domains/autenticacao/pages/PaginaDetalheSessao';
 import { PaginaLogin } from '../../domains/autenticacao/pages/PaginaLogin';
@@ -24,6 +25,7 @@ import { PaginaFormularioEntrada } from '../../domains/estoque/pages/PaginaFormu
 import { PaginaFormularioTransferencia } from '../../domains/estoque/pages/PaginaFormularioTransferencia';
 import { PaginaListagemTransferencias } from '../../domains/estoque/pages/PaginaListagemTransferencias';
 import { PaginaPermissoesUsuarios } from '../../domains/usuarios/pages/PaginaPermissoesUsuarios';
+import { PaginaUnidadesMedida } from '../../domains/unidades-medida/pages/PaginaUnidadesMedida';
 import { PaginaFormularioRetirada } from '../../domains/estoque/pages/PaginaFormularioRetirada';
 import { PaginaHistoricoRetiradasEstoque } from '../../domains/estoque/pages/PaginaHistoricoRetiradasEstoque';
 import { PaginaListagemEstoque } from '../../domains/estoque/pages/PaginaListagemEstoque';
@@ -51,6 +53,10 @@ export function RotasApp() {
           <Route element={<RotaProtegidaPorPapel roles={['ADMIN']} />}>
             <Route path="usuarios/novo" element={<PaginaCadastroUsuario />} />
             <Route path="usuarios/permissoes" element={<PaginaPermissoesUsuarios />} />
+          </Route>
+
+          <Route element={<RotaProtegidaCatalogoMedidas />}>
+            <Route path="unidades-medida" element={<PaginaUnidadesMedida />} />
           </Route>
 
           <Route path="produtos" element={<PaginaListagemProdutos />} />

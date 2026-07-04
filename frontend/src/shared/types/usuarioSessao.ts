@@ -5,6 +5,8 @@ export type UsuarioSessao = {
   primeiroNome: string;
   sobrenome: string;
   permissao: number;
+  /** Pode cadastrar/editar o catálogo de unidades de medida (Kg, Comprimido, etc.). */
+  podeGerenciarUnidadesMedida?: boolean;
   dataHoraCriacao: Date;
   dataHoraAtualizacao: Date;
   isDeleted: boolean;

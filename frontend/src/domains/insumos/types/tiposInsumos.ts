@@ -15,6 +15,7 @@ export type InsumoLeituraDto = {
   descricaoSimples?: string | null;
   descricaoDetalhada: string;
   unidade: number;
+  unidadeRotulo?: string | null;
   itemNivelEstoque: ItemNivelEstoqueDto;
   itensEstoque: ItemEstoqueDto[];
 };

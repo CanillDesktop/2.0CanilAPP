@@ -11,7 +11,7 @@ import {
   TextField,
 } from '@mui/material';
 import type { FormEvent } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarraAcoesFormulario } from '../../../shared/components/cadastro/BarraAcoesFormulario';
 import { PainelSucessoCadastro } from '../../../shared/components/cadastro/PainelSucessoCadastro';
@@ -20,22 +20,18 @@ import { PainelErro } from '../../../shared/components/PainelErro';
 import type { EstadoNavegacaoListagem } from '../../../shared/types/navegacaoListagem';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import { SeletorUnidadeMedida } from '../../unidades-medida/components/SeletorUnidadeMedida';
+import { useUnidadesMedida } from '../../unidades-medida/hooks/useUnidadesMedida';
 import { OPCOES_CATEGORIA_PRODUTO_FILTRO } from '../constants/opcoesCategoriaProduto';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
 import type { ProdutoCadastroDto } from '../types/tiposProdutos';
 
 const PASSOS = ['Identificação', 'Configurações'] as const;
 
-const OPCOES_UNIDADE = [
-  { valor: 1, rotulo: 'Unidade' },
-  { valor: 2, rotulo: 'Kg' },
-  { valor: 3, rotulo: 'Litro' },
-];
-
 const estadoInicialFormulario = () => ({
   descricaoSimples: '',
   descricaoDetalhada: '',
-  unidade: 1,
+  unidade: 0,
   categoria: 1,
   nivelMinimoEstoque: 0,
 });
@@ -43,11 +39,18 @@ const estadoInicialFormulario = () => ({
 export function FormularioProduto() {
   const navegar = useNavigate();
   const { criar, carregando, erro, errosValidacao } = useMutacaoProduto();
+  const { itens: unidades } = useUnidadesMedida('produto');
   const estilos = useEstilosListagem();
   const sxCampo = estilosCampoFormulario(estilos.cores);
 
   const [passoAtual, setPassoAtual] = useState(0);
   const [form, setForm] = useState(estadoInicialFormulario);
+
+  useEffect(() => {
+    if (form.unidade <= 0 && unidades[0]) {
+      setForm((p) => ({ ...p, unidade: unidades[0].id }));
+    }
+  }, [unidades, form.unidade]);
   const [sucesso, setSucesso] = useState<{ nome: string } | null>(null);
 
   const passoIdentificacaoValido = useMemo(
@@ -175,21 +178,12 @@ export function FormularioProduto() {
                   </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth sx={sxCampo}>
-                    <InputLabel id="unidade-label">Unidade</InputLabel>
-                    <Select
-                      labelId="unidade-label"
-                      label="Unidade"
-                      value={form.unidade}
-                      onChange={(e) => setForm((p) => ({ ...p, unidade: Number(e.target.value) }))}
-                    >
-                      {OPCOES_UNIDADE.map((opcao) => (
-                        <MenuItem key={opcao.valor} value={opcao.valor}>
-                          {opcao.rotulo}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <SeletorUnidadeMedida
+                    tipo="produto"
+                    value={form.unidade}
+                    onChange={(id) => setForm((p) => ({ ...p, unidade: id }))}
+                    sx={sxCampo}
+                  />
                 </Grid>
               </Grid>
             </SecaoFormularioCadastro>

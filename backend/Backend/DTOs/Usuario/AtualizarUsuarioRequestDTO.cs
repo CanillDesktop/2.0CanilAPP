@@ -35,11 +35,14 @@ public class AtualizarUsuarioRequestDTO
     public string? Email
     {
         get => _email;
-        set => _email = string.IsNullOrWhiteSpace(value) ? null : value;
+        set => _email = string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();
     }
 
     [DisplayName("Permissão")]
     public PermissoesEnum? Permissao { get; set; }
+
+    [DisplayName("Gerenciar unidades de medida")]
+    public bool? PodeGerenciarUnidadesMedida { get; set; }
 
     public List<UsuarioUnidadeEstoqueAtribuicaoDTO>? UnidadesEstoque { get; set; }
 }

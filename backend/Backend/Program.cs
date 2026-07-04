@@ -230,6 +230,8 @@ public class Program
             builder.Services.AddScoped<IUserSessionService, UserSessionService>();
             builder.Services.AddScoped<ICodigoAcessoService, CodigoAcessoService>();
             builder.Services.AddScoped<IUnidadeEstoqueContextService, UnidadeEstoqueContextService>();
+            builder.Services.AddScoped<IUnidadeMedidaRepository, UnidadeMedidaRepository>();
+            builder.Services.AddScoped<IUnidadeMedidaService, UnidadeMedidaService>();
             builder.Services.AddScoped<IEntradaEstoqueService, EntradaEstoqueService>();
             builder.Services.AddScoped<ITransferenciaEstoqueService, TransferenciaEstoqueService>();
 

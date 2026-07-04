@@ -3,6 +3,7 @@ using Backend.Models.CodigoAcesso;
 using Backend.Models.Insumos;
 using Backend.Models.Medicamentos;
 using Backend.Models.Produtos;
+using Backend.Models.UnidadeMedida;
 using Backend.Models.Usuarios;
 using Backend.Models.Estoque;
 using Microsoft.EntityFrameworkCore;
@@ -48,6 +49,7 @@ public class CanilAppDbContext : DbContext
     public DbSet<ContadorLoteModel> ContadoresLote { get; set; }
     public DbSet<UnidadeEstoqueModel> UnidadesEstoque { get; set; }
     public DbSet<UsuarioUnidadeEstoqueModel> UsuariosUnidadesEstoque { get; set; }
+    public DbSet<UnidadeMedidaModel> UnidadesMedida { get; set; }
     public DbSet<MovimentacaoEstoqueModel> MovimentacoesEstoque { get; set; }
     public DbSet<TransferenciaEstoqueModel> TransferenciasEstoque { get; set; }
     public DbSet<TransferenciaEstoqueItemModel> TransferenciasEstoqueItens { get; set; }

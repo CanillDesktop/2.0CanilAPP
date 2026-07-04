@@ -22,3 +22,30 @@ export function descreverPermissao(permissao: number) {
   if (permissao === 2) return 'Leitura';
   return `Nivel ${permissao}`;
 }
+
+/** Admin ou usuário com a flag de catálogo de unidades de medida. */
+export function podeGerenciarCatalogoUnidadesMedida(usuario?: {
+  permissao?: number;
+  podeGerenciarUnidadesMedida?: boolean;
+} | null): boolean {
+  if (!usuario) return false;
+  return usuario.permissao === 1 || Boolean(usuario.podeGerenciarUnidadesMedida);
+}
+
+const ROTULOS_PERMISSAO_UNIDADE = [
+  { chave: 'podeConsultar', rotulo: 'Consultar' },
+  { chave: 'podeEntrada', rotulo: 'Entrada' },
+  { chave: 'podeSaida', rotulo: 'Saída' },
+  { chave: 'podeTransferirEnviar', rotulo: 'Enviar transferência' },
+  { chave: 'podeTransferirReceber', rotulo: 'Receber transferência' },
+] as const;
+
+export function listarRotulosPermissoesUnidade(vinculo: {
+  podeConsultar: boolean;
+  podeEntrada: boolean;
+  podeSaida: boolean;
+  podeTransferirEnviar: boolean;
+  podeTransferirReceber: boolean;
+}): string[] {
+  return ROTULOS_PERMISSAO_UNIDADE.filter((item) => vinculo[item.chave]).map((item) => item.rotulo);
+}

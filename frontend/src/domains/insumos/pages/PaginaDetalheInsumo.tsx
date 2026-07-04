@@ -2,6 +2,7 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { larguraConteudoPagina, paddingPaginaDetalhe } from '../../../shared/theme/estilosLayoutPagina';
 import { CabecalhoDetalheItem } from '../../../shared/components/detalheItem/CabecalhoDetalheItem';
 import { InfoCardDetalheItem } from '../../../shared/components/detalheItem/InfoCardDetalheItem';
@@ -12,17 +13,8 @@ import { PainelErro } from '../../../shared/components/PainelErro';
 import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
 import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
 import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
+import { useUnidadesMedida } from '../../unidades-medida/hooks/useUnidadesMedida';
 import { useInsumoDetalhe, useMutacaoInsumo } from '../hooks/useInsumos';
-
-const OPCOES_UNIDADE: Record<number, string> = {
-  1: 'Unidade',
-  2: 'Kg',
-  3: 'Litro',
-};
-
-function rotuloUnidade(unidade: number) {
-  return OPCOES_UNIDADE[unidade] ?? String(unidade);
-}
 
 export function PaginaDetalheInsumo() {
   const params = useParams();
@@ -32,14 +24,17 @@ export function PaginaDetalheInsumo() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { cores } = useTemaApp();
+  const { unidadeAtivaId } = useUnidadeEstoque();
+  const { rotuloPorId } = useUnidadesMedida(undefined, false);
 
   const { estado, carregar } = useInsumoDetalhe(Number.isFinite(id) ? id : undefined);
   const { excluir, carregando, erro, errosValidacao } = useMutacaoInsumo();
   const [erroRetirada, setErroRetirada] = useState<string | null>(null);
 
   useEffect(() => {
+    if (unidadeAtivaId == null) return;
     void carregar();
-  }, [carregar, location.search]);
+  }, [carregar, location.search, unidadeAtivaId]);
 
   const i = estado.dados;
 
@@ -54,7 +49,7 @@ export function PaginaDetalheInsumo() {
 
   async function aoExcluir() {
     if (!Number.isFinite(id)) return;
-    if (!window.confirm('Confirma excluir este insumo?')) return;
+    if (!window.confirm('Excluir este insumo apenas da unidade atual? As outras unidades não serão alteradas.')) return;
     const resultado = await excluir(id);
     if (resultado.ok) navigate('/insumos');
   }
@@ -120,8 +115,8 @@ export function PaginaDetalheInsumo() {
               { rotulo: 'Código', valor: i.codigo },
               { rotulo: 'Descrição simplificada', valor: i.nomeOuDescricaoSimples ?? i.descricaoSimples ?? i.descricaoSimplificada },
               { rotulo: 'Descrição detalhada', valor: i.descricaoDetalhada },
-              { rotulo: 'Unidade', valor: rotuloUnidade(i.unidade) },
-              { rotulo: 'Nível mínimo', valor: i.itemNivelEstoque.nivelMinimoEstoque },
+              { rotulo: 'Unidade', valor: i.unidadeRotulo ?? rotuloPorId(i.unidade) },
+              { rotulo: 'Nível mínimo', valor: i.itemNivelEstoque?.nivelMinimoEstoque ?? 0 },
             ]}
           />
 

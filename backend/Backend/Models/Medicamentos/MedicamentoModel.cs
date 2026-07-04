@@ -14,6 +14,8 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
     public string Formula { get; set; } = string.Empty;
     public string NomeComercial { get; set; } = string.Empty;
     public PublicoAlvoMedicamentoEnum PublicoAlvo { get; set; }
+    /// <summary>Id da unidade de medida cadastrada (<see cref="UnidadeMedida.UnidadeMedidaModel"/>).</summary>
+    public int Unidade { get; set; }
 
     private static string GeraIdentificador()
     {
@@ -39,6 +41,7 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
             Formula = dto.Formula,
             NomeComercial = dto.NomeComercial.ToUpper(),
             PublicoAlvo = dto.PublicoAlvo,
+            Unidade = dto.Unidade,
             ItensNivelEstoque = dto.NivelMinimoEstoque > 0
                 ? [new ItemNivelEstoqueModel { NivelMinimoEstoque = dto.NivelMinimoEstoque }]
                 : [],
@@ -49,16 +52,18 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
     public static implicit operator MedicamentoLeituraDTO(MedicamentosModel model)
     {
         var itensEstoque = model.ItensEstoque ?? [];
-        var nivelEstoque = model.ItensNivelEstoque.FirstOrDefault();
+        var nivelEstoque = (model.ItensNivelEstoque ?? []).FirstOrDefault();
 
         return new MedicamentoLeituraDTO()
         {
             Id = model.Id,
             Codigo = model.Codigo,
             NomeOuDescricaoSimples = model.NomeComercial,
+            Prioridade = model.Prioridade,
             Descricao = model.Descricao,
             Formula = model.Formula,
             PublicoAlvo = model.PublicoAlvo,
+            Unidade = model.Unidade,
             ItemNivelEstoque = nivelEstoque,
             ItensEstoque = [.. itensEstoque.Select(e => (ItemEstoqueDTO)e)]
         };

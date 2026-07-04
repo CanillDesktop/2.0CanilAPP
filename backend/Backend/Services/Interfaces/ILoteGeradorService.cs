@@ -17,10 +17,9 @@ public interface ILoteGeradorService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gera o lote de um insumo: INS + Unidade + 3 primeiras letras da descrição + sequencial.
+    /// Gera o lote de um insumo: INS + letras da descrição + sequencial.
     /// </summary>
     Task<string> GerarLoteInsumoAsync(
-        UnidadeInsumosEnum unidade,
         string descricaoSimplificada,
         CancellationToken cancellationToken = default);
 
@@ -43,7 +42,6 @@ public interface ILoteGeradorService
 
     /// <summary>Prevê (sem consumir a sequência) o próximo lote de um insumo.</summary>
     Task<string> PreverProximoLoteInsumoAsync(
-        UnidadeInsumosEnum unidade,
         string descricaoSimplificada,
         CancellationToken cancellationToken = default);
 

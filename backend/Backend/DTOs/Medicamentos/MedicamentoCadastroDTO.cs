@@ -32,6 +32,11 @@ namespace Backend.DTOs.Medicamentos
         [Required(ErrorMessage = "{0} é obrigatório")]
         public PublicoAlvoMedicamentoEnum PublicoAlvo { get; set; }
 
+        [Display(Name = "Unidade de medida")]
+        [Required(ErrorMessage = "{0} é obrigatória")]
+        [Range(1, int.MaxValue, ErrorMessage = "{0} é obrigatória")]
+        public int Unidade { get; set; }
+
         [Display(Name = "Data de validade")]
         public DateTime? DataValidade { get; set; }
 

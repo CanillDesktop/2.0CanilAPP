@@ -13,8 +13,10 @@ namespace Backend.DTOs.Produtos
         [Required(ErrorMessage = "{0} é obrigatória")]
         public string DescricaoDetalhada { get; set; } = string.Empty;
 
+        [Display(Name = "Unidade de medida")]
         [Required(ErrorMessage = "{0} é obrigatória")]
-        public UnidadeEnum Unidade { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "{0} é obrigatória")]
+        public int Unidade { get; set; }
 
         [Required(ErrorMessage = "{0} é obrigatória")]
         public CategoriaEnum Categoria { get; set; }

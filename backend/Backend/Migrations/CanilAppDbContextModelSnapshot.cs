@@ -231,9 +231,6 @@ namespace Backend.Migrations
                     b.Property<int>("Quantidade")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("RetiradaId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("SaldoAposMovimentacao")
                         .HasColumnType("INTEGER");
 
@@ -242,11 +239,11 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IdRetirada");
+
                     b.HasIndex("IdTransferencia");
 
                     b.HasIndex("IdUsuario");
-
-                    b.HasIndex("RetiradaId");
 
                     b.HasIndex("IdItem", "Lote");
 
@@ -556,6 +553,49 @@ namespace Backend.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
+            modelBuilder.Entity("Backend.Models.UnidadeMedida.UnidadeMedidaModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("AplicavelInsumo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("AplicavelMedicamento")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("AplicavelProduto")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DataHoraAtualizacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DataHoraCriacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EditadorPor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Sigla")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UnidadesMedida");
+                });
+
             modelBuilder.Entity("Backend.Models.Usuarios.UsuariosModel", b =>
                 {
                     b.Property<int>("Id")
@@ -596,6 +636,9 @@ namespace Backend.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Permissao")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PodeGerenciarUnidadesMedida")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("PrimeiroNome")
@@ -668,6 +711,9 @@ namespace Backend.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("PublicoAlvo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Unidade")
                         .HasColumnType("INTEGER");
 
                     b.ToTable("Medicamentos", (string)null);
@@ -744,6 +790,10 @@ namespace Backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Backend.Models.Estoque.RetiradaEstoqueModel", "Retirada")
+                        .WithMany()
+                        .HasForeignKey("IdRetirada");
+
                     b.HasOne("Backend.Models.Estoque.TransferenciaEstoqueModel", "Transferencia")
                         .WithMany()
                         .HasForeignKey("IdTransferencia");
@@ -759,10 +809,6 @@ namespace Backend.Migrations
                         .HasForeignKey("IdUsuario")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Backend.Models.Estoque.RetiradaEstoqueModel", "Retirada")
-                        .WithMany()
-                        .HasForeignKey("RetiradaId");
 
                     b.Navigation("Item");
 

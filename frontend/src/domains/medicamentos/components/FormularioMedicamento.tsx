@@ -11,7 +11,7 @@ import {
   TextField,
 } from '@mui/material';
 import type { FormEvent } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarraAcoesFormulario } from '../../../shared/components/cadastro/BarraAcoesFormulario';
 import { PainelSucessoCadastro } from '../../../shared/components/cadastro/PainelSucessoCadastro';
@@ -20,6 +20,8 @@ import { PainelErro } from '../../../shared/components/PainelErro';
 import type { EstadoNavegacaoListagem } from '../../../shared/types/navegacaoListagem';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import { SeletorUnidadeMedida } from '../../unidades-medida/components/SeletorUnidadeMedida';
+import { useUnidadesMedida } from '../../unidades-medida/hooks/useUnidadesMedida';
 import { useMutacaoMedicamento } from '../hooks/useMedicamentos';
 import type { MedicamentoCadastroDto } from '../types/tiposMedicamentos';
 
@@ -42,12 +44,14 @@ const estadoInicialFormulario = () => ({
   formula: '',
   nomeComercial: '',
   publicoAlvo: 0,
+  unidade: 0,
   nivelMinimoEstoque: 0,
 });
 
 export function FormularioMedicamento() {
   const navegar = useNavigate();
   const { criar, carregando, erro, errosValidacao } = useMutacaoMedicamento();
+  const { itens: unidades } = useUnidadesMedida('medicamento');
   const estilos = useEstilosListagem();
   const sxCampo = estilosCampoFormulario(estilos.cores);
 
@@ -55,12 +59,19 @@ export function FormularioMedicamento() {
   const [form, setForm] = useState(estadoInicialFormulario);
   const [sucesso, setSucesso] = useState<{ nome: string } | null>(null);
 
+  useEffect(() => {
+    if (form.unidade <= 0 && unidades[0]) {
+      setForm((p) => ({ ...p, unidade: unidades[0].id }));
+    }
+  }, [unidades, form.unidade]);
+
   const passoIdentificacaoValido = useMemo(
     () =>
       form.nomeComercial.trim().length > 0 &&
       form.formula.trim().length > 0 &&
-      form.descricaoMedicamento.trim().length > 0,
-    [form.nomeComercial, form.formula, form.descricaoMedicamento],
+      form.descricaoMedicamento.trim().length > 0 &&
+      form.unidade > 0,
+    [form.nomeComercial, form.formula, form.descricaoMedicamento, form.unidade],
   );
 
   const passoConfigValido = useMemo(() => {
@@ -77,6 +88,7 @@ export function FormularioMedicamento() {
       formula: form.formula,
       nomeComercial: form.nomeComercial,
       publicoAlvo: form.publicoAlvo,
+      unidade: form.unidade,
       dataValidade: null,
       nivelMinimoEstoque: form.nivelMinimoEstoque,
     };
@@ -168,6 +180,14 @@ export function FormularioMedicamento() {
                     onChange={(e) => setForm((p) => ({ ...p, descricaoMedicamento: e.target.value }))}
                     multiline
                     minRows={2}
+                    sx={sxCampo}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <SeletorUnidadeMedida
+                    tipo="medicamento"
+                    value={form.unidade}
+                    onChange={(id) => setForm((p) => ({ ...p, unidade: id }))}
                     sx={sxCampo}
                   />
                 </Grid>

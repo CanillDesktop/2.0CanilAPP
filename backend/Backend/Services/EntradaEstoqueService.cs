@@ -141,7 +141,7 @@ public class EntradaEstoqueService : IEntradaEstoqueService
     {
         ProdutosModel p => _loteGerador.GerarLoteProdutoAsync(p.Categoria, p.DescricaoSimples),
         MedicamentosModel m => _loteGerador.GerarLoteMedicamentoAsync(m.PublicoAlvo, m.NomeComercial),
-        InsumosModel i => _loteGerador.GerarLoteInsumoAsync(i.Unidade, i.DescricaoSimplificada),
+        InsumosModel i => _loteGerador.GerarLoteInsumoAsync(i.DescricaoSimplificada),
         _ => throw new RegraDeNegocioInfringidaException("Tipo de item não suportado."),
     };
 }

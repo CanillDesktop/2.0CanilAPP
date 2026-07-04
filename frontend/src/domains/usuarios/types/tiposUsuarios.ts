@@ -44,6 +44,8 @@ export type UsuarioCriadoDto = {
   primeiroNome: string;
   sobrenome?: string | null;
   permissao: number;
+  /** Catálogo de unidades de medida (Kg, Comprimido…). Admin sempre tem. */
+  podeGerenciarUnidadesMedida?: boolean;
   dataHoraCriacao: string;
   dataHoraAtualizacao: string;
   /** Legado: true quando status !== Ativo. */
@@ -63,6 +65,7 @@ export type UsuarioAtualizacaoDto = {
   email: string;
   /** Só aplicado quando um administrador edita outro usuário. */
   permissao?: number;
+  podeGerenciarUnidadesMedida?: boolean;
   unidadesEstoque?: UsuarioUnidadeEstoqueAtribuicaoDto[];
 };
 

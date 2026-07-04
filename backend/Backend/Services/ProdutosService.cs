@@ -18,17 +18,20 @@ namespace Backend.Services
         private readonly IProdutosRepository _repository;
         private readonly IUserSessionService _userSessionService;
         private readonly IUnidadeEstoqueContextService _unidadeContext;
+        private readonly IUnidadeMedidaService _unidadeMedidaService;
         private readonly IConfiguration _configuration;
 
         public ProdutosService(
             IProdutosRepository repository,
             IUserSessionService userSessionService,
             IUnidadeEstoqueContextService unidadeContext,
+            IUnidadeMedidaService unidadeMedidaService,
             IConfiguration configuration)
         {
             _repository = repository;
             _userSessionService = userSessionService;
             _unidadeContext = unidadeContext;
+            _unidadeMedidaService = unidadeMedidaService;
             _configuration = configuration;
         }
 
@@ -36,7 +39,7 @@ namespace Backend.Services
         {
             if (string.IsNullOrWhiteSpace(model.DescricaoSimples)
                 || string.IsNullOrWhiteSpace(model.DescricaoDetalhada)
-                || !Enum.IsDefined(typeof(UnidadeEnum), (int)model.Unidade)
+                || model.Unidade <= 0
                 || !Enum.IsDefined(typeof(CategoriaEnum), (int)model.Categoria))
             {
                 throw new ModelIncompletaException("Um ou mais campos obrigatórios não foram preenchidos");
@@ -50,6 +53,7 @@ namespace Backend.Services
         public async Task<ProdutosModel?> CriarAsync(ProdutosModel model)
         {
             ValidarCamposObrigatorios(model);
+            await _unidadeMedidaService.GarantirAplicavelAsync(model.Unidade, TipoItemUnidadeMedida.Produto);
 
             model.ItensEstoque = [];
             var nivelMinimo = model.ItensNivelEstoque.FirstOrDefault()?.NivelMinimoEstoque ?? 0;
@@ -58,14 +62,12 @@ namespace Backend.Services
             var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
             await _unidadeContext.GarantirConsultaAsync(idUnidade);
 
-            if (nivelMinimo > 0)
+            // Presença na unidade ativa (mesmo com nível 0): cadastro não afeta outras unidades.
+            model.ItensNivelEstoque.Add(new ItemNivelEstoqueModel
             {
-                model.ItensNivelEstoque.Add(new ItemNivelEstoqueModel
-                {
-                    IdUnidadeEstoque = idUnidade,
-                    NivelMinimoEstoque = nivelMinimo,
-                });
-            }
+                IdUnidadeEstoque = idUnidade,
+                NivelMinimoEstoque = nivelMinimo,
+            });
 
             model.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
 
@@ -84,6 +86,7 @@ namespace Backend.Services
                 }
 
                 ValidarCamposObrigatorios(model);
+                await _unidadeMedidaService.GarantirAplicavelAsync(model.Unidade, TipoItemUnidadeMedida.Produto);
 
                 var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
                 await _unidadeContext.GarantirConsultaAsync(idUnidade);
@@ -137,14 +140,8 @@ namespace Backend.Services
 
         public async Task<bool> DeletarAsync(int id)
         {
-            var produto = await BuscarPorIdAsync(id);
-
-            if (produto == null) return false;
-
-            produto.IsDeleted = true;
-            produto.DataHoraAtualizacao = DateTime.UtcNow;
-
-            return await _repository.DeleteAsync(produto);
+            var editor = _userSessionService.EditedBy ?? string.Empty;
+            return await _repository.DeleteNaUnidadeAtivaAsync(id, editor);
         }
 
         public async Task<ItemComEstoqueListaPaginadaDTO<ProdutosLeituraDTO>> BuscarPaginadoAsync(

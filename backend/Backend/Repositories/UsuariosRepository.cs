@@ -72,8 +72,9 @@ public class UsuariosRepository : BaseCRUDRepository<UsuariosModel>, IUsuariosRe
 
     public async Task<UsuariosModel?> GetByEmailAsync(string email)
     {
+        var emailNormalizado = email.Trim().ToLowerInvariant();
         return await _context.Usuarios
-            .FirstOrDefaultAsync(u => u.Email == email);
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == emailNormalizado);
     }
 
     public async Task<int> CountAsync(Expression<Func<UsuariosModel, bool>>? predicate = null)

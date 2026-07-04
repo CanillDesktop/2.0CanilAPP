@@ -1,17 +1,9 @@
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import {
-  Box,
-  FormControl,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
-} from '@mui/material';
+import { Box, Grid, TextField } from '@mui/material';
 import type { FormEvent } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarraAcoesFormulario } from '../../../shared/components/cadastro/BarraAcoesFormulario';
 import { PainelSucessoCadastro } from '../../../shared/components/cadastro/PainelSucessoCadastro';
@@ -20,8 +12,9 @@ import { PainelErro } from '../../../shared/components/PainelErro';
 import type { EstadoNavegacaoListagem } from '../../../shared/types/navegacaoListagem';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import { SeletorUnidadeMedida } from '../../unidades-medida/components/SeletorUnidadeMedida';
+import { useUnidadesMedida } from '../../unidades-medida/hooks/useUnidadesMedida';
 import { useMutacaoInsumo } from '../hooks/useInsumos';
-import { OPCOES_UNIDADE_INSUMO } from '../constants/opcoesUnidadeInsumo';
 import type { InsumoCadastroDto } from '../types/tiposInsumos';
 
 const PASSOS = ['Identificação', 'Configurações'] as const;
@@ -29,19 +22,26 @@ const PASSOS = ['Identificação', 'Configurações'] as const;
 const estadoInicialFormulario = () => ({
   descricaoSimplificada: '',
   descricaoDetalhada: '',
-  unidade: 1,
+  unidade: 0,
   nivelMinimoEstoque: 0,
 });
 
 export function FormularioInsumo() {
   const navegar = useNavigate();
   const { criar, carregando, erro, errosValidacao } = useMutacaoInsumo();
+  const { itens: unidades } = useUnidadesMedida('insumo');
   const estilos = useEstilosListagem();
   const sxCampo = estilosCampoFormulario(estilos.cores);
 
   const [passoAtual, setPassoAtual] = useState(0);
   const [form, setForm] = useState(estadoInicialFormulario);
   const [sucesso, setSucesso] = useState<{ nome: string } | null>(null);
+
+  useEffect(() => {
+    if (form.unidade <= 0 && unidades[0]) {
+      setForm((p) => ({ ...p, unidade: unidades[0].id }));
+    }
+  }, [unidades, form.unidade]);
 
   const passoIdentificacaoValido = useMemo(
     () =>
@@ -135,21 +135,12 @@ export function FormularioInsumo() {
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth sx={sxCampo}>
-                    <InputLabel id="unidade-label">Unidade</InputLabel>
-                    <Select
-                      labelId="unidade-label"
-                      label="Unidade"
-                      value={form.unidade}
-                      onChange={(e) => setForm((p) => ({ ...p, unidade: Number(e.target.value) }))}
-                    >
-                      {OPCOES_UNIDADE_INSUMO.map((opcao) => (
-                        <MenuItem key={opcao.valor} value={opcao.valor}>
-                          {opcao.rotulo}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <SeletorUnidadeMedida
+                    tipo="insumo"
+                    value={form.unidade}
+                    onChange={(id) => setForm((p) => ({ ...p, unidade: id }))}
+                    sx={sxCampo}
+                  />
                 </Grid>
                 <Grid size={12}>
                   <TextField

@@ -29,4 +29,6 @@ public interface IUsuariosService : ICRUDService<UsuariosModel>
     Task<UsuariosModel?> AtualizarAsync(int id, AtualizarUsuarioRequestDTO dto);
 
     Task<IReadOnlyList<UsuarioUnidadeEstoqueDTO>> ObterUnidadesEstoqueAsync(int idUsuario, CancellationToken cancellationToken = default);
+
+    Task<bool> UsuarioPodeGerenciarUnidadesMedidaAsync(int idUsuario, CancellationToken cancellationToken = default);
 }

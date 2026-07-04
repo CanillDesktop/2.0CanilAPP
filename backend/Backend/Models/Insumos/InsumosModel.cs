@@ -11,7 +11,8 @@ public class InsumosModel : ItemComEstoqueBaseModel
     public string Codigo { get; set; } = string.Empty;
     public string DescricaoSimplificada { get; set; } = string.Empty;
     public string DescricaoDetalhada { get; set; } = string.Empty;
-    public UnidadeInsumosEnum Unidade { get; set; }
+    /// <summary>Id da unidade de medida cadastrada (<see cref="UnidadeMedida.UnidadeMedidaModel"/>).</summary>
+    public int Unidade { get; set; }
 
     private static string GeraIdentificador()
     {
@@ -46,7 +47,7 @@ public class InsumosModel : ItemComEstoqueBaseModel
     public static implicit operator InsumosLeituraDTO(InsumosModel model)
     {
         var itensEstoque = model.ItensEstoque ?? [];
-        var nivelEstoque = model.ItensNivelEstoque.FirstOrDefault();
+        var nivelEstoque = (model.ItensNivelEstoque ?? []).FirstOrDefault();
 
         return new InsumosLeituraDTO()
         {

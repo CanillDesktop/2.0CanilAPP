@@ -18,17 +18,20 @@ namespace Backend.Services
         private readonly IMedicamentosRepository _repository;
         private readonly IUserSessionService _userSessionService;
         private readonly IUnidadeEstoqueContextService _unidadeContext;
+        private readonly IUnidadeMedidaService _unidadeMedidaService;
         private readonly IConfiguration _configuration;
 
         public MedicamentosService(
             IMedicamentosRepository repository,
             IUserSessionService userSessionService,
             IUnidadeEstoqueContextService unidadeContext,
+            IUnidadeMedidaService unidadeMedidaService,
             IConfiguration configuration)
         {
             _repository = repository;
             _userSessionService = userSessionService;
             _unidadeContext = unidadeContext;
+            _unidadeMedidaService = unidadeMedidaService;
             _configuration = configuration;
         }
 
@@ -37,6 +40,7 @@ namespace Backend.Services
             if (string.IsNullOrWhiteSpace(model.NomeComercial)
                 || string.IsNullOrWhiteSpace(model.Descricao)
                 || string.IsNullOrWhiteSpace(model.Formula)
+                || model.Unidade <= 0
                 || !Enum.IsDefined(typeof(PrioridadeEnum), (int)model.Prioridade)
                 || !Enum.IsDefined(typeof(PublicoAlvoMedicamentoEnum), (int)model.PublicoAlvo))
             {
@@ -51,6 +55,7 @@ namespace Backend.Services
         public async Task<MedicamentosModel?> CriarAsync(MedicamentosModel model)
         {
             ValidarCamposObrigatorios(model);
+            await _unidadeMedidaService.GarantirAplicavelAsync(model.Unidade, TipoItemUnidadeMedida.Medicamento);
 
             model.ItensEstoque = [];
             var nivelMinimo = model.ItensNivelEstoque.FirstOrDefault()?.NivelMinimoEstoque ?? 0;
@@ -59,14 +64,12 @@ namespace Backend.Services
             var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
             await _unidadeContext.GarantirConsultaAsync(idUnidade);
 
-            if (nivelMinimo > 0)
+            // Presença na unidade ativa (mesmo com nível 0): cadastro não afeta outras unidades.
+            model.ItensNivelEstoque.Add(new ItemNivelEstoqueModel
             {
-                model.ItensNivelEstoque.Add(new ItemNivelEstoqueModel
-                {
-                    IdUnidadeEstoque = idUnidade,
-                    NivelMinimoEstoque = nivelMinimo,
-                });
-            }
+                IdUnidadeEstoque = idUnidade,
+                NivelMinimoEstoque = nivelMinimo,
+            });
 
             model.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
 
@@ -85,6 +88,7 @@ namespace Backend.Services
                 }
 
                 ValidarCamposObrigatorios(model);
+                await _unidadeMedidaService.GarantirAplicavelAsync(model.Unidade, TipoItemUnidadeMedida.Medicamento);
 
                 var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
                 await _unidadeContext.GarantirConsultaAsync(idUnidade);
@@ -94,6 +98,7 @@ namespace Backend.Services
                 medicamentoExistente.NomeComercial = model.NomeComercial;
                 medicamentoExistente.PublicoAlvo = model.PublicoAlvo;
                 medicamentoExistente.Prioridade = model.Prioridade;
+                medicamentoExistente.Unidade = model.Unidade;
 
                 var nivelInformado = model.ItensNivelEstoque.FirstOrDefault()?.NivelMinimoEstoque;
                 if (nivelInformado is int minimo)
@@ -138,13 +143,8 @@ namespace Backend.Services
 
         public async Task<bool> DeletarAsync(int id)
         {
-            var medicamento = await BuscarPorIdAsync(id);
-            if (medicamento == null) return false;
-
-            medicamento.IsDeleted = true;
-            medicamento.DataHoraAtualizacao = DateTime.UtcNow;
-
-            return await _repository.DeleteAsync(medicamento);
+            var editor = _userSessionService.EditedBy ?? string.Empty;
+            return await _repository.DeleteNaUnidadeAtivaAsync(id, editor);
         }
 
         public async Task<ItemComEstoqueListaPaginadaDTO<MedicamentoLeituraDTO>> BuscarPaginadoAsync(
