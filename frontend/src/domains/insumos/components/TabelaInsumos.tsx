@@ -26,8 +26,8 @@ import {
 import { motion } from 'framer-motion';
 import { Fragment, useState } from 'react';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
+import { useUnidadesMedida } from '../../unidades-medida/hooks/useUnidadesMedida';
 import type { InsumoLeituraDto } from '../types/tiposInsumos';
-import { rotuloUnidadeInsumo } from '../constants/opcoesUnidadeInsumo';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 
 type Props = {
@@ -71,7 +71,7 @@ export function obterStatusInsumo(item: InsumoLeituraDto): StatusInsumo {
   return 'ativo';
 }
 
-function mapearLinha(item: InsumoLeituraDto): LinhaInsumo {
+function mapearLinha(item: InsumoLeituraDto, rotuloUnidade: (id: number) => string): LinhaInsumo {
   const quantidade = item.itensEstoque.reduce((acc, lote) => acc + lote.quantidade, 0);
   const ultimaData = item.itensEstoque
     .map((lote) => new Date(lote.dataEntrega))
@@ -82,7 +82,7 @@ function mapearLinha(item: InsumoLeituraDto): LinhaInsumo {
     id: item.id,
     codigo: item.codigo,
     nome: item.nomeOuDescricaoSimples,
-    unidadeNome: rotuloUnidadeInsumo(item.unidade),
+    unidadeNome: item.unidadeRotulo ?? rotuloUnidade(item.unidade),
     quantidade,
     status: obterStatusInsumo(item),
     ultimaMovimentacao: ultimaData ? ultimaData.toLocaleDateString('pt-BR') : 'Sem movimentação',
@@ -287,6 +287,7 @@ export function TabelaInsumos({
 }: Props) {
   const estilos = useEstilosListagem();
   const { cores } = estilos;
+  const { rotuloPorId } = useUnidadesMedida(undefined, false);
   const theme = useTheme();
   const ehMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
@@ -296,7 +297,7 @@ export function TabelaInsumos({
   };
 
   if (itens.length === 0) return <p>Nenhum insumo encontrado.</p>;
-  const linhas = itens.map(mapearLinha);
+  const linhas = itens.map((item) => mapearLinha(item, rotuloPorId));
 
   if (ehMobile) {
     return (
@@ -347,7 +348,7 @@ export function TabelaInsumos({
         </TableHead>
         <TableBody>
           {itens.map((insumo) => {
-            const linha = mapearLinha(insumo);
+            const linha = mapearLinha(insumo, rotuloPorId);
             const expanded = expandedRow === insumo.id;
             return (
               <Fragment key={insumo.id}>

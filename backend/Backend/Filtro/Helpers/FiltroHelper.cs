@@ -12,11 +12,21 @@ namespace Backend.Filtro.Helpers;
 
 internal static class FiltroHelper
 {
+    /// <summary>
+    /// Base para filtros e contagens: itens com presença na unidade (lote ou nível),
+    /// sem Include — o total é por item, não por lote.
+    /// </summary>
     public static IQueryable<T> Base<T>(IQueryable<T> query, int idUnidadeEstoque) where T : ItemComEstoqueBaseModel =>
+        query.Where(p => !p.IsDeleted
+            && (p.ItensEstoque.Any(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted)
+                || p.ItensNivelEstoque.Any(n => n.IdUnidadeEstoque == idUnidadeEstoque && !n.IsDeleted)));
+
+    /// <summary>Carrega lotes e níveis da unidade apenas na materialização da página.</summary>
+    public static IQueryable<T> ComNavegacoesUnidade<T>(IQueryable<T> query, int idUnidadeEstoque)
+        where T : ItemComEstoqueBaseModel =>
         query
             .Include(p => p.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted))
-            .Include(p => p.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidadeEstoque && !n.IsDeleted))
-            .Where(p => !p.IsDeleted);
+            .Include(p => p.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidadeEstoque && !n.IsDeleted));
 
     public static IQueryable<T> AplicarStatusEstoque<T>(
         IQueryable<T> query,
@@ -89,6 +99,20 @@ internal static class FiltroHelper
         return query;
     }
 
+    /// <summary>
+    /// Produtos com saldo &gt; 0 apenas em <paramref name="idUnidadeExclusiva"/>
+    /// (sem saldo positivo na outra unidade).
+    /// </summary>
+    public static IQueryable<ProdutosModel> AplicarExclusivoUnidade(
+        IQueryable<ProdutosModel> query,
+        int idUnidadeExclusiva,
+        int idUnidadeOutra)
+    {
+        return query.Where(p =>
+            p.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeExclusiva).Sum(e => e.Quantidade) > 0
+            && p.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeOutra).Sum(e => e.Quantidade) <= 0);
+    }
+
     public static IQueryable<MedicamentosModel> AplicarFiltrosMedicamentos(
         IQueryable<MedicamentosModel> query,
         MedicamentosFiltro filtro,
@@ -141,8 +165,8 @@ internal static class FiltroHelper
                     !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.Lote != null && e.Lote.ToLower().Contains(termo))));
         }
 
-        if (filtro.Unidade.HasValue && Enum.IsDefined(typeof(UnidadeInsumosEnum), filtro.Unidade.Value))
-            query = query.Where(p => p.Unidade == (UnidadeInsumosEnum)filtro.Unidade.Value);
+        if (filtro.Unidade is int idUnidadeMedida && idUnidadeMedida > 0)
+            query = query.Where(p => p.Unidade == idUnidadeMedida);
 
         if (filtro.DataEntrega.HasValue)
             query = query.Where(p =>

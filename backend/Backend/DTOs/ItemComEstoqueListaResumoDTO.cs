@@ -1,8 +1,8 @@
 namespace Backend.DTOs;
 
 /// <summary>
-/// Totais de estoque considerando o mesmo recorte de busca + NFe/datas do filtro,
-/// mas <b>sem</b> o filtro de status — permite ver a distribuição real do subconjunto.
+/// Totais por item (produto/insumo/medicamento), não por lote, no mesmo recorte de busca
+/// + NFe/datas do filtro, mas <b>sem</b> o filtro de status — permite ver a distribuição real do subconjunto.
 /// </summary>
 public class ItemComEstoqueListaResumoDTO
 {

@@ -14,23 +14,29 @@ public class ItemNivelEstoqueModel : BaseModel
     [JsonIgnore]
     public UnidadeEstoqueModel? UnidadeEstoque { get; set; }
 
-    public static implicit operator ItemNivelEstoqueDTO(ItemNivelEstoqueModel model)
+    public static implicit operator ItemNivelEstoqueDTO(ItemNivelEstoqueModel? model)
     {
-        return new ItemNivelEstoqueDTO()
+        if (model is null)
+            return new ItemNivelEstoqueDTO();
+
+        return new ItemNivelEstoqueDTO
         {
             Id = model.Id,
             IdUnidadeEstoque = model.IdUnidadeEstoque,
-            NivelMinimoEstoque = model.NivelMinimoEstoque
+            NivelMinimoEstoque = model.NivelMinimoEstoque,
         };
     }
 
-    public static implicit operator ItemNivelEstoqueModel(ItemNivelEstoqueDTO dto)
+    public static implicit operator ItemNivelEstoqueModel(ItemNivelEstoqueDTO? dto)
     {
-        return new ItemNivelEstoqueModel()
+        if (dto is null)
+            return new ItemNivelEstoqueModel();
+
+        return new ItemNivelEstoqueModel
         {
             Id = dto.Id,
             IdUnidadeEstoque = dto.IdUnidadeEstoque,
-            NivelMinimoEstoque = dto.NivelMinimoEstoque
+            NivelMinimoEstoque = dto.NivelMinimoEstoque,
         };
     }
 }

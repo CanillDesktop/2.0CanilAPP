@@ -228,21 +228,8 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
                     .SetProperty(e => e.DataHoraAtualizacao, _ => now)
                     .SetProperty(e => e.EditadorPor, _ => editor));
 
-            var aindaTemLoteAtivo = await _context.ItensEstoque
-                .AnyAsync(e => e.Id == chave.Id && !e.IsDeleted && e.Quantidade > 0);
-
-            if (!aindaTemLoteAtivo)
-            {
-                var itemPai = await _context.Set<ItemComEstoqueBaseModel>()
-                    .FirstOrDefaultAsync(p => p.Id == chave.Id && !p.IsDeleted);
-
-                if (itemPai != null)
-                {
-                    itemPai.IsDeleted = true;
-                    itemPai.DataHoraAtualizacao = now;
-                    itemPai.EditadorPor = editor;
-                }
-            }
+            // Não remove o item do catálogo global: saldo zerado em uma unidade
+            // não deve apagar o cadastro nas demais unidades.
 
             await _retiradaRepository.CreateAsync(dto, saveChanges: false);
             await _context.SaveChangesAsync();

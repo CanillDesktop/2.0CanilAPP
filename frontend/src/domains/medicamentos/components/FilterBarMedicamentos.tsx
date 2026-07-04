@@ -8,13 +8,14 @@ import {
   InputAdornment,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   type SelectChangeEvent,
   TextField,
 } from '@mui/material';
 import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { PainelFiltrosColapsavel } from '../../../shared/components/PainelFiltrosColapsavel';
 import { estilosCampoFiltro, estilosLabelFiltro } from '../../../shared/theme/estilosCampos';
 import {
   OPCOES_PRIORIDADE_MEDICAMENTO_FILTRO,
@@ -61,19 +62,23 @@ export function FilterBarMedicamentos({
   const inputSx = estilosCampoFiltro(cores);
   const labelSx = estilosLabelFiltro(cores);
 
+  const filtrosAtivos = useMemo(() => {
+    let n = 0;
+    if (busca.trim()) n += 1;
+    if (prioridade !== 'todas') n += 1;
+    if (publicoAlvo !== 'todos') n += 1;
+    if (status !== 'todos') n += 1;
+    if (dataEntrega.trim()) n += 1;
+    if (dataValidade.trim()) n += 1;
+    return n;
+  }, [busca, prioridade, publicoAlvo, status, dataEntrega, dataValidade]);
+
   function handleStatusChange(e: SelectChangeEvent) {
     onStatusChange(e.target.value as MedicamentoStatusEstoqueFiltro);
   }
 
   return (
-    <Paper
-      sx={{
-        p: 2,
-        borderRadius: 3,
-        backgroundColor: cores.bgCard,
-        border: `1px solid ${cores.border}`,
-      }}
-    >
+    <PainelFiltrosColapsavel filtrosAtivos={filtrosAtivos}>
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 4 }}>
           <TextField
@@ -203,6 +208,6 @@ export function FilterBarMedicamentos({
           </Box>
         </Grid>
       </Grid>
-    </Paper>
+    </PainelFiltrosColapsavel>
   );
 }

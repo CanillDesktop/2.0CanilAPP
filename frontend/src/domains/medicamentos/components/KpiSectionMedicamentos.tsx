@@ -1,66 +1,42 @@
 import type { ReactNode } from 'react';
-import { Box, Grid, Skeleton, Stack, Typography } from '@mui/material';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { KpiSectionListagem } from '../../../shared/components/KpiSectionListagem';
+import type { StatusEstoqueFiltro } from '../../../shared/types/itemComEstoqueLista';
 import { MARCA } from '../../../shared/theme/tokensTema';
 
 type Kpi = {
   titulo: string;
   valor: number;
   icon: ReactNode;
-  cor?: string;
+  statusFiltro: StatusEstoqueFiltro;
 };
 
 const CORES_ICONE = (cores: ReturnType<typeof useTemaApp>['cores']) =>
-  [cores.accent, MARCA.salmao, cores.acaoExcluir, cores.brandHighlight] as const;
+  [cores.accent, cores.brandHighlight, MARCA.salmao, cores.acaoMovimentar, cores.acaoExcluir] as const;
 
-export function KpiSectionMedicamentos({ kpis, carregando }: { kpis: Kpi[]; carregando: boolean }) {
+export function KpiSectionMedicamentos({
+  kpis,
+  carregando,
+  statusSelecionado,
+  onStatusChange,
+}: {
+  kpis: Kpi[];
+  carregando: boolean;
+  statusSelecionado: StatusEstoqueFiltro;
+  onStatusChange: (status: StatusEstoqueFiltro) => void;
+}) {
   const { cores } = useTemaApp();
   const coresIcone = CORES_ICONE(cores);
 
   return (
-    <Grid container spacing={2} sx={{ mb: 3 }}>
-      {kpis.map((kpi, indice) => (
-        <Grid key={kpi.titulo} size={{ xs: 12, sm: 6, md: 3 }}>
-          <Box
-            sx={{
-              borderRadius: 3,
-              p: 2,
-              border: `1px solid ${cores.metricCardBorder}`,
-              backgroundColor: cores.metricCardBg,
-              color: cores.textPrimary,
-              boxShadow: cores.sombraCard,
-              height: '100%',
-            }}
-          >
-            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
-              <Box>
-                <Typography variant="body2" sx={{ color: cores.textMuted, fontWeight: 600 }}>
-                  {kpi.titulo}
-                </Typography>
-                {carregando ? (
-                  <Skeleton width={90} height={40} />
-                ) : (
-                  <Typography sx={{ fontSize: '28px', fontWeight: 800, lineHeight: 1.2, mt: 0.5 }}>
-                    {kpi.valor}
-                  </Typography>
-                )}
-              </Box>
-              <Box
-                sx={{
-                  p: 1,
-                  borderRadius: 2,
-                  color: coresIcone[indice % coresIcone.length],
-                  bgcolor: cores.chipBg,
-                  border: `1px solid ${cores.chipBorder}`,
-                  display: 'flex',
-                }}
-              >
-                {kpi.icon}
-              </Box>
-            </Stack>
-          </Box>
-        </Grid>
-      ))}
-    </Grid>
+    <KpiSectionListagem
+      carregando={carregando}
+      statusSelecionado={statusSelecionado}
+      onStatusChange={onStatusChange}
+      kpis={kpis.map((kpi, indice) => ({
+        ...kpi,
+        corIcone: coresIcone[indice % coresIcone.length],
+      }))}
+    />
   );
 }

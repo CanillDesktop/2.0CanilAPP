@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { consultarEstoquePaginadoApi } from '../api/estoqueConsultaApi';
 import { ESTOQUE_ORIGEM_API, type LinhaOperacionalEstoque } from '../types/tiposEstoque';
 import { mapearEstoqueLinhaDto } from '../utils/mapearLinhaOperacionalEstoque';
@@ -28,6 +29,7 @@ export function useBuscaCategoria(
   pageSize: number,
   filtrosAvancados: FiltrosAvancadosBusca,
 ) {
+  const { unidadeAtivaId } = useUnidadeEstoque();
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
   const [carregando, setCarregando] = useState(false);
@@ -46,6 +48,14 @@ export function useBuscaCategoria(
     let ativo = true;
 
     async function carregar() {
+      if (unidadeAtivaId == null) {
+        setResultados([]);
+        setTotalCount(0);
+        setTotalPages(1);
+        setCarregando(false);
+        return;
+      }
+
       setCarregando(true);
       try {
         const statusOperacional =
@@ -71,6 +81,7 @@ export function useBuscaCategoria(
             orderBy: 'nome',
             sortDirection: 'asc',
           },
+          unidadeAtivaId,
         );
 
         if (!ativo) return;
@@ -91,7 +102,7 @@ export function useBuscaCategoria(
     return () => {
       ativo = false;
     };
-  }, [categoria, debouncedTerm, pagina, pageSize, filtrosAvancados]);
+  }, [unidadeAtivaId, categoria, debouncedTerm, pagina, pageSize, filtrosAvancados]);
 
   return {
     searchTerm,

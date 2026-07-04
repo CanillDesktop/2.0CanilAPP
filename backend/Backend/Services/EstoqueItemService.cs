@@ -53,7 +53,7 @@ namespace Backend.Services
         {
             ProdutosModel produto => _loteGerador.GerarLoteProdutoAsync(produto.Categoria, produto.DescricaoSimples),
             MedicamentosModel medicamento => _loteGerador.GerarLoteMedicamentoAsync(medicamento.PublicoAlvo, medicamento.NomeComercial),
-            InsumosModel insumo => _loteGerador.GerarLoteInsumoAsync(insumo.Unidade, insumo.DescricaoSimplificada),
+            InsumosModel insumo => _loteGerador.GerarLoteInsumoAsync(insumo.DescricaoSimplificada),
             _ => throw new RegraDeNegocioInfringidaException("Tipo de item não suportado para geração de lote.")
         };
 
@@ -61,7 +61,7 @@ namespace Backend.Services
         {
             ProdutosModel produto => _loteGerador.PreverProximoLoteProdutoAsync(produto.Categoria, produto.DescricaoSimples),
             MedicamentosModel medicamento => _loteGerador.PreverProximoLoteMedicamentoAsync(medicamento.PublicoAlvo, medicamento.NomeComercial),
-            InsumosModel insumo => _loteGerador.PreverProximoLoteInsumoAsync(insumo.Unidade, insumo.DescricaoSimplificada),
+            InsumosModel insumo => _loteGerador.PreverProximoLoteInsumoAsync(insumo.DescricaoSimplificada),
             _ => throw new RegraDeNegocioInfringidaException("Tipo de item não suportado para geração de lote.")
         };
 

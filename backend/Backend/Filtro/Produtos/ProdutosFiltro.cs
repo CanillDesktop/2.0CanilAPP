@@ -16,4 +16,10 @@ public class ProdutosFiltro
 
     /// <summary>todos | ativo | baixo | a_vencer | sem_estoque</summary>
     public string? StatusEstoque { get; set; }
+
+    /// <summary>
+    /// Quando informado (<c>secretaria</c> ou <c>canil</c>), retorna apenas produtos com saldo
+    /// positivo exclusivamente nessa unidade. Exige permissão de consulta nas duas unidades.
+    /// </summary>
+    public string? ExclusivoUnidade { get; set; }
 }

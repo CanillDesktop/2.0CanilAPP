@@ -144,7 +144,9 @@ public class DashboardService : IDashboardService
                 EstoqueStatusOperacional.ProximoVencimento,
                 idUnidadeEstoque);
 
-        return await query.AsNoTracking().ToListAsync(cancellationToken);
+        return await EstoqueConsultaQueryable.ComNavegacoesUnidade(query, idUnidadeEstoque)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
     private static DashboardAlertaItemDTO ParaAlerta(EstoqueLinhaLeituraDTO dto, string origem) =>

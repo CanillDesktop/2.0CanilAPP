@@ -56,7 +56,7 @@ public class EstoqueConsultaRepository : IEstoqueConsultaRepository
 
         var ordenada = EstoqueConsultaQueryable.AplicarOrdenacaoProdutos(query, parameters, idUnidade);
         stopwatch.Restart();
-        var items = await PaginarAsync(ordenada, parameters, cancellationToken);
+        var items = await PaginarAsync(ordenada, parameters, idUnidade, cancellationToken);
         stopwatch.Stop();
         Console.WriteLine($"ToListAsync: {stopwatch.ElapsedMilliseconds} ms");
 
@@ -76,7 +76,7 @@ public class EstoqueConsultaRepository : IEstoqueConsultaRepository
 
         var totalCount = await query.CountAsync(cancellationToken);
         var ordenada = EstoqueConsultaQueryable.AplicarOrdenacaoMedicamentos(query, parameters, idUnidade);
-        var items = await PaginarAsync(ordenada, parameters, cancellationToken);
+        var items = await PaginarAsync(ordenada, parameters, idUnidade, cancellationToken);
 
         return new EstoqueConsultaPaginada(items, totalCount);
     }
@@ -94,7 +94,7 @@ public class EstoqueConsultaRepository : IEstoqueConsultaRepository
 
         var totalCount = await query.CountAsync(cancellationToken);
         var ordenada = EstoqueConsultaQueryable.AplicarOrdenacaoInsumos(query, parameters, idUnidade);
-        var items = await PaginarAsync(ordenada, parameters, cancellationToken);
+        var items = await PaginarAsync(ordenada, parameters, idUnidade, cancellationToken);
 
         return new EstoqueConsultaPaginada(items, totalCount);
     }
@@ -102,13 +102,14 @@ public class EstoqueConsultaRepository : IEstoqueConsultaRepository
     private static async Task<IReadOnlyList<Models.Estoque.ItemComEstoqueBaseModel>> PaginarAsync<T>(
         IQueryable<T> ordenada,
         EstoqueConsultaParameters parameters,
+        int idUnidade,
         CancellationToken cancellationToken)
         where T : Models.Estoque.ItemComEstoqueBaseModel
     {
         var pageNumber = parameters.NormalizedPageNumber;
         var pageSize = parameters.PageSize;
 
-        var items = await ordenada
+        var items = await EstoqueConsultaQueryable.ComNavegacoesUnidade(ordenada, idUnidade)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -122,9 +123,19 @@ public class EstoqueConsultaRepository : IEstoqueConsultaRepository
         var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync(cancellationToken);
         await _unidadeContext.GarantirConsultaAsync(idUnidade, cancellationToken);
 
-        var produtos = await _context.Produtos.CountAsync(p => !p.IsDeleted, cancellationToken);
-        var medicamentos = await _context.Medicamentos.CountAsync(m => !m.IsDeleted, cancellationToken);
-        var insumos = await _context.Insumos.CountAsync(i => !i.IsDeleted, cancellationToken);
+        // Conta apenas itens com lote na unidade ativa (catálogo é global; saldo é por unidade).
+        var produtos = await _context.Produtos.CountAsync(
+            p => !p.IsDeleted
+                 && p.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidade),
+            cancellationToken);
+        var medicamentos = await _context.Medicamentos.CountAsync(
+            m => !m.IsDeleted
+                 && m.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidade),
+            cancellationToken);
+        var insumos = await _context.Insumos.CountAsync(
+            i => !i.IsDeleted
+                 && i.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidade),
+            cancellationToken);
 
         return new EstoqueContagemConsulta(produtos, medicamentos, insumos);
     }

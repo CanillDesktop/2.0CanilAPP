@@ -15,12 +15,20 @@ namespace Backend.Repositories;
 /// </summary>
 internal static class EstoqueConsultaQueryable
 {
+    /// <summary>
+    /// Base para filtros e contagens: sem Include de lotes, para o total ser por item e não por lote.
+    /// </summary>
     public static IQueryable<T> Base<T>(IQueryable<T> query, int idUnidadeEstoque)
+        where T : ItemComEstoqueBaseModel =>
+        query.Where(x => !x.IsDeleted
+            && x.ItensEstoque.Any(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted));
+
+    /// <summary>Carrega lotes e níveis da unidade apenas na materialização da página.</summary>
+    public static IQueryable<T> ComNavegacoesUnidade<T>(IQueryable<T> query, int idUnidadeEstoque)
         where T : ItemComEstoqueBaseModel =>
         query
             .Include(x => x.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted))
-            .Include(x => x.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidadeEstoque && !n.IsDeleted))
-            .Where(x => !x.IsDeleted);
+            .Include(x => x.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidadeEstoque && !n.IsDeleted));
 
     public static IQueryable<T> AplicarFiltrosComuns<T>(
         IQueryable<T> query,

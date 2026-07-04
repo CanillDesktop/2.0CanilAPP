@@ -21,6 +21,7 @@ import {
 import { motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
@@ -41,6 +42,7 @@ const MotionBox = motion(Box);
 export function PaginaListagemInsumos() {
   const { estado, carregar } = useListaInsumosPaginados();
   const { excluir, carregando: carregandoExclusao } = useMutacaoInsumo();
+  const { unidadeAtivaId } = useUnidadeEstoque();
   const navigate = useNavigate();
   const estilos = useEstilosListagem();
   const [busca, setBusca] = useState('');
@@ -89,8 +91,9 @@ export function PaginaListagemInsumos() {
   }, [debouncedBusca, unidade, status, dataEntrega, dataValidade]);
 
   const recarregar = useCallback(async () => {
+    if (unidadeAtivaId == null) return;
     await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
-  }, [carregar, montarFiltroApi, page, rowsPerPage]);
+  }, [carregar, montarFiltroApi, page, rowsPerPage, unidadeAtivaId]);
 
   useEffect(() => {
     void recarregar();
@@ -180,42 +183,44 @@ export function PaginaListagemInsumos() {
           <Stack sx={{ gap: 0.5 }}>
             <KpiSectionInsumos
               carregando={estado.carregando && !estado.dados}
+              statusSelecionado={status}
+              onStatusChange={setStatus}
               kpis={[
                 {
                   titulo: 'Total (filtro atual)',
                   valor: kpis.totalRecorte,
                   icon: <Inventory2OutlinedIcon />,
-                  cor: 'primary.main',
+                  statusFiltro: 'todos',
                 },
                 {
                   titulo: 'Ativos',
                   valor: kpis.ativos,
                   icon: <TaskAltOutlinedIcon />,
-                  cor: 'success.main',
+                  statusFiltro: 'ativo',
                 },
                 {
                   titulo: 'Baixo estoque',
                   valor: kpis.baixo,
                   icon: <ReportProblemOutlinedIcon />,
-                  cor: 'warning.main',
+                  statusFiltro: 'baixo',
                 },
                 {
                   titulo: 'Próximo vencimento',
                   valor: kpis.aVencer,
                   icon: <EventOutlinedIcon />,
-                  cor: 'info.main',
+                  statusFiltro: 'a_vencer',
                 },
                 {
                   titulo: 'Sem estoque',
                   valor: kpis.semEstoque,
                   icon: <RemoveShoppingCartOutlinedIcon />,
-                  cor: 'error.main',
+                  statusFiltro: 'sem_estoque',
                 },
               ]}
             />
             <Typography variant="caption" sx={estilos.legenda}>
-              Indicadores refletem todos os insumos que obedecem à busca, unidade e datas (sem o filtro de status). O
-              filtro de status restringe apenas a tabela e a paginação.
+              Toque em um card para filtrar a tabela. Os indicadores refletem busca, unidade e datas (sem o filtro de
+              status). Toque de novo no card ativo para limpar o filtro.
             </Typography>
           </Stack>
 
@@ -293,7 +298,9 @@ export function PaginaListagemInsumos() {
       <Dialog open={idExclusao != null} onClose={() => setIdExclusao(null)}>
         <DialogTitle>Confirmar exclusão</DialogTitle>
         <DialogContent>
-          <Typography variant="body2">Deseja realmente excluir este insumo?</Typography>
+          <Typography variant="body2">
+            Deseja excluir este insumo apenas da unidade atual? O cadastro nas outras unidades não será alterado.
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIdExclusao(null)}>Cancelar</Button>

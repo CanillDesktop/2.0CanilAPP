@@ -77,6 +77,9 @@ export function AppShellAutenticado() {
         component="main"
         sx={{
           flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
           width: '100%',
           maxWidth: '100%',
           boxSizing: 'border-box',

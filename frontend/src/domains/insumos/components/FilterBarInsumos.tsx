@@ -8,15 +8,17 @@ import {
   InputAdornment,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   type SelectChangeEvent,
   TextField,
 } from '@mui/material';
 import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { PainelFiltrosColapsavel } from '../../../shared/components/PainelFiltrosColapsavel';
 import { estilosCampoFiltro, estilosLabelFiltro } from '../../../shared/theme/estilosCampos';
-import { OPCOES_UNIDADE_INSUMO_FILTRO } from '../constants/opcoesFiltroInsumo';
+import { useUnidadesMedida } from '../../unidades-medida/hooks/useUnidadesMedida';
+import { rotuloUnidadeMedida } from '../../unidades-medida/types/tiposUnidadeMedida';
 import type { InsumoStatusEstoqueFiltro } from '../types/tiposInsumos';
 
 const MotionButton = motion(Button);
@@ -51,22 +53,26 @@ export function FilterBarInsumos({
   onNovoInsumo,
 }: FilterBarInsumosProps) {
   const { cores } = useTemaApp();
+  const { itens: unidades } = useUnidadesMedida('insumo');
   const inputSx = estilosCampoFiltro(cores);
   const labelSx = estilosLabelFiltro(cores);
+
+  const filtrosAtivos = useMemo(() => {
+    let n = 0;
+    if (busca.trim()) n += 1;
+    if (unidade !== 'todas') n += 1;
+    if (status !== 'todos') n += 1;
+    if (dataEntrega.trim()) n += 1;
+    if (dataValidade.trim()) n += 1;
+    return n;
+  }, [busca, unidade, status, dataEntrega, dataValidade]);
 
   function handleStatusChange(e: SelectChangeEvent) {
     onStatusChange(e.target.value as InsumoStatusEstoqueFiltro);
   }
 
   return (
-    <Paper
-      sx={{
-        p: 2,
-        borderRadius: 3,
-        backgroundColor: cores.bgCard,
-        border: `1px solid ${cores.border}`,
-      }}
-    >
+    <PainelFiltrosColapsavel filtrosAtivos={filtrosAtivos}>
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 5 }}>
           <TextField
@@ -93,9 +99,9 @@ export function FilterBarInsumos({
             <InputLabel sx={labelSx}>Unidade</InputLabel>
             <Select label="Unidade" value={unidade} onChange={(e) => onUnidadeChange(e.target.value)} sx={inputSx}>
               <MenuItem value="todas">Todas</MenuItem>
-              {OPCOES_UNIDADE_INSUMO_FILTRO.map((opcao) => (
-                <MenuItem key={opcao.valor} value={String(opcao.valor)}>
-                  {opcao.rotulo}
+              {unidades.map((u) => (
+                <MenuItem key={u.id} value={String(u.id)}>
+                  {rotuloUnidadeMedida(u)}
                 </MenuItem>
               ))}
             </Select>
@@ -173,6 +179,6 @@ export function FilterBarInsumos({
           </Box>
         </Grid>
       </Grid>
-    </Paper>
+    </PainelFiltrosColapsavel>
   );
 }
