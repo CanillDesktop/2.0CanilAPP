@@ -109,7 +109,8 @@ public class AuthService : IAuthService
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(ClaimTypes.Role, usuario.Permissao.ToString()),
             new(ClaimTypes.Name, $"{usuario.PrimeiroNome} {usuario.Sobrenome}"),
-            new("EditedBy", $"{usuario.PrimeiroNome} {usuario.Sobrenome} ({usuario.Email})")
+            new("EditedBy", $"{usuario.PrimeiroNome} {usuario.Sobrenome} ({usuario.Email})"),
+            new("TokenVersion", usuario.TokenVersion.ToString())
         };
 
         var token = new JwtSecurityToken(

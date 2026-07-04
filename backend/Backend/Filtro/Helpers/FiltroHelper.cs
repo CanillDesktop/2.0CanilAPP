@@ -12,16 +12,26 @@ namespace Backend.Filtro.Helpers;
 
 internal static class FiltroHelper
 {
-    public static IQueryable<T> Base<T>(IQueryable<T> query) where T : ItemComEstoqueBaseModel =>
-        query
-            .Include(p => p.ItensEstoque.Where(e => !e.IsDeleted))
-            .Include(p => p.ItemNivelEstoque)
-            .Where(p => !p.IsDeleted);
+    /// <summary>
+    /// Base para filtros e contagens: itens com presença na unidade (lote ou nível),
+    /// sem Include — o total é por item, não por lote.
+    /// </summary>
+    public static IQueryable<T> Base<T>(IQueryable<T> query, int idUnidadeEstoque) where T : ItemComEstoqueBaseModel =>
+        query.Where(p => !p.IsDeleted
+            && (p.ItensEstoque.Any(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted)
+                || p.ItensNivelEstoque.Any(n => n.IdUnidadeEstoque == idUnidadeEstoque && !n.IsDeleted)));
 
+    /// <summary>Carrega lotes e níveis da unidade apenas na materialização da página.</summary>
+    public static IQueryable<T> ComNavegacoesUnidade<T>(IQueryable<T> query, int idUnidadeEstoque)
+        where T : ItemComEstoqueBaseModel =>
+        query
+            .Include(p => p.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted))
+            .Include(p => p.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidadeEstoque && !n.IsDeleted));
 
     public static IQueryable<T> AplicarStatusEstoque<T>(
         IQueryable<T> query,
-        string? statusEstoque) where T : ItemComEstoqueBaseModel
+        string? statusEstoque,
+        int idUnidadeEstoque) where T : ItemComEstoqueBaseModel
     {
         if (string.IsNullOrWhiteSpace(statusEstoque)
             || statusEstoque.Equals("todos", StringComparison.OrdinalIgnoreCase))
@@ -35,19 +45,22 @@ internal static class FiltroHelper
         return statusEstoque.ToLowerInvariant() switch
         {
             "sem_estoque" => query.Where(p =>
-                !p.ItensEstoque.Any(e => !e.IsDeleted)
-                || p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) <= 0),
+                !p.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque)
+                || p.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque).Sum(e => e.Quantidade) <= 0),
             "baixo" => query.Where(p =>
-                p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
-                && p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)
-                    < (p.ItemNivelEstoque != null ? p.ItemNivelEstoque.NivelMinimoEstoque : 0)),
+                p.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque).Sum(e => e.Quantidade) > 0
+                && p.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque).Sum(e => e.Quantidade)
+                    < (p.ItensNivelEstoque.Where(n => !n.IsDeleted && n.IdUnidadeEstoque == idUnidadeEstoque)
+                        .Select(n => (int?)n.NivelMinimoEstoque).FirstOrDefault() ?? 0)),
             "ativo" => query.Where(p =>
-                p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) > 0
-                && p.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)
-                    >= (p.ItemNivelEstoque != null ? p.ItemNivelEstoque.NivelMinimoEstoque : 0)),
+                p.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque).Sum(e => e.Quantidade) > 0
+                && p.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque).Sum(e => e.Quantidade)
+                    >= (p.ItensNivelEstoque.Where(n => !n.IsDeleted && n.IdUnidadeEstoque == idUnidadeEstoque)
+                        .Select(n => (int?)n.NivelMinimoEstoque).FirstOrDefault() ?? 0)),
             "a_vencer" => query.Where(p =>
                 p.ItensEstoque.Any(e =>
                     !e.IsDeleted
+                    && e.IdUnidadeEstoque == idUnidadeEstoque
                     && e.DataValidade != null
                     && e.DataValidade >= hoje
                     && e.DataValidade <= limiteVencimento)),
@@ -57,7 +70,8 @@ internal static class FiltroHelper
 
     public static IQueryable<ProdutosModel> AplicarFiltrosProdutos(
         IQueryable<ProdutosModel> query,
-        ProdutosFiltro filtro)
+        ProdutosFiltro filtro,
+        int idUnidadeEstoque)
     {
         if (TermoBuscaQueryable.TryNormalizar(filtro.Termo, out var termo))
         {
@@ -66,9 +80,9 @@ internal static class FiltroHelper
                 || (p.DescricaoSimples != null && p.DescricaoSimples.ToLower().Contains(termo))
                 || (p.DescricaoDetalhada != null && p.DescricaoDetalhada.ToLower().Contains(termo))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.NFe != null && e.NFe.ToLower().Contains(termo)))
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.NFe != null && e.NFe.ToLower().Contains(termo)))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.Lote != null && e.Lote.ToLower().Contains(termo))));
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.Lote != null && e.Lote.ToLower().Contains(termo))));
         }
 
         if (filtro.Categoria.HasValue && Enum.IsDefined(typeof(CategoriaEnum), filtro.Categoria.Value))
@@ -76,18 +90,33 @@ internal static class FiltroHelper
 
         if (filtro.DataEntrega.HasValue)
             query = query.Where(p =>
-                p.ItensEstoque.Any(e => !e.IsDeleted && e.DataEntrega == filtro.DataEntrega));
+                p.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataEntrega == filtro.DataEntrega));
 
         if (filtro.DataValidade.HasValue)
             query = query.Where(p =>
-                p.ItensEstoque.Any(e => !e.IsDeleted && e.DataValidade == filtro.DataValidade));
+                p.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataValidade == filtro.DataValidade));
 
         return query;
     }
 
+    /// <summary>
+    /// Produtos com saldo &gt; 0 apenas em <paramref name="idUnidadeExclusiva"/>
+    /// (sem saldo positivo na outra unidade).
+    /// </summary>
+    public static IQueryable<ProdutosModel> AplicarExclusivoUnidade(
+        IQueryable<ProdutosModel> query,
+        int idUnidadeExclusiva,
+        int idUnidadeOutra)
+    {
+        return query.Where(p =>
+            p.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeExclusiva).Sum(e => e.Quantidade) > 0
+            && p.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeOutra).Sum(e => e.Quantidade) <= 0);
+    }
+
     public static IQueryable<MedicamentosModel> AplicarFiltrosMedicamentos(
         IQueryable<MedicamentosModel> query,
-        MedicamentosFiltro filtro)
+        MedicamentosFiltro filtro,
+        int idUnidadeEstoque)
     {
         if (TermoBuscaQueryable.TryNormalizar(filtro.Termo, out var termo))
         {
@@ -97,9 +126,9 @@ internal static class FiltroHelper
                 || (p.Formula != null && p.Formula.ToLower().Contains(termo))
                 || (p.NomeComercial != null && p.NomeComercial.ToLower().Contains(termo))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.NFe != null && e.NFe.ToLower().Contains(termo)))
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.NFe != null && e.NFe.ToLower().Contains(termo)))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.Lote != null && e.Lote.ToLower().Contains(termo))));
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.Lote != null && e.Lote.ToLower().Contains(termo))));
         }
 
         if (filtro.Prioridade.HasValue && Enum.IsDefined(typeof(PrioridadeEnum), filtro.Prioridade.Value))
@@ -110,18 +139,19 @@ internal static class FiltroHelper
 
         if (filtro.DataEntrega.HasValue)
             query = query.Where(p =>
-                p.ItensEstoque.Any(e => !e.IsDeleted && e.DataEntrega == filtro.DataEntrega));
+                p.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataEntrega == filtro.DataEntrega));
 
         if (filtro.DataValidade.HasValue)
             query = query.Where(p =>
-                p.ItensEstoque.Any(e => !e.IsDeleted && e.DataValidade == filtro.DataValidade));
+                p.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataValidade == filtro.DataValidade));
 
         return query;
     }
 
     public static IQueryable<InsumosModel> AplicarFiltrosInsumos(
         IQueryable<InsumosModel> query,
-        InsumosFiltro filtro)
+        InsumosFiltro filtro,
+        int idUnidadeEstoque)
     {
         if (TermoBuscaQueryable.TryNormalizar(filtro.Termo, out var termo))
         {
@@ -130,21 +160,21 @@ internal static class FiltroHelper
                 || (p.DescricaoSimplificada != null && p.DescricaoSimplificada.ToLower().Contains(termo))
                 || (p.DescricaoDetalhada != null && p.DescricaoDetalhada.ToLower().Contains(termo))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.NFe != null && e.NFe.ToLower().Contains(termo)))
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.NFe != null && e.NFe.ToLower().Contains(termo)))
                 || (p.ItensEstoque.Any(e =>
-                    !e.IsDeleted && e.Lote != null && e.Lote.ToLower().Contains(termo))));
+                    !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.Lote != null && e.Lote.ToLower().Contains(termo))));
         }
 
-        if (filtro.Unidade.HasValue && Enum.IsDefined(typeof(UnidadeInsumosEnum), filtro.Unidade.Value))
-            query = query.Where(p => p.Unidade == (UnidadeInsumosEnum)filtro.Unidade.Value);
+        if (filtro.Unidade is int idUnidadeMedida && idUnidadeMedida > 0)
+            query = query.Where(p => p.Unidade == idUnidadeMedida);
 
         if (filtro.DataEntrega.HasValue)
             query = query.Where(p =>
-                p.ItensEstoque.Any(e => !e.IsDeleted && e.DataEntrega == filtro.DataEntrega));
+                p.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataEntrega == filtro.DataEntrega));
 
         if (filtro.DataValidade.HasValue)
             query = query.Where(p =>
-                p.ItensEstoque.Any(e => !e.IsDeleted && e.DataValidade == filtro.DataValidade));
+                p.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataValidade == filtro.DataValidade));
 
         return query;
     }

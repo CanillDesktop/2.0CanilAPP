@@ -16,11 +16,16 @@ namespace Backend.Controllers
     {
         private readonly IEstoqueItemService _service;
         private readonly IEstoqueConsultaService _consultaService;
+        private readonly IEntradaEstoqueService _entradaService;
 
-        public EstoqueController(IEstoqueItemService service, IEstoqueConsultaService consultaService)
+        public EstoqueController(
+            IEstoqueItemService service,
+            IEstoqueConsultaService consultaService,
+            IEntradaEstoqueService entradaService)
         {
             _service = service;
             _consultaService = consultaService;
+            _entradaService = entradaService;
         }
 
         [HttpGet("{codigo}", Name = "GetItensEstoqueByCodigo")]
@@ -105,6 +110,18 @@ namespace Backend.Controllers
         {
             var proximoLote = await _service.GerarProximoLoteAsync(itemId);
             return Ok(proximoLote);
+        }
+
+        [HttpPost("entradas")]
+        [ProducesResponseType(typeof(ItemEstoqueDTO), StatusCodes.Status201Created)]
+        public async Task<IActionResult> RegistrarEntrada([FromBody] EntradaEstoqueDTO dto, CancellationToken cancellationToken)
+        {
+            var lote = await _entradaService.RegistrarEntradaAsync(dto, cancellationToken);
+            ItemEstoqueDTO itemCriado = lote;
+            return CreatedAtRoute(
+                "GetItemEstoqueByLote",
+                new { codigo = itemCriado.Codigo, lote = itemCriado.Lote },
+                itemCriado);
         }
 
         [HttpPost]

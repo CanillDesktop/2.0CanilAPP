@@ -1,22 +1,17 @@
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import {
   Box,
-  Collapse,
   FormControl,
-  FormControlLabel,
   Grid,
   InputLabel,
   MenuItem,
   Select,
-  Switch,
   TextField,
-  Typography,
 } from '@mui/material';
 import type { FormEvent } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarraAcoesFormulario } from '../../../shared/components/cadastro/BarraAcoesFormulario';
 import { PainelSucessoCadastro } from '../../../shared/components/cadastro/PainelSucessoCadastro';
@@ -25,39 +20,37 @@ import { PainelErro } from '../../../shared/components/PainelErro';
 import type { EstadoNavegacaoListagem } from '../../../shared/types/navegacaoListagem';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import { SeletorUnidadeMedida } from '../../unidades-medida/components/SeletorUnidadeMedida';
+import { useUnidadesMedida } from '../../unidades-medida/hooks/useUnidadesMedida';
 import { OPCOES_CATEGORIA_PRODUTO_FILTRO } from '../constants/opcoesCategoriaProduto';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
 import type { ProdutoCadastroDto } from '../types/tiposProdutos';
 
-const PASSOS = ['Identificação', 'Estoque e configurações'] as const;
-
-const OPCOES_UNIDADE = [
-  { valor: 1, rotulo: 'Unidade' },
-  { valor: 2, rotulo: 'Kg' },
-  { valor: 3, rotulo: 'Litro' },
-];
+const PASSOS = ['Identificação', 'Configurações'] as const;
 
 const estadoInicialFormulario = () => ({
   descricaoSimples: '',
   descricaoDetalhada: '',
-  unidade: 1,
+  unidade: 0,
   categoria: 1,
-  cadastrarEstoqueInicial: true,
-  quantidade: 0,
-  dataEntrega: new Date().toISOString().slice(0, 10),
-  nfe: '',
-  dataValidade: '',
   nivelMinimoEstoque: 0,
 });
 
 export function FormularioProduto() {
   const navegar = useNavigate();
   const { criar, carregando, erro, errosValidacao } = useMutacaoProduto();
+  const { itens: unidades } = useUnidadesMedida('produto');
   const estilos = useEstilosListagem();
   const sxCampo = estilosCampoFormulario(estilos.cores);
 
   const [passoAtual, setPassoAtual] = useState(0);
   const [form, setForm] = useState(estadoInicialFormulario);
+
+  useEffect(() => {
+    if (form.unidade <= 0 && unidades[0]) {
+      setForm((p) => ({ ...p, unidade: unidades[0].id }));
+    }
+  }, [unidades, form.unidade]);
   const [sucesso, setSucesso] = useState<{ nome: string } | null>(null);
 
   const passoIdentificacaoValido = useMemo(
@@ -71,15 +64,9 @@ export function FormularioProduto() {
     [form.descricaoSimples, form.descricaoDetalhada, form.unidade, form.categoria],
   );
 
-  const passoEstoqueValido = useMemo(() => {
-    if (!Number.isFinite(form.nivelMinimoEstoque) || form.nivelMinimoEstoque < 0) return false;
-    if (!form.cadastrarEstoqueInicial) return true;
-    return (
-      Number.isFinite(form.quantidade) &&
-      form.quantidade > 0 &&
-      form.dataEntrega.trim().length > 0
-    );
-  }, [form]);
+  const passoConfigValido = useMemo(() => {
+    return Number.isFinite(form.nivelMinimoEstoque) && form.nivelMinimoEstoque >= 0;
+  }, [form.nivelMinimoEstoque]);
 
   function montarDto(): ProdutoCadastroDto {
     return {
@@ -87,17 +74,17 @@ export function FormularioProduto() {
       descricaoDetalhada: form.descricaoDetalhada,
       unidade: form.unidade,
       categoria: form.categoria,
-      quantidade: form.cadastrarEstoqueInicial ? form.quantidade : 0,
-      dataEntrega: new Date(form.dataEntrega).toISOString(),
-      nfe: form.nfe,
-      dataValidade: form.dataValidade ? new Date(form.dataValidade).toISOString() : null,
+      quantidade: 0,
+      dataEntrega: new Date().toISOString(),
+      nfe: '',
+      dataValidade: null,
       nivelMinimoEstoque: form.nivelMinimoEstoque,
     };
   }
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
-    if (!passoEstoqueValido || carregando) return;
+    if (!passoConfigValido || carregando) return;
 
     const resultado = await criar(montarDto());
     if (!resultado.ok) return;
@@ -121,7 +108,7 @@ export function FormularioProduto() {
   return (
     <LayoutFormularioCadastro
       titulo="Novo produto"
-      subtitulo="Passo a passo: identifique o item e configure estoque inicial, se necessário."
+      subtitulo="Cadastre a ficha do produto. Entradas de estoque são feitas depois, em Estoque → Entrada."
       rotaLista="/produtos"
       rotuloLista="Produtos"
       icone={<Inventory2OutlinedIcon />}
@@ -191,129 +178,36 @@ export function FormularioProduto() {
                   </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <FormControl fullWidth sx={sxCampo}>
-                    <InputLabel id="unidade-label">Unidade</InputLabel>
-                    <Select
-                      labelId="unidade-label"
-                      label="Unidade"
-                      value={form.unidade}
-                      onChange={(e) => setForm((p) => ({ ...p, unidade: Number(e.target.value) }))}
-                    >
-                      {OPCOES_UNIDADE.map((opcao) => (
-                        <MenuItem key={opcao.valor} value={opcao.valor}>
-                          {opcao.rotulo}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <SeletorUnidadeMedida
+                    tipo="produto"
+                    value={form.unidade}
+                    onChange={(id) => setForm((p) => ({ ...p, unidade: id }))}
+                    sx={sxCampo}
+                  />
                 </Grid>
               </Grid>
             </SecaoFormularioCadastro>
           ) : (
-            <>
-              <SecaoFormularioCadastro
-                titulo="Estoque inicial"
-                descricao="Opcional — você pode registrar o primeiro lote agora ou depois na ficha do item."
-                variante="estoque"
-                icone={<WarehouseOutlinedIcon />}
-                acaoCabecalho={
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={form.cadastrarEstoqueInicial}
-                        onChange={(e) => setForm((p) => ({ ...p, cadastrarEstoqueInicial: e.target.checked }))}
-                      />
-                    }
-                    label="Cadastrar estoque inicial"
-                    sx={{ color: estilos.cores.textPrimary, m: 0 }}
+            <SecaoFormularioCadastro
+              titulo="Configurações"
+              descricao="Alertas de estoque baixo usam este mínimo como referência na unidade ativa."
+              variante="config"
+              icone={<SettingsOutlinedIcon />}
+            >
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Nível mínimo de estoque"
+                    value={form.nivelMinimoEstoque}
+                    onChange={(e) => setForm((p) => ({ ...p, nivelMinimoEstoque: Number(e.target.value) }))}
+                    slotProps={{ htmlInput: { min: 0 } }}
+                    sx={sxCampo}
                   />
-                }
-              >
-                <Collapse in={form.cadastrarEstoqueInicial} unmountOnExit>
-                  <Grid container spacing={2}>
-                    <Grid size={12}>
-                      <Typography variant="body2" sx={{ color: estilos.cores.textMuted }}>
-                        O número do lote é gerado automaticamente pelo sistema ao salvar.
-                      </Typography>
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        required={form.cadastrarEstoqueInicial}
-                        disabled={!form.cadastrarEstoqueInicial}
-                        type="number"
-                        label="Quantidade inicial"
-                        value={form.quantidade}
-                        onChange={(e) => setForm((p) => ({ ...p, quantidade: Number(e.target.value) }))}
-                        slotProps={{ htmlInput: { min: 1 } }}
-                        sx={sxCampo}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        required={form.cadastrarEstoqueInicial}
-                        disabled={!form.cadastrarEstoqueInicial}
-                        type="date"
-                        label="Data de entrada"
-                        value={form.dataEntrega}
-                        onChange={(e) => setForm((p) => ({ ...p, dataEntrega: e.target.value }))}
-                        slotProps={{ inputLabel: { shrink: true } }}
-                        sx={sxCampo}
-                      />
-                    </Grid>
-                    <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        fullWidth
-                        disabled={!form.cadastrarEstoqueInicial}
-                        type="date"
-                        label="Data de validade"
-                        value={form.dataValidade}
-                        onChange={(e) => setForm((p) => ({ ...p, dataValidade: e.target.value }))}
-                        slotProps={{ inputLabel: { shrink: true } }}
-                        sx={sxCampo}
-                      />
-                    </Grid>
-                    <Grid size={12}>
-                      <TextField
-                        fullWidth
-                        disabled={!form.cadastrarEstoqueInicial}
-                        label="Documento (NF)"
-                        value={form.nfe}
-                        onChange={(e) => setForm((p) => ({ ...p, nfe: e.target.value }))}
-                        sx={sxCampo}
-                      />
-                    </Grid>
-                  </Grid>
-                </Collapse>
-                {!form.cadastrarEstoqueInicial ? (
-                  <Typography variant="body2" sx={{ color: estilos.cores.textMuted }}>
-                    O produto será criado sem lote. Registre estoque depois na ficha do item.
-                  </Typography>
-                ) : null}
-              </SecaoFormularioCadastro>
-
-              <SecaoFormularioCadastro
-                titulo="Configurações"
-                descricao="Alertas de estoque baixo usam este mínimo como referência."
-                variante="config"
-                icone={<SettingsOutlinedIcon />}
-              >
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Nível mínimo de estoque"
-                      value={form.nivelMinimoEstoque}
-                      onChange={(e) => setForm((p) => ({ ...p, nivelMinimoEstoque: Number(e.target.value) }))}
-                      slotProps={{ htmlInput: { min: 0 } }}
-                      sx={sxCampo}
-                    />
-                  </Grid>
                 </Grid>
-              </SecaoFormularioCadastro>
-            </>
+              </Grid>
+            </SecaoFormularioCadastro>
           )}
 
           <BarraAcoesFormulario
@@ -321,7 +215,7 @@ export function FormularioProduto() {
             totalPassos={PASSOS.length}
             carregando={carregando}
             podeAvancar={passoIdentificacaoValido}
-            podeSalvar={passoEstoqueValido}
+            podeSalvar={passoConfigValido}
             rotuloSalvar="Criar produto"
             onCancelar={() => navegar('/produtos')}
             onPassoAnterior={() => setPassoAtual((p) => Math.max(0, p - 1))}

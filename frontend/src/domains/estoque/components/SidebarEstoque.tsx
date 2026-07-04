@@ -1,9 +1,12 @@
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
+import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
+import InputOutlinedIcon from '@mui/icons-material/InputOutlined';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicationOutlinedIcon from '@mui/icons-material/MedicationOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import StraightenOutlinedIcon from '@mui/icons-material/StraightenOutlined';
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined';
 import type { ReactElement } from 'react';
 import {
@@ -16,8 +19,11 @@ import {
   Toolbar,
 } from '@mui/material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { podeGerenciarCatalogoUnidadesMedida } from '../../usuarios/utils/exibirPerfilUsuario';
 import type { PapelUsuarioApp } from '../../../shared/types/papelUsuario';
+import type { UsuarioSessao } from '../../../shared/types/usuarioSessao';
 
 export const larguraSidebar = 252;
 
@@ -26,6 +32,8 @@ type ItemNavegacao = {
   rota: string;
   icone: ReactElement;
   papeis?: PapelUsuarioApp[];
+  /** Exige permissão de catálogo de unidades de medida (ou admin). */
+  exigeCatalogoMedidas?: boolean;
 };
 
 const itensNavegacao: ItemNavegacao[] = [
@@ -34,12 +42,24 @@ const itensNavegacao: ItemNavegacao[] = [
   { titulo: 'Medicamentos', rota: '/medicamentos', icone: <MedicationOutlinedIcon /> },
   { titulo: 'Insumos', rota: '/insumos', icone: <ScienceOutlinedIcon /> },
   { titulo: 'Histórico retiradas', rota: '/estoque/historico-retiradas', icone: <HistoryOutlinedIcon /> },
+  { titulo: 'Transferências', rota: '/estoque/transferencias', icone: <SwapHorizOutlinedIcon /> },
   { titulo: 'Estoque', rota: '/estoque', icone: <WarehouseOutlinedIcon /> },
   { titulo: 'Usuários', rota: '/usuarios', icone: <PeopleOutlinedIcon /> },
+  { titulo: 'Permissões', rota: '/usuarios/permissoes', icone: <InputOutlinedIcon />, papeis: ['ADMIN'] },
+  {
+    titulo: 'Medidas dos itens',
+    rota: '/unidades-medida',
+    icone: <StraightenOutlinedIcon />,
+    exigeCatalogoMedidas: true,
+  },
 ];
 
-function itensVisiveisParaPapel(papel: PapelUsuarioApp): ItemNavegacao[] {
-  return itensNavegacao.filter((item) => !item.papeis || item.papeis.includes(papel));
+function itensVisiveisParaUsuario(papel: PapelUsuarioApp, usuario: UsuarioSessao | null): ItemNavegacao[] {
+  return itensNavegacao.filter((item) => {
+    if (item.papeis && !item.papeis.includes(papel)) return false;
+    if (item.exigeCatalogoMedidas && !podeGerenciarCatalogoUnidadesMedida(usuario)) return false;
+    return true;
+  });
 }
 
 type SidebarEstoqueProps = {
@@ -58,7 +78,8 @@ function ConteudoSidebar({
   const location = useLocation();
   const navigate = useNavigate();
   const { cores } = useTemaApp();
-  const itens = itensVisiveisParaPapel(papelUsuario);
+  const { usuario } = useAutenticacao();
+  const itens = itensVisiveisParaUsuario(papelUsuario, usuario);
 
   const itemAtivoMaisEspecifico = [...itens]
     .filter((i) => location.pathname === i.rota || location.pathname.startsWith(`${i.rota}/`))

@@ -2,6 +2,7 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { larguraConteudoPagina, paddingPaginaDetalhe } from '../../../shared/theme/estilosLayoutPagina';
 import { CabecalhoDetalheItem } from '../../../shared/components/detalheItem/CabecalhoDetalheItem';
 import { InfoCardDetalheItem } from '../../../shared/components/detalheItem/InfoCardDetalheItem';
@@ -12,22 +13,13 @@ import { PainelErro } from '../../../shared/components/PainelErro';
 import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
 import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
 import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
+import { useUnidadesMedida } from '../../unidades-medida/hooks/useUnidadesMedida';
 import { OPCOES_CATEGORIA_PRODUTO_FILTRO } from '../constants/opcoesCategoriaProduto';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
 import { useProdutoDetalhe } from '../hooks/useProdutos';
 
-const OPCOES_UNIDADE: Record<number, string> = {
-  1: 'Unidade',
-  2: 'Kg',
-  3: 'Litro',
-};
-
 function rotuloCategoria(categoria: number) {
   return OPCOES_CATEGORIA_PRODUTO_FILTRO.find((o) => o.valor === categoria)?.rotulo ?? `Categoria ${categoria}`;
-}
-
-function rotuloUnidade(unidade: number) {
-  return OPCOES_UNIDADE[unidade] ?? String(unidade);
 }
 
 export function PaginaDetalheProduto() {
@@ -38,14 +30,17 @@ export function PaginaDetalheProduto() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { cores } = useTemaApp();
+  const { unidadeAtivaId } = useUnidadeEstoque();
+  const { rotuloPorId } = useUnidadesMedida(undefined, false);
 
   const { estado, carregar } = useProdutoDetalhe(Number.isFinite(id) ? id : undefined);
   const { excluir, carregando, erro, errosValidacao } = useMutacaoProduto();
   const [erroRetirada, setErroRetirada] = useState<string | null>(null);
 
   useEffect(() => {
+    if (unidadeAtivaId == null) return;
     void carregar();
-  }, [carregar, location.search]);
+  }, [carregar, location.search, unidadeAtivaId]);
 
   const p = estado.dados;
 
@@ -60,7 +55,7 @@ export function PaginaDetalheProduto() {
 
   async function aoExcluir() {
     if (!Number.isFinite(id)) return;
-    if (!window.confirm('Confirma excluir este produto?')) return;
+    if (!window.confirm('Excluir este produto apenas da unidade atual? As outras unidades não serão alteradas.')) return;
     const resultado = await excluir(id);
     if (resultado.ok) navigate('/produtos');
   }
@@ -125,8 +120,8 @@ export function PaginaDetalheProduto() {
             campos={[
               { rotulo: 'Código', valor: p.codigo },
               { rotulo: 'Categoria', valor: rotuloCategoria(p.categoria) },
-              { rotulo: 'Unidade', valor: rotuloUnidade(p.unidade) },
-              { rotulo: 'Nível mínimo', valor: p.itemNivelEstoque.nivelMinimoEstoque },
+              { rotulo: 'Unidade', valor: p.unidadeRotulo ?? rotuloPorId(p.unidade) },
+              { rotulo: 'Nível mínimo', valor: p.itemNivelEstoque?.nivelMinimoEstoque ?? 0 },
             ]}
           />
 

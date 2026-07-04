@@ -1,19 +1,31 @@
 import { obterClienteHttp } from '../../../infrastructure/http/clienteHttpSingleton';
 import { montarQueryString } from '../../../shared/utils/montarQueryString';
+import { HEADER_UNIDADE_ESTOQUE } from '../constants/unidadesEstoque';
 import type {
   DashboardAlertasFiltroDto,
   DashboardAlertasPaginadosDto,
   DashboardResumoDto,
 } from '../types/tiposDashboard';
 
-export async function obterResumoDashboardApi(): Promise<DashboardResumoDto> {
+function headersUnidade(unidadeEstoqueId?: number | null) {
+  return unidadeEstoqueId != null
+    ? { [HEADER_UNIDADE_ESTOQUE]: String(unidadeEstoqueId) }
+    : undefined;
+}
+
+export async function obterResumoDashboardApi(
+  unidadeEstoqueId?: number | null,
+): Promise<DashboardResumoDto> {
   const cliente = obterClienteHttp();
-  const { data } = await cliente.get<DashboardResumoDto>('/api/Dashboard/resumo');
+  const { data } = await cliente.get<DashboardResumoDto>('/api/Dashboard/resumo', {
+    headers: headersUnidade(unidadeEstoqueId),
+  });
   return data;
 }
 
 export async function listarAlertasDashboardApi(
   filtro: DashboardAlertasFiltroDto,
+  unidadeEstoqueId?: number | null,
 ): Promise<DashboardAlertasPaginadosDto> {
   const cliente = obterClienteHttp();
   const params: Record<string, string | number | undefined> = {
@@ -24,6 +36,8 @@ export async function listarAlertasDashboardApi(
     pageSize: filtro.pageSize ?? 5,
   };
   const qs = montarQueryString(params);
-  const { data } = await cliente.get<DashboardAlertasPaginadosDto>(`/api/Dashboard/alertas${qs}`);
+  const { data } = await cliente.get<DashboardAlertasPaginadosDto>(`/api/Dashboard/alertas${qs}`, {
+    headers: headersUnidade(unidadeEstoqueId),
+  });
   return data;
 }

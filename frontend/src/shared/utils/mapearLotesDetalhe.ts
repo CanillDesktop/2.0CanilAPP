@@ -8,8 +8,8 @@ function compararValidade(a: LoteDetalhe, b: LoteDetalhe): number {
   return new Date(a.validade).getTime() - new Date(b.validade).getTime();
 }
 
-export function mapearItensEstoqueParaLotes(idItem: number, originais: ItemEstoqueDto[]): LoteDetalhe[] {
-  return originais
+export function mapearItensEstoqueParaLotes(idItem: number, originais?: ItemEstoqueDto[] | null): LoteDetalhe[] {
+  return (originais ?? [])
     .map((lote, idx) => ({
       id: `${idItem}-${lote.lote ?? idx}`,
       codigo: lote.lote ?? '',

@@ -9,6 +9,7 @@ import { MSG_ERRO } from '../constants/mensagensErroUsuario';
 import { SidebarEstoque } from '../../domains/estoque/components/SidebarEstoque';
 import { mapearPapelUsuario } from '../types/papelUsuario';
 import { BotaoAlternarTema } from './BotaoAlternarTema';
+import { SeletorUnidadeEstoque } from './SeletorUnidadeEstoque';
 
 export function AppShellAutenticado() {
   const navigate = useNavigate();
@@ -50,7 +51,8 @@ export function AppShellAutenticado() {
           <MenuOutlinedIcon />
         </IconButton>
 
-        <Stack direction="row" sx={{ alignItems: 'center', gap: 0.5 }}>
+        <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
+          <SeletorUnidadeEstoque compacto />
           <BotaoAlternarTema variante="icone" />
           <Button
             variant="outlined"
@@ -75,6 +77,9 @@ export function AppShellAutenticado() {
         component="main"
         sx={{
           flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
           width: '100%',
           maxWidth: '100%',
           boxSizing: 'border-box',

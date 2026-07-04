@@ -16,13 +16,16 @@ public class DashboardService : IDashboardService
 {
     private readonly IEstoqueConsultaRepository _estoqueConsultaRepository;
     private readonly CanilAppDbContext _context;
+    private readonly IUnidadeEstoqueContextService _unidadeContext;
 
     public DashboardService(
         IEstoqueConsultaRepository estoqueConsultaRepository,
-        CanilAppDbContext context)
+        CanilAppDbContext context,
+        IUnidadeEstoqueContextService unidadeContext)
     {
         _estoqueConsultaRepository = estoqueConsultaRepository;
         _context = context;
+        _unidadeContext = unidadeContext;
     }
 
     public async Task<DashboardResumoDTO> ObterResumoAsync(CancellationToken cancellationToken = default)
@@ -61,33 +64,39 @@ public class DashboardService : IDashboardService
         var incluirMedicamentos = string.IsNullOrEmpty(origemNormalizada) || origemNormalizada == "medicamento";
         var incluirInsumos = string.IsNullOrEmpty(origemNormalizada) || origemNormalizada == "insumo";
 
+        var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync(cancellationToken);
+        await _unidadeContext.GarantirConsultaAsync(idUnidade, cancellationToken);
+
         var alertas = new List<DashboardAlertaItemDTO>();
 
         if (incluirProdutos)
         {
             var produtos = await FiltrarAlertasAsync(
-                EstoqueConsultaQueryable.Base(_context.Produtos.AsQueryable()),
+                EstoqueConsultaQueryable.Base(_context.Produtos.AsQueryable(), idUnidade),
                 tipoNormalizado,
+                idUnidade,
                 cancellationToken);
-            alertas.AddRange(produtos.Select(p => ParaAlerta(EstoqueLinhaMapper.ParaDto(p, EstoqueOrigem.Produto), "produto")));
+            alertas.AddRange(produtos.Select(p => ParaAlerta(EstoqueLinhaMapper.ParaDto(p, EstoqueOrigem.Produto, idUnidade), "produto")));
         }
 
         if (incluirMedicamentos)
         {
             var medicamentos = await FiltrarAlertasAsync(
-                EstoqueConsultaQueryable.Base(_context.Medicamentos.AsQueryable()),
+                EstoqueConsultaQueryable.Base(_context.Medicamentos.AsQueryable(), idUnidade),
                 tipoNormalizado,
+                idUnidade,
                 cancellationToken);
-            alertas.AddRange(medicamentos.Select(m => ParaAlerta(EstoqueLinhaMapper.ParaDto(m, EstoqueOrigem.Medicamento), "medicamento")));
+            alertas.AddRange(medicamentos.Select(m => ParaAlerta(EstoqueLinhaMapper.ParaDto(m, EstoqueOrigem.Medicamento, idUnidade), "medicamento")));
         }
 
         if (incluirInsumos)
         {
             var insumos = await FiltrarAlertasAsync(
-                EstoqueConsultaQueryable.Base(_context.Insumos.AsQueryable()),
+                EstoqueConsultaQueryable.Base(_context.Insumos.AsQueryable(), idUnidade),
                 tipoNormalizado,
+                idUnidade,
                 cancellationToken);
-            alertas.AddRange(insumos.Select(i => ParaAlerta(EstoqueLinhaMapper.ParaDto(i, EstoqueOrigem.Insumo), "insumo")));
+            alertas.AddRange(insumos.Select(i => ParaAlerta(EstoqueLinhaMapper.ParaDto(i, EstoqueOrigem.Insumo, idUnidade), "insumo")));
         }
 
         if (!string.IsNullOrEmpty(termoBusca))
@@ -121,23 +130,23 @@ public class DashboardService : IDashboardService
     private static async Task<List<T>> FiltrarAlertasAsync<T>(
         IQueryable<T> query,
         string tipo,
+        int idUnidadeEstoque,
         CancellationToken cancellationToken)
         where T : ItemComEstoqueBaseModel
     {
-        if (tipo == "abaixo_minimo")
-        {
-            query = query.Where(x =>
-                x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)
-                < (x.ItemNivelEstoque != null ? x.ItemNivelEstoque.NivelMinimoEstoque : 0));
-        }
-        else
-        {
-            query = EstoqueConsultaQueryable.AplicarStatusOperacional(
+        query = tipo == "abaixo_minimo"
+            ? EstoqueConsultaQueryable.AplicarStatusOperacional(
                 query,
-                EstoqueStatusOperacional.ProximoVencimento);
-        }
+                EstoqueStatusOperacional.Baixo,
+                idUnidadeEstoque)
+            : EstoqueConsultaQueryable.AplicarStatusOperacional(
+                query,
+                EstoqueStatusOperacional.ProximoVencimento,
+                idUnidadeEstoque);
 
-        return await query.AsNoTracking().ToListAsync(cancellationToken);
+        return await EstoqueConsultaQueryable.ComNavegacoesUnidade(query, idUnidadeEstoque)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 
     private static DashboardAlertaItemDTO ParaAlerta(EstoqueLinhaLeituraDTO dto, string origem) =>

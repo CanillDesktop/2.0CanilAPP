@@ -8,6 +8,7 @@ public class ItemEstoqueModel : BaseModel
     private string? _lote = string.Empty;
 
     public string Codigo { get; set; } = string.Empty;
+    public int IdUnidadeEstoque { get; set; } = UnidadeEstoqueIds.Secretaria;
     public string? Lote
     {
         get => _lote;
@@ -33,6 +34,9 @@ public class ItemEstoqueModel : BaseModel
     [JsonIgnore]
     public ItemComEstoqueBaseModel? ItemBase { get; set; }
 
+    [JsonIgnore]
+    public UnidadeEstoqueModel? UnidadeEstoque { get; set; }
+
 
     public static implicit operator ItemEstoqueDTO(ItemEstoqueModel model)
     {
@@ -44,7 +48,8 @@ public class ItemEstoqueModel : BaseModel
             model.Quantidade,
             model.DataEntrega,
             model.NFe,
-            model.DataValidade
+            model.DataValidade,
+            model.IdUnidadeEstoque
         );
     }
 
@@ -58,7 +63,8 @@ public class ItemEstoqueModel : BaseModel
             Quantidade = dto.Quantidade,
             DataEntrega = dto.DataEntrega,
             NFe = dto.NFe,
-            DataValidade = dto.DataValidade
+            DataValidade = dto.DataValidade,
+            IdUnidadeEstoque = dto.IdUnidadeEstoque,
         };
     }
 }

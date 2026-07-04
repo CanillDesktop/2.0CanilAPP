@@ -1,5 +1,6 @@
 using Backend.Context;
 using Backend.DTOs.Usuario;
+using Backend.Models.Enums;
 using Backend.Models.Usuarios;
 using Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -11,18 +12,75 @@ public class UsuariosRepository : BaseCRUDRepository<UsuariosModel>, IUsuariosRe
 {
     public UsuariosRepository(CanilAppDbContext context) : base(context) { }
 
-    public async Task<UsuariosModel?> GetByEmailAsync(string email)
+    public new async Task<UsuariosModel?> GetByIdAsync(int id)
     {
         return await _context.Usuarios
-            .FirstOrDefaultAsync(u => u.Email == email);
+            .FirstOrDefaultAsync(u => u.Id == id && u.Status == StatusUsuario.Ativo);
+    }
+
+    public async Task<UsuariosModel?> GetByIdGestaoAsync(int id)
+    {
+        return await _context.Usuarios
+            .FirstOrDefaultAsync(u => u.Id == id && u.Status != StatusUsuario.Excluido);
+    }
+
+    public async Task<UsuariosModel?> GetByIdExcluidoAsync(int id)
+    {
+        return await _context.Usuarios
+            .FirstOrDefaultAsync(u => u.Id == id && u.Status == StatusUsuario.Excluido);
+    }
+
+    public async Task<(IReadOnlyList<UsuariosModel> Items, int TotalCount)> ListarPaginadoAsync(
+        StatusUsuario[] statusesPermitidos,
+        string? busca,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Usuarios.AsNoTracking()
+            .Where(u => statusesPermitidos.Contains(u.Status));
+
+        if (!string.IsNullOrWhiteSpace(busca))
+        {
+            var termo = busca.Trim().ToLowerInvariant();
+            query = query.Where(u =>
+                u.Email.ToLower().Contains(termo)
+                || u.PrimeiroNome.ToLower().Contains(termo)
+                || (u.Sobrenome != null && u.Sobrenome.ToLower().Contains(termo)));
+        }
+
+        var total = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .OrderBy(u => u.PrimeiroNome)
+            .ThenBy(u => u.Sobrenome)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, total);
+    }
+
+    public async Task<UsuarioSessaoSnapshot?> ObterSnapshotSessaoAsync(int id)
+    {
+        return await _context.Usuarios
+            .AsNoTracking()
+            .Where(u => u.Id == id)
+            .Select(u => new UsuarioSessaoSnapshot(u.Status, u.TokenVersion))
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<UsuariosModel?> GetByEmailAsync(string email)
+    {
+        var emailNormalizado = email.Trim().ToLowerInvariant();
+        return await _context.Usuarios
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == emailNormalizado);
     }
 
     public async Task<int> CountAsync(Expression<Func<UsuariosModel, bool>>? predicate = null)
     {
         if (predicate != null)
-        {
             return await _context.Usuarios.CountAsync(predicate);
-        }
 
         return await _context.Usuarios.CountAsync();
     }
@@ -31,7 +89,7 @@ public class UsuariosRepository : BaseCRUDRepository<UsuariosModel>, IUsuariosRe
         CancellationToken cancellationToken = default)
     {
         return await _context.Usuarios.AsNoTracking()
-            .Where(u => !u.IsDeleted)
+            .Where(u => u.Status == StatusUsuario.Ativo)
             .OrderBy(u => u.PrimeiroNome)
             .ThenBy(u => u.Sobrenome)
             .Select(u => new UsuarioResumoFiltroDTO
@@ -43,15 +101,5 @@ public class UsuariosRepository : BaseCRUDRepository<UsuariosModel>, IUsuariosRe
                         : (u.PrimeiroNome + " " + u.Sobrenome!).Trim(),
             })
             .ToListAsync(cancellationToken);
-    }
-
-    public async Task<IEnumerable<UsuariosModel>> ListarTodosIncluindoInativosAsync()
-    {
-        return await _context.Usuarios.AsNoTracking().ToListAsync();
-    }
-
-    public async Task<UsuariosModel?> GetByIdIncluindoInativosAsync(int id)
-    {
-        return await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id);
     }
 }

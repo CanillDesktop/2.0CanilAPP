@@ -1,6 +1,7 @@
-using Backend.Context;
 using Backend.Data;
+using Backend.Context;
 using Backend.Exceptions;
+using Backend.Middleware;
 using Backend.Models;
 using Backend.Repositories;
 using Backend.Repositories.Interfaces;
@@ -228,6 +229,12 @@ public class Program
             builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             builder.Services.AddScoped<IUserSessionService, UserSessionService>();
             builder.Services.AddScoped<ICodigoAcessoService, CodigoAcessoService>();
+            builder.Services.AddScoped<IUnidadeEstoqueContextService, UnidadeEstoqueContextService>();
+            builder.Services.AddScoped<IUnidadeMedidaRepository, UnidadeMedidaRepository>();
+            builder.Services.AddScoped<IUnidadeMedidaService, UnidadeMedidaService>();
+            builder.Services.AddScoped<IEntradaEstoqueService, EntradaEstoqueService>();
+            builder.Services.AddScoped<ITransferenciaEstoqueService, TransferenciaEstoqueService>();
+            builder.Services.AddScoped<ITransferenciaEstoqueExportService, TransferenciaEstoqueExportService>();
 
             builder.Services.AddHttpContextAccessor();
 
@@ -241,6 +248,7 @@ public class Program
                 try
                 {
                     db.Database.Migrate();
+                    UnidadeEstoqueSeed.GarantirVinculosUsuariosAsync(db).GetAwaiter().GetResult();
                 }
                 catch (Exception ex)
                 {
@@ -299,6 +307,7 @@ public class Program
             app.UseCors("General");
             app.UseRateLimiter();
             app.UseAuthentication();
+            app.UseTokenVersionValidation();
             app.UseAuthorization();
             app.MapControllers();
 

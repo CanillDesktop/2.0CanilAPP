@@ -30,6 +30,7 @@ import {
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { estilosCampoFiltro } from '../../../shared/theme/estilosCampos';
 import { MARCA } from '../../../shared/theme/tokensTema';
 import { useBuscaCategoria, type CategoriaBusca, type FiltrosAvancadosBusca } from '../hooks/useBuscaCategoria';
@@ -283,6 +284,7 @@ function EmptyPreview() {
 
 export function BuscaCategoriaTabs({ onSelecionarItem }: Props) {
   const { cores } = useTemaApp();
+  const { unidadeAtivaId, contexto } = useUnidadeEstoque();
   const sxCampoFiltro = estilosCampoFiltro(cores);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -305,6 +307,20 @@ export function BuscaCategoriaTabs({ onSelecionarItem }: Props) {
     termoNomeDebounced,
   } = useBuscaCategoria(selectedTab, paginaAtual, ITENS_POR_PAGINA_BUSCA, filtrosAvancados);
 
+  const unidadeAtiva = useMemo(() => {
+    const unidades = contexto?.unidadesDisponiveis ?? [];
+    return (
+      unidades.find((u) => u.id === unidadeAtivaId) ??
+      (contexto && unidadeAtivaId != null
+        ? {
+            id: contexto.unidadeAtivaId,
+            nome: contexto.unidadeAtivaNome,
+            sigla: contexto.unidadeAtivaSigla,
+          }
+        : null)
+    );
+  }, [contexto, unidadeAtivaId]);
+
   useEffect(() => {
     setSearchTerm('');
     setSelectedItemId(null);
@@ -315,7 +331,7 @@ export function BuscaCategoriaTabs({ onSelecionarItem }: Props) {
 
   useEffect(() => {
     setPaginaAtual(1);
-  }, [termoNomeDebounced, filtrosAvancados]);
+  }, [termoNomeDebounced, filtrosAvancados, unidadeAtivaId]);
 
   const temFiltroAvancadoAtivo = useMemo(
     () =>
@@ -363,10 +379,11 @@ export function BuscaCategoriaTabs({ onSelecionarItem }: Props) {
     listaTopoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [paginaSegura]);
 
-  const mostrarVazio =
-    !carregando &&
-    resultados.length === 0 &&
-    (Boolean(termoNomeDebounced) || temFiltroAvancadoAtivo);
+  const mostrarVazio = !carregando && resultados.length === 0;
+  const mensagemVazio =
+    termoNomeDebounced || temFiltroAvancadoAtivo
+      ? 'Nenhum item encontrado nesta unidade.'
+      : 'Nenhum item com estoque nesta unidade.';
   const itemSelecionado = resultados.find((item) => item.id === selectedItemId) ?? null;
 
   function categoriaLabel(categoria: LinhaOperacionalEstoque['origem']) {
@@ -555,7 +572,7 @@ export function BuscaCategoriaTabs({ onSelecionarItem }: Props) {
           ) : null}
           {mostrarVazio ? (
             <Typography variant="body2" sx={{ color: cores.textMuted, py: 1 }}>
-              Nenhum item encontrado.
+              {mensagemVazio}
             </Typography>
           ) : (
             resultados.map((item) => {
@@ -683,9 +700,17 @@ export function BuscaCategoriaTabs({ onSelecionarItem }: Props) {
         <Typography variant="h6" sx={{ fontWeight: 700, color: cores.textPrimary, textAlign: 'center', mb: 0.5 }}>
           Busca por categoria
         </Typography>
+        {unidadeAtiva ? (
+          <Typography
+            variant="caption"
+            sx={{ color: cores.focus, display: 'block', textAlign: 'center', fontWeight: 700, mb: 0.5 }}
+          >
+            Unidade: {unidadeAtiva.sigla} — {unidadeAtiva.nome}
+          </Typography>
+        ) : null}
         {mostrarSubtitulo ? (
           <Typography variant="caption" sx={{ color: cores.textMuted, display: 'block', textAlign: 'center' }}>
-            Selecione a categoria e pesquise pelo nome.
+            Itens com estoque na unidade atual. Selecione a categoria e pesquise pelo nome.
           </Typography>
         ) : null}
       </Box>

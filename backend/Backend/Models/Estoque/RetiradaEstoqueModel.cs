@@ -14,6 +14,8 @@ public class RetiradaEstoqueModel
     public string NomeOuDescricaoSimples { get; set; } = string.Empty;
     public int Quantidade { get; set; }
     public string Lote { get; set; } = string.Empty;
+    public int IdUnidadeEstoque { get; set; } = UnidadeEstoqueIds.Secretaria;
+    public int? IdMovimentacao { get; set; }
 
     /// <summary>Texto informado sobre quem retira (instantâneo histórico; pode diferir do cadastro atual).</summary>
     public string De { get; set; } = string.Empty;

@@ -1,6 +1,8 @@
 import axios, { type AxiosInstance } from 'axios';
+import { HEADER_UNIDADE_ESTOQUE } from '../../domains/estoque/constants/unidadesEstoque';
 import { urlBaseApi } from '../config/variaveisAmbiente';
 import { obterAccessToken } from '../../shared/services/armazenamentoSessao';
+import { obterUnidadeAtivaId } from '../../shared/services/armazenamentoUnidadeEstoque';
 
 /**
  * Fábrica do cliente HTTP centralizado (Axios).
@@ -20,6 +22,14 @@ export function criarClienteHttp(): AxiosInstance {
     const token = obterAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Respeita unidade já definida na chamada; senão usa a unidade ativa persistida.
+    const headerUnidade = config.headers.get?.(HEADER_UNIDADE_ESTOQUE) ?? config.headers[HEADER_UNIDADE_ESTOQUE];
+    if (headerUnidade == null || headerUnidade === '') {
+      const unidadeId = obterUnidadeAtivaId();
+      if (unidadeId != null) {
+        config.headers[HEADER_UNIDADE_ESTOQUE] = String(unidadeId);
+      }
     }
     return config;
   });

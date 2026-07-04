@@ -98,6 +98,9 @@ namespace Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("IdUnidadeEstoque")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Lote")
                         .HasColumnType("TEXT");
 
@@ -134,9 +137,11 @@ namespace Backend.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("Id", "Lote");
+                    b.HasKey("Id", "IdUnidadeEstoque", "Lote");
 
-                    b.HasIndex("Lote")
+                    b.HasIndex("IdUnidadeEstoque");
+
+                    b.HasIndex("IdUnidadeEstoque", "Lote")
                         .IsUnique();
 
                     b.ToTable("ItensEstoque");
@@ -146,6 +151,9 @@ namespace Backend.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdUnidadeEstoque")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("DataHoraAtualizacao")
@@ -164,9 +172,84 @@ namespace Backend.Migrations
                     b.Property<int>("NivelMinimoEstoque")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id", "IdUnidadeEstoque");
+
+                    b.HasIndex("IdUnidadeEstoque");
 
                     b.ToTable("ItensNivelEstoque");
+                });
+
+            modelBuilder.Entity("Backend.Models.Estoque.MovimentacaoEstoqueModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DataHoraMovimentacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DoadorDocumento")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DoadorNome")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FornecedorDocumento")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FornecedorNome")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("IdItem")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("IdRetirada")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("IdTransferencia")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdUnidadeEstoque")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Lote")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NFe")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Observacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OrigemMovimentacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantidade")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SaldoAposMovimentacao")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TipoMovimentacao")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdRetirada");
+
+                    b.HasIndex("IdTransferencia");
+
+                    b.HasIndex("IdUsuario");
+
+                    b.HasIndex("IdItem", "Lote");
+
+                    b.HasIndex("IdUnidadeEstoque", "DataHoraMovimentacao");
+
+                    b.ToTable("MovimentacoesEstoque");
                 });
 
             modelBuilder.Entity("Backend.Models.Estoque.RetiradaEstoqueModel", b =>
@@ -190,6 +273,12 @@ namespace Backend.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("EstavaVencido")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("IdMovimentacao")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdUnidadeEstoque")
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("IdUsuarioRecebedor")
@@ -229,7 +318,207 @@ namespace Backend.Migrations
 
                     b.HasIndex("IdUsuarioRetirante");
 
+                    b.HasIndex("IdUnidadeEstoque", "DataHoraRetirada");
+
                     b.ToTable("RetiradaEstoque");
+                });
+
+            modelBuilder.Entity("Backend.Models.Estoque.TransferenciaEstoqueItemModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdItem")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("IdMovimentacaoEntrada")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("IdMovimentacaoSaida")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdTransferencia")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Lote")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantidade")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("ValorUnitario")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdItem");
+
+                    b.HasIndex("IdTransferencia");
+
+                    b.ToTable("TransferenciasEstoqueItens");
+                });
+
+            modelBuilder.Entity("Backend.Models.Estoque.TransferenciaEstoqueModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DataHoraAtualizacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DataHoraCriacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DataTransferencia")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EditadorPor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("IdUnidadeDestino")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdUnidadeOrigem")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("IdUsuarioAprovacao")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdUsuarioEnvio")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("IdUsuarioRecebimento")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Observacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdUnidadeDestino");
+
+                    b.HasIndex("IdUsuarioEnvio");
+
+                    b.HasIndex("IdUsuarioRecebimento");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("IdUnidadeOrigem", "IdUnidadeDestino", "DataTransferencia");
+
+                    b.ToTable("TransferenciasEstoque");
+                });
+
+            modelBuilder.Entity("Backend.Models.Estoque.UnidadeEstoqueModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DataCadastro")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DataHoraAtualizacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DataHoraCriacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EditadorPor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Sigla")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Sigla")
+                        .IsUnique();
+
+                    b.ToTable("UnidadesEstoque");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Ativa = true,
+                            DataCadastro = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataHoraAtualizacao = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataHoraCriacao = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EditadorPor = "Sistema",
+                            IsDeleted = false,
+                            Nome = "Secretaria",
+                            Sigla = "SEC",
+                            Tipo = "ADMINISTRATIVO"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Ativa = true,
+                            DataCadastro = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataHoraAtualizacao = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DataHoraCriacao = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            EditadorPor = "Sistema",
+                            IsDeleted = false,
+                            Nome = "Canil",
+                            Sigla = "CAN",
+                            Tipo = "OPERACIONAL"
+                        });
+                });
+
+            modelBuilder.Entity("Backend.Models.Estoque.UsuarioUnidadeEstoqueModel", b =>
+                {
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdUnidadeEstoque")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PodeConsultar")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PodeEntrada")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PodeSaida")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PodeTransferirEnviar")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PodeTransferirReceber")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("IdUsuario", "IdUnidadeEstoque");
+
+                    b.HasIndex("IdUnidadeEstoque");
+
+                    b.ToTable("UsuariosUnidadesEstoque");
                 });
 
             modelBuilder.Entity("Backend.Models.RefreshToken", b =>
@@ -264,6 +553,49 @@ namespace Backend.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
+            modelBuilder.Entity("Backend.Models.UnidadeMedida.UnidadeMedidaModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("AplicavelInsumo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("AplicavelMedicamento")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("AplicavelProduto")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DataHoraAtualizacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DataHoraCriacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EditadorPor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Sigla")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UnidadesMedida");
+                });
+
             modelBuilder.Entity("Backend.Models.Usuarios.UsuariosModel", b =>
                 {
                     b.Property<int>("Id")
@@ -274,6 +606,12 @@ namespace Backend.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("DataHoraCriacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeletedBy")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("EditadorPor")
@@ -288,18 +626,39 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("InactivatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("InactivatedBy")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Permissao")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("PodeGerenciarUnidadesMedida")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("PrimeiroNome")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("ReactivatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ReactivatedBy")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Sobrenome")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TokenVersion")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -354,6 +713,9 @@ namespace Backend.Migrations
                     b.Property<int>("PublicoAlvo")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Unidade")
+                        .HasColumnType("INTEGER");
+
                     b.ToTable("Medicamentos", (string)null);
                 });
 
@@ -390,18 +752,73 @@ namespace Backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Backend.Models.Estoque.UnidadeEstoqueModel", "UnidadeEstoque")
+                        .WithMany()
+                        .HasForeignKey("IdUnidadeEstoque")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("ItemBase");
+
+                    b.Navigation("UnidadeEstoque");
                 });
 
             modelBuilder.Entity("Backend.Models.Estoque.ItemNivelEstoqueModel", b =>
                 {
                     b.HasOne("Backend.Models.Estoque.ItemComEstoqueBaseModel", "ItemBase")
-                        .WithOne("ItemNivelEstoque")
-                        .HasForeignKey("Backend.Models.Estoque.ItemNivelEstoqueModel", "Id")
+                        .WithMany("ItensNivelEstoque")
+                        .HasForeignKey("Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Backend.Models.Estoque.UnidadeEstoqueModel", "UnidadeEstoque")
+                        .WithMany()
+                        .HasForeignKey("IdUnidadeEstoque")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("ItemBase");
+
+                    b.Navigation("UnidadeEstoque");
+                });
+
+            modelBuilder.Entity("Backend.Models.Estoque.MovimentacaoEstoqueModel", b =>
+                {
+                    b.HasOne("Backend.Models.Estoque.ItemComEstoqueBaseModel", "Item")
+                        .WithMany()
+                        .HasForeignKey("IdItem")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Estoque.RetiradaEstoqueModel", "Retirada")
+                        .WithMany()
+                        .HasForeignKey("IdRetirada");
+
+                    b.HasOne("Backend.Models.Estoque.TransferenciaEstoqueModel", "Transferencia")
+                        .WithMany()
+                        .HasForeignKey("IdTransferencia");
+
+                    b.HasOne("Backend.Models.Estoque.UnidadeEstoqueModel", "UnidadeEstoque")
+                        .WithMany()
+                        .HasForeignKey("IdUnidadeEstoque")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Usuarios.UsuariosModel", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+
+                    b.Navigation("Retirada");
+
+                    b.Navigation("Transferencia");
+
+                    b.Navigation("UnidadeEstoque");
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("Backend.Models.Estoque.RetiradaEstoqueModel", b =>
@@ -415,6 +832,77 @@ namespace Backend.Migrations
                         .WithMany()
                         .HasForeignKey("IdUsuarioRetirante")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("Backend.Models.Estoque.TransferenciaEstoqueItemModel", b =>
+                {
+                    b.HasOne("Backend.Models.Estoque.ItemComEstoqueBaseModel", "Item")
+                        .WithMany()
+                        .HasForeignKey("IdItem")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Estoque.TransferenciaEstoqueModel", "Transferencia")
+                        .WithMany("Itens")
+                        .HasForeignKey("IdTransferencia")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+
+                    b.Navigation("Transferencia");
+                });
+
+            modelBuilder.Entity("Backend.Models.Estoque.TransferenciaEstoqueModel", b =>
+                {
+                    b.HasOne("Backend.Models.Estoque.UnidadeEstoqueModel", "UnidadeDestino")
+                        .WithMany()
+                        .HasForeignKey("IdUnidadeDestino")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Estoque.UnidadeEstoqueModel", "UnidadeOrigem")
+                        .WithMany()
+                        .HasForeignKey("IdUnidadeOrigem")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Usuarios.UsuariosModel", "UsuarioEnvio")
+                        .WithMany()
+                        .HasForeignKey("IdUsuarioEnvio")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Usuarios.UsuariosModel", "UsuarioRecebimento")
+                        .WithMany()
+                        .HasForeignKey("IdUsuarioRecebimento");
+
+                    b.Navigation("UnidadeDestino");
+
+                    b.Navigation("UnidadeOrigem");
+
+                    b.Navigation("UsuarioEnvio");
+
+                    b.Navigation("UsuarioRecebimento");
+                });
+
+            modelBuilder.Entity("Backend.Models.Estoque.UsuarioUnidadeEstoqueModel", b =>
+                {
+                    b.HasOne("Backend.Models.Estoque.UnidadeEstoqueModel", "UnidadeEstoque")
+                        .WithMany("Usuarios")
+                        .HasForeignKey("IdUnidadeEstoque")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Usuarios.UsuariosModel", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("UnidadeEstoque");
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("Backend.Models.RefreshToken", b =>
@@ -457,10 +945,19 @@ namespace Backend.Migrations
 
             modelBuilder.Entity("Backend.Models.Estoque.ItemComEstoqueBaseModel", b =>
                 {
-                    b.Navigation("ItemNivelEstoque")
-                        .IsRequired();
-
                     b.Navigation("ItensEstoque");
+
+                    b.Navigation("ItensNivelEstoque");
+                });
+
+            modelBuilder.Entity("Backend.Models.Estoque.TransferenciaEstoqueModel", b =>
+                {
+                    b.Navigation("Itens");
+                });
+
+            modelBuilder.Entity("Backend.Models.Estoque.UnidadeEstoqueModel", b =>
+                {
+                    b.Navigation("Usuarios");
                 });
 
             modelBuilder.Entity("Backend.Models.Usuarios.UsuariosModel", b =>

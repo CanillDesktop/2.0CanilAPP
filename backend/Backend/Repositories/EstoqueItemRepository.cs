@@ -1,6 +1,7 @@
 ﻿using Backend.Context;
 using Backend.Models.Estoque;
 using Backend.Repositories.Interfaces;
+using Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Repositories
@@ -8,38 +9,39 @@ namespace Backend.Repositories
     public class EstoqueItemRepository : IEstoqueItemRepository
     {
         private readonly CanilAppDbContext _context;
+        private readonly IUnidadeEstoqueContextService _unidadeContext;
 
-        public EstoqueItemRepository(CanilAppDbContext context)
+        public EstoqueItemRepository(CanilAppDbContext context, IUnidadeEstoqueContextService unidadeContext)
         {
             _context = context;
+            _unidadeContext = unidadeContext;
         }
 
         public async Task<IEnumerable<ItemEstoqueModel>> GetByCodigoAsync(string codigo)
         {
-            var itemEstoque = await _context.ItensEstoque
-                .Where(r => r.IsDeleted == false)
-                .Where(r => r.Codigo == codigo)
-                .ToListAsync();
+            var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
+            await _unidadeContext.GarantirConsultaAsync(idUnidade);
 
-            return itemEstoque;
+            return await _context.ItensEstoque
+                .Where(r => r.IsDeleted == false)
+                .Where(r => r.Codigo == codigo && r.IdUnidadeEstoque == idUnidade)
+                .ToListAsync();
         }
 
         public async Task<ItemEstoqueModel?> GetByLoteAsync(string lote)
         {
-            var itemEstoque = await _context.ItensEstoque
+            var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
+            await _unidadeContext.GarantirConsultaAsync(idUnidade);
+
+            return await _context.ItensEstoque
                 .Where(r => r.IsDeleted == false)
-                .FirstOrDefaultAsync(p => p.Lote == lote);
-
-            return itemEstoque;
+                .Where(r => r.Lote == lote && r.IdUnidadeEstoque == idUnidade)
+                .FirstOrDefaultAsync();
         }
 
-        public async Task<ItemComEstoqueBaseModel?> ObterItemBasePorIdAsync(int id)
-        {
-            // A herança TPT garante que o EF retorne a instância concreta
-            // (ProdutosModel/MedicamentosModel/InsumosModel) ao consultar o tipo base.
-            return await _context.Set<ItemComEstoqueBaseModel>()
+        public async Task<ItemComEstoqueBaseModel?> ObterItemBasePorIdAsync(int id) =>
+            await _context.Set<ItemComEstoqueBaseModel>()
                 .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted);
-        }
 
         public async Task<ItemEstoqueModel> CreateAsync(ItemEstoqueModel model, bool saveChanges = true)
         {

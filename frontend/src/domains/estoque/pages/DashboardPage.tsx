@@ -18,6 +18,7 @@ import { motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { larguraConteudoPagina, paddingPaginaShell } from '../../../shared/theme/estilosLayoutPagina';
@@ -48,6 +49,7 @@ const contagemInicial: ContagemPorClasse = { produtos: 0, medicamentos: 0, insum
 export function DashboardPage() {
   const navigate = useNavigate();
   const { usuario } = useAutenticacao();
+  const { unidadeAtivaId } = useUnidadeEstoque();
   const { cores } = useTemaApp();
   const estilos = useEstilosListagem();
   const [carregandoResumo, setCarregandoResumo] = useState(true);
@@ -80,16 +82,23 @@ export function DashboardPage() {
   useEffect(() => {
     setPageMinimo(1);
     setPageVencimento(1);
-  }, [categoria, debouncedBusca]);
+  }, [categoria, debouncedBusca, unidadeAtivaId]);
 
   useEffect(() => {
     let ativo = true;
 
     async function carregarResumo() {
+      if (unidadeAtivaId == null) {
+        setContagemPorOrigem(contagemInicial);
+        setTotalItens(0);
+        setCarregandoResumo(false);
+        return;
+      }
+
       setCarregandoResumo(true);
       setErroCarregamento(null);
       try {
-        const resumo = await obterResumoDashboardApi();
+        const resumo = await obterResumoDashboardApi(unidadeAtivaId);
         if (!ativo) return;
         setContagemPorOrigem({
           produtos: resumo.produtos,
@@ -111,26 +120,43 @@ export function DashboardPage() {
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [unidadeAtivaId]);
 
   const carregarAlertas = useCallback(async () => {
+    if (unidadeAtivaId == null) {
+      setAlertasMinimo([]);
+      setAlertasVencimento([]);
+      setTotalMinimo(0);
+      setTotalVencimento(0);
+      setTotalPagesMinimo(1);
+      setTotalPagesVencimento(1);
+      setCarregandoAlertas(false);
+      return;
+    }
+
     setCarregandoAlertas(true);
     try {
       const [minimo, vencimento] = await Promise.all([
-        listarAlertasDashboardApi({
-          tipo: 'abaixo_minimo',
-          origem: categoria || undefined,
-          termo: debouncedBusca,
-          pageNumber: pageMinimo,
-          pageSize: itensPorPaginaAlertas,
-        }),
-        listarAlertasDashboardApi({
-          tipo: 'proximo_vencimento',
-          origem: categoria || undefined,
-          termo: debouncedBusca,
-          pageNumber: pageVencimento,
-          pageSize: itensPorPaginaAlertas,
-        }),
+        listarAlertasDashboardApi(
+          {
+            tipo: 'abaixo_minimo',
+            origem: categoria || undefined,
+            termo: debouncedBusca,
+            pageNumber: pageMinimo,
+            pageSize: itensPorPaginaAlertas,
+          },
+          unidadeAtivaId,
+        ),
+        listarAlertasDashboardApi(
+          {
+            tipo: 'proximo_vencimento',
+            origem: categoria || undefined,
+            termo: debouncedBusca,
+            pageNumber: pageVencimento,
+            pageSize: itensPorPaginaAlertas,
+          },
+          unidadeAtivaId,
+        ),
       ]);
 
       setAlertasMinimo(minimo.items.map(mapearAlertaDashboardParaLinha));
@@ -150,7 +176,7 @@ export function DashboardPage() {
     } finally {
       setCarregandoAlertas(false);
     }
-  }, [categoria, debouncedBusca, pageMinimo, pageVencimento, itensPorPaginaAlertas]);
+  }, [unidadeAtivaId, categoria, debouncedBusca, pageMinimo, pageVencimento, itensPorPaginaAlertas]);
 
   useEffect(() => {
     void carregarAlertas();

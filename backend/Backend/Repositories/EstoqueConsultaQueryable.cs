@@ -15,52 +15,61 @@ namespace Backend.Repositories;
 /// </summary>
 internal static class EstoqueConsultaQueryable
 {
-    public static IQueryable<T> Base<T>(IQueryable<T> query)
+    /// <summary>
+    /// Base para filtros e contagens: sem Include de lotes, para o total ser por item e não por lote.
+    /// </summary>
+    public static IQueryable<T> Base<T>(IQueryable<T> query, int idUnidadeEstoque)
+        where T : ItemComEstoqueBaseModel =>
+        query.Where(x => !x.IsDeleted
+            && x.ItensEstoque.Any(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted));
+
+    /// <summary>Carrega lotes e níveis da unidade apenas na materialização da página.</summary>
+    public static IQueryable<T> ComNavegacoesUnidade<T>(IQueryable<T> query, int idUnidadeEstoque)
         where T : ItemComEstoqueBaseModel =>
         query
-            .Include(x => x.ItensEstoque.Where(e => !e.IsDeleted))
-            .Include(x => x.ItemNivelEstoque)
-            .Where(x => !x.IsDeleted);
+            .Include(x => x.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted))
+            .Include(x => x.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidadeEstoque && !n.IsDeleted));
 
     public static IQueryable<T> AplicarFiltrosComuns<T>(
         IQueryable<T> query,
-        EstoqueFiltroDTO filtro)
+        EstoqueFiltroDTO filtro,
+        int idUnidadeEstoque)
         where T : ItemComEstoqueBaseModel
     {
         if (filtro.QuantidadeMinima is int qMin)
             query = query.Where(x =>
-                x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) >= qMin);
+                x.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque).Sum(e => e.Quantidade) >= qMin);
 
         if (filtro.QuantidadeMaxima is int qMax)
             query = query.Where(x =>
-                x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade) <= qMax);
+                x.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque).Sum(e => e.Quantidade) <= qMax);
 
         if (filtro.ValidadeDe.HasValue)
         {
             var de = filtro.ValidadeDe.Value.Date;
             query = query.Where(x =>
-                x.ItensEstoque.Any(e => !e.IsDeleted && e.DataValidade != null && e.DataValidade >= de));
+                x.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataValidade != null && e.DataValidade >= de));
         }
 
         if (filtro.ValidadeAte.HasValue)
         {
             var ate = filtro.ValidadeAte.Value.Date;
             query = query.Where(x =>
-                x.ItensEstoque.Any(e => !e.IsDeleted && e.DataValidade != null && e.DataValidade <= ate));
+                x.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataValidade != null && e.DataValidade <= ate));
         }
 
         if (filtro.MovimentacaoDe.HasValue)
         {
             var de = filtro.MovimentacaoDe.Value.Date;
             query = query.Where(x =>
-                x.ItensEstoque.Any(e => !e.IsDeleted && e.DataEntrega >= de));
+                x.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataEntrega >= de));
         }
 
         if (filtro.MovimentacaoAte.HasValue)
         {
             var ate = filtro.MovimentacaoAte.Value.Date;
             query = query.Where(x =>
-                x.ItensEstoque.Any(e => !e.IsDeleted && e.DataEntrega <= ate));
+                x.ItensEstoque.Any(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataEntrega <= ate));
         }
 
         return query;
@@ -68,7 +77,8 @@ internal static class EstoqueConsultaQueryable
 
     public static IQueryable<T> AplicarStatusOperacional<T>(
         IQueryable<T> query,
-        string? status)
+        string? status,
+        int idUnidadeEstoque)
         where T : ItemComEstoqueBaseModel
     {
         if (string.IsNullOrWhiteSpace(status)) return query;
@@ -77,8 +87,7 @@ internal static class EstoqueConsultaQueryable
         var limite = EstoqueStatusCalculo.LimiteVencimento(hoje);
         var alvo = EstoqueStatusCalculo.Peso(status);
 
-        // Reusa a MESMA expressão de classificação da ordenação/mapper: filtra por código == alvo.
-        var codigo = EstoqueStatusCalculo.CodigoExpression<T>(hoje, limite);
+        var codigo = EstoqueStatusCalculo.CodigoExpression<T>(hoje, limite, idUnidadeEstoque);
         var predicado = Expression.Lambda<Func<T, bool>>(
             Expression.Equal(codigo.Body, Expression.Constant(alvo)),
             codigo.Parameters);
@@ -123,23 +132,27 @@ internal static class EstoqueConsultaQueryable
 
     public static IQueryable<ProdutosModel> AplicarOrdenacaoProdutos(
         IQueryable<ProdutosModel> query,
-        EstoqueConsultaParameters p) =>
-        AplicarOrdenacao(query, p, x => x.DescricaoSimples);
+        EstoqueConsultaParameters p,
+        int idUnidadeEstoque) =>
+        AplicarOrdenacao(query, p, x => x.DescricaoSimples, idUnidadeEstoque);
 
     public static IQueryable<MedicamentosModel> AplicarOrdenacaoMedicamentos(
         IQueryable<MedicamentosModel> query,
-        EstoqueConsultaParameters p) =>
-        AplicarOrdenacao(query, p, x => x.NomeComercial);
+        EstoqueConsultaParameters p,
+        int idUnidadeEstoque) =>
+        AplicarOrdenacao(query, p, x => x.NomeComercial, idUnidadeEstoque);
 
     public static IQueryable<InsumosModel> AplicarOrdenacaoInsumos(
         IQueryable<InsumosModel> query,
-        EstoqueConsultaParameters p) =>
-        AplicarOrdenacao(query, p, x => x.DescricaoSimplificada);
+        EstoqueConsultaParameters p,
+        int idUnidadeEstoque) =>
+        AplicarOrdenacao(query, p, x => x.DescricaoSimplificada, idUnidadeEstoque);
 
     private static IQueryable<T> AplicarOrdenacao<T>(
         IQueryable<T> query,
         EstoqueConsultaParameters p,
-        System.Linq.Expressions.Expression<Func<T, string>> seletorNome)
+        Expression<Func<T, string>> seletorNome,
+        int idUnidadeEstoque)
         where T : ItemComEstoqueBaseModel
     {
         var asc = p.IsSortAscending;
@@ -149,25 +162,24 @@ internal static class EstoqueConsultaQueryable
         IOrderedQueryable<T> ordenado = p.NormalizedOrderBy switch
         {
             "quantidade" => asc
-                ? query.OrderBy(x => x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade))
-                : query.OrderByDescending(x => x.ItensEstoque.Where(e => !e.IsDeleted).Sum(e => e.Quantidade)),
+                ? query.OrderBy(x => x.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque).Sum(e => e.Quantidade))
+                : query.OrderByDescending(x => x.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque).Sum(e => e.Quantidade)),
 
             "validade" => asc
-                ? query.OrderBy(x => x.ItensEstoque.Where(e => !e.IsDeleted && e.DataValidade != null)
+                ? query.OrderBy(x => x.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataValidade != null)
                     .Min(e => (DateTime?)e.DataValidade))
-                : query.OrderByDescending(x => x.ItensEstoque.Where(e => !e.IsDeleted && e.DataValidade != null)
+                : query.OrderByDescending(x => x.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque && e.DataValidade != null)
                     .Min(e => (DateTime?)e.DataValidade)),
 
             "ultimamovimentacao" => asc
-                ? query.OrderBy(x => x.ItensEstoque.Where(e => !e.IsDeleted)
+                ? query.OrderBy(x => x.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque)
                     .Max(e => (DateTime?)e.DataEntrega))
-                : query.OrderByDescending(x => x.ItensEstoque.Where(e => !e.IsDeleted)
+                : query.OrderByDescending(x => x.ItensEstoque.Where(e => !e.IsDeleted && e.IdUnidadeEstoque == idUnidadeEstoque)
                     .Max(e => (DateTime?)e.DataEntrega)),
 
-            // Mesma expressão de classificação do filtro/mapper (traduzível para SQL via CASE WHEN).
             "status" => asc
-                ? query.OrderBy(EstoqueStatusCalculo.CodigoExpression<T>(hoje, limite))
-                : query.OrderByDescending(EstoqueStatusCalculo.CodigoExpression<T>(hoje, limite)),
+                ? query.OrderBy(EstoqueStatusCalculo.CodigoExpression<T>(hoje, limite, idUnidadeEstoque))
+                : query.OrderByDescending(EstoqueStatusCalculo.CodigoExpression<T>(hoje, limite, idUnidadeEstoque)),
 
             _ => asc
                 ? query.OrderBy(seletorNome)

@@ -8,19 +8,15 @@ using Backend.Repositories;
 
 namespace Backend.Services;
 
-/// <summary>
-/// Projeta um item agregado (produto/medicamento/insumo) na linha operacional de estoque.
-/// Espelha a lógica que rodava client-side em PaginaListagemEstoque.
-/// </summary>
 internal static class EstoqueLinhaMapper
 {
     private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
 
-    public static EstoqueLinhaLeituraDTO ParaDto(ItemComEstoqueBaseModel model, EstoqueOrigem origem)
+    public static EstoqueLinhaLeituraDTO ParaDto(ItemComEstoqueBaseModel model, EstoqueOrigem origem, int idUnidadeEstoque)
     {
-        var lotes = model.ItensEstoque?.Where(e => !e.IsDeleted).ToList() ?? [];
+        var lotes = model.ObterLotesAtivos(idUnidadeEstoque).ToList();
         var quantidade = lotes.Sum(e => e.Quantidade);
-        var minimo = model.ItemNivelEstoque?.NivelMinimoEstoque ?? 0;
+        var minimo = model.ObterNivelEstoque(idUnidadeEstoque)?.NivelMinimoEstoque ?? 0;
 
         var hoje = DateTime.UtcNow.Date;
         var limite = EstoqueStatusCalculo.LimiteVencimento(hoje);
@@ -59,6 +55,7 @@ internal static class EstoqueLinhaMapper
                 : ultimaMovimentacao.ToString("dd/MM/yyyy", PtBr),
             MenorValidadeUtc = menorValidade == default ? null : menorValidade,
             UltimaMovimentacaoUtc = ultimaMovimentacao == default ? null : ultimaMovimentacao,
+            IdUnidadeEstoque = idUnidadeEstoque,
         };
     }
 

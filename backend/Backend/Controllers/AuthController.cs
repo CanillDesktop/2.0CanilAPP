@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using Backend.Exceptions;
 using Backend.Models;
 using Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -41,11 +43,22 @@ public class AuthController : ControllerBase
             });
         }
 
+        var login = request.Login.Trim().ToLowerInvariant();
+        if (!new EmailAddressAttribute().IsValid(login))
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Dados inválidos",
+                Status = StatusCodes.Status400BadRequest,
+                Details = "Formato de e-mail inválido."
+            });
+        }
+
         try
         {
-            _logger.LogInformation("Solicitação de login recebida para {Login}.", request.Login);
+            _logger.LogInformation("Solicitação de login recebida para {Login}.", login);
 
-            var result = await _authService.AuthenticateAsync(request.Login, request.Senha, cancellationToken);
+            var result = await _authService.AuthenticateAsync(login, request.Senha, cancellationToken);
 
             if (result?.TokenResponse == null)
             {
@@ -81,6 +94,15 @@ public class AuthController : ControllerBase
                 Title = "Acesso não autorizado",
                 Status = StatusCodes.Status400BadRequest,
                 Details = ex.Message ?? "Usuário ou senha inválidos."
+            });
+        }
+        catch (AcessoNegadoException ex)
+        {
+            return StatusCode(ex.StatusCode, new ErrorResponse
+            {
+                Title = ex.Titulo,
+                Status = ex.StatusCode,
+                Details = ex.Message
             });
         }
     }

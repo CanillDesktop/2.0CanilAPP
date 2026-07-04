@@ -50,7 +50,7 @@ namespace Backend.Controllers
                 });
             }
 
-            return Ok(insumo);
+            return Ok((InsumosLeituraDTO)insumo);
         }
 
         [HttpPost]
@@ -86,8 +86,17 @@ namespace Backend.Controllers
             try
             {
                 var insumoAtualizado = await _service.AtualizarAsync(id, dto);
+                if (insumoAtualizado == null)
+                {
+                    return NotFound(new ErrorResponse
+                    {
+                        Title = "Recurso não encontrado",
+                        Status = StatusCodes.Status404NotFound,
+                        Details = "Insumo não encontrado"
+                    });
+                }
 
-                return Ok(insumoAtualizado);
+                return Ok((InsumosLeituraDTO)insumoAtualizado);
             }
             catch (ModelIncompletaException ex)
             {

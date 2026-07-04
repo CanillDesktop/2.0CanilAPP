@@ -8,5 +8,6 @@ namespace Backend.Services.Interfaces
         Task<RefreshToken?> GetRefreshTokenAsync(string refreshTokenHash);
         Task<RefreshToken?> ReplaceRefreshTokenAsync(RefreshToken oldToken, RefreshToken newToken);
         Task RevokeRefreshTokenAsync(string refreshTokenHash);
+        Task RevokeAllTokensForUserAsync(int userId);
     }
 }

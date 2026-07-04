@@ -14,9 +14,15 @@ public class EstoqueConsultaService : IEstoqueConsultaService
     };
 
     private readonly IEstoqueConsultaRepository _repository;
+    private readonly IUnidadeEstoqueContextService _unidadeContext;
 
-    public EstoqueConsultaService(IEstoqueConsultaRepository repository) =>
+    public EstoqueConsultaService(
+        IEstoqueConsultaRepository repository,
+        IUnidadeEstoqueContextService unidadeContext)
+    {
         _repository = repository;
+        _unidadeContext = unidadeContext;
+    }
 
     public async Task<PagedResultDto<EstoqueLinhaLeituraDTO>> ConsultarPaginadoAsync(
         EstoqueFiltroDTO filtro,
@@ -25,10 +31,11 @@ public class EstoqueConsultaService : IEstoqueConsultaService
     {
         ValidarEntrada(filtro, parameters);
 
+        var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync(cancellationToken);
         var consulta = await _repository.ConsultarPaginadoAsync(filtro, parameters, cancellationToken);
 
         var linhas = consulta.Items
-            .Select(m => EstoqueLinhaMapper.ParaDto(m, filtro.Origem))
+            .Select(m => EstoqueLinhaMapper.ParaDto(m, filtro.Origem, idUnidade))
             .ToList();
 
         return PagedResultFactory.Create(

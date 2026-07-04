@@ -14,13 +14,14 @@ import type {
 
 function normalizarParamsFiltro(filtro?: ProdutoFiltro): Record<string, string | number | undefined> {
   if (!filtro) return {};
-  const { statusEstoque, termo, categoria, dataEntrega, dataValidade } = filtro;
+  const { statusEstoque, termo, categoria, dataEntrega, dataValidade, exclusivoUnidade } = filtro;
   return {
     termo: termo?.trim() || undefined,
     categoria,
     dataEntrega,
     dataValidade,
     statusEstoque: normalizarStatusEstoqueQuery(statusEstoque),
+    exclusivoUnidade: exclusivoUnidade || undefined,
   };
 }
 

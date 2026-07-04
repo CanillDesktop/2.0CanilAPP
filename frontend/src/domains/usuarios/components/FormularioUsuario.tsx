@@ -1,7 +1,10 @@
 import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import { CampoSenha } from '../../../shared/components/CampoSenha';
+import type { EscolhaUnidadeCadastro } from '../../estoque/constants/unidadesEstoque';
 import type { UsuarioCriadoDto } from '../types/tiposUsuarios';
+import { CampoEscolhaUnidadeCadastro } from './CampoEscolhaUnidadeCadastro';
 
 function rotuloPermissao(permissao: number) {
   if (permissao === 1) return 'Administrador';
@@ -15,6 +18,7 @@ type Props = {
   /** Edição: exibe email (preenchido) para qualquer papel. */
   incluirEmailEdicao?: boolean;
   incluirPermissao?: boolean;
+  incluirUnidade?: boolean;
   /** Na edição de perfil: todos veem a permissão; só admin editando outro usuário usa "editavel". */
   permissaoEdicao?: 'oculto' | 'somenteLeitura' | 'editavel';
   carregando?: boolean;
@@ -24,6 +28,7 @@ type Props = {
     email?: string;
     senha?: string;
     permissao?: number;
+    unidadeCadastro?: EscolhaUnidadeCadastro;
   }) => void;
 };
 
@@ -32,6 +37,7 @@ export function FormularioUsuario({
   incluirEmailSenha = false,
   incluirEmailEdicao = false,
   incluirPermissao = false,
+  incluirUnidade = false,
   permissaoEdicao = 'oculto',
   carregando = false,
   onSubmit,
@@ -41,6 +47,7 @@ export function FormularioUsuario({
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [permissao, setPermissao] = useState<number>(usuario?.permissao ?? 2);
+  const [unidadeCadastro, setUnidadeCadastro] = useState<EscolhaUnidadeCadastro>('secretaria');
 
   useEffect(() => {
     setPrimeiroNome(usuario?.primeiroNome ?? '');
@@ -70,6 +77,7 @@ export function FormularioUsuario({
       email: incluirEmailSenha || incluirEmailEdicao ? email.trim() : undefined,
       senha: incluirEmailSenha ? senha.trim() : undefined,
       permissao: incluirPermissao ? permissao : permissaoEdicao === 'editavel' ? permissao : undefined,
+      unidadeCadastro: incluirUnidade ? unidadeCadastro : undefined,
     });
   }
 
@@ -150,6 +158,9 @@ export function FormularioUsuario({
                 <MenuItem value={1}>Administrador</MenuItem>
                 <MenuItem value={2}>Leitura</MenuItem>
               </TextField>
+            ) : null}
+            {incluirUnidade ? (
+              <CampoEscolhaUnidadeCadastro valor={unidadeCadastro} onChange={setUnidadeCadastro} />
             ) : null}
           </>
         ) : null}

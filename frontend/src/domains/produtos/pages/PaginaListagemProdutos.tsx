@@ -15,14 +15,19 @@ import {
   Skeleton,
   Snackbar,
   Stack,
+  Tab,
+  Tabs,
   TablePagination,
   Typography,
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import { UnidadeEstoqueIds } from '../../estoque/constants/unidadesEstoque';
 import {
   MENSAGEM_LOTE_INVALIDO_RETIRADA,
   MENSAGEM_PRODUTO_SEM_NOME_RETIRADA,
@@ -34,14 +39,23 @@ import { KpiSectionProdutos } from '../components/KpiSectionProdutos';
 import { TabelaProdutos } from '../components/TabelaProdutos';
 import { useListaProdutosPaginados } from '../hooks/useProdutos';
 import { useMutacaoProduto } from '../hooks/useMutacaoProduto';
-import type { ProdutoFiltro, ProdutoLeituraDto, ProdutoStatusEstoqueFiltro } from '../types/tiposProdutos';
+import type {
+  ProdutoExclusivoUnidadeFiltro,
+  ProdutoFiltro,
+  ProdutoLeituraDto,
+  ProdutoStatusEstoqueFiltro,
+} from '../types/tiposProdutos';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
+
+type AbaListagemProdutos = 'todos' | ProdutoExclusivoUnidadeFiltro;
 
 const MotionBox = motion(Box);
 
 export function PaginaListagemProdutos() {
   const { estado, carregar } = useListaProdutosPaginados();
   const { excluir, carregando: carregandoExclusao } = useMutacaoProduto();
+  const { unidadeAtivaId, contexto, definirUnidadeAtiva } = useUnidadeEstoque();
+  const { cores } = useTemaApp();
   const navigate = useNavigate();
   const estilos = useEstilosListagem();
   const [busca, setBusca] = useState('');
@@ -50,6 +64,9 @@ export function PaginaListagemProdutos() {
   const [status, setStatus] = useState<ProdutoStatusEstoqueFiltro>('todos');
   const [dataEntrega, setDataEntrega] = useState('');
   const [dataValidade, setDataValidade] = useState('');
+  const [aba, setAba] = useState<AbaListagemProdutos>('todos');
+  /** Unidade ativa antes de entrar em "Só na Secretaria/Canil", restaurada em "Unidade atual". */
+  const unidadeAntesExclusivoRef = useRef<number | null>(null);
   const [idExclusao, setIdExclusao] = useState<number | null>(null);
   const { snackbar, setSnackbar } = useSnackbarRetornoListagem({
     open: false,
@@ -59,6 +76,50 @@ export function PaginaListagemProdutos() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  const temAcessoDuasUnidades = useMemo(() => {
+    const ids = new Set((contexto?.unidadesDisponiveis ?? []).map((u) => u.id));
+    return ids.has(UnidadeEstoqueIds.Secretaria) && ids.has(UnidadeEstoqueIds.Canil);
+  }, [contexto?.unidadesDisponiveis]);
+
+  useEffect(() => {
+    if (!temAcessoDuasUnidades && aba !== 'todos') setAba('todos');
+  }, [temAcessoDuasUnidades, aba]);
+
+  useEffect(() => {
+    // Se o usuário trocar a unidade pelo seletor global durante uma aba exclusiva, volta para "Unidade atual".
+    if (aba === 'secretaria' && unidadeAtivaId !== UnidadeEstoqueIds.Secretaria) {
+      unidadeAntesExclusivoRef.current = null;
+      setAba('todos');
+    }
+    if (aba === 'canil' && unidadeAtivaId !== UnidadeEstoqueIds.Canil) {
+      unidadeAntesExclusivoRef.current = null;
+      setAba('todos');
+    }
+  }, [unidadeAtivaId, aba]);
+
+  function aoMudarAba(nova: AbaListagemProdutos) {
+    if (aba === 'todos' && nova !== 'todos' && unidadeAtivaId != null) {
+      unidadeAntesExclusivoRef.current = unidadeAtivaId;
+    }
+
+    setAba(nova);
+
+    if (nova === 'secretaria') {
+      definirUnidadeAtiva(UnidadeEstoqueIds.Secretaria);
+      return;
+    }
+    if (nova === 'canil') {
+      definirUnidadeAtiva(UnidadeEstoqueIds.Canil);
+      return;
+    }
+
+    const restaurarId = unidadeAntesExclusivoRef.current;
+    unidadeAntesExclusivoRef.current = null;
+    if (restaurarId != null && restaurarId !== unidadeAtivaId) {
+      definirUnidadeAtiva(restaurarId);
+    }
+  }
+
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedBusca(busca), 320);
     return () => window.clearTimeout(t);
@@ -66,7 +127,7 @@ export function PaginaListagemProdutos() {
 
   useEffect(() => {
     setPage(0);
-  }, [debouncedBusca, categoria, status, dataEntrega, dataValidade]);
+  }, [debouncedBusca, categoria, status, dataEntrega, dataValidade, aba]);
 
   function limparFiltros() {
     setBusca('');
@@ -86,12 +147,14 @@ export function PaginaListagemProdutos() {
       dataEntrega: dataEntrega.trim().length > 0 ? dataEntrega : undefined,
       dataValidade: dataValidade.trim().length > 0 ? dataValidade : undefined,
       statusEstoque: status,
+      exclusivoUnidade: aba === 'todos' ? undefined : aba,
     };
-  }, [debouncedBusca, categoria, status, dataEntrega, dataValidade]);
+  }, [debouncedBusca, categoria, status, dataEntrega, dataValidade, aba]);
 
   const recarregar = useCallback(async () => {
+    if (unidadeAtivaId == null) return;
     await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
-  }, [carregar, montarFiltroApi, page, rowsPerPage]);
+  }, [carregar, montarFiltroApi, page, rowsPerPage, unidadeAtivaId]);
 
   useEffect(() => {
     void recarregar();
@@ -163,6 +226,26 @@ export function PaginaListagemProdutos() {
             </Typography>
           </Stack>
 
+          {temAcessoDuasUnidades ? (
+            <Tabs
+              value={aba}
+              onChange={(_, v) => aoMudarAba(v as AbaListagemProdutos)}
+              textColor="inherit"
+              indicatorColor="primary"
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                borderBottom: `1px solid ${cores.border}`,
+                '& .MuiTab-root': { color: cores.textMuted, textTransform: 'none', fontWeight: 600 },
+                '& .Mui-selected': { color: cores.textPrimary },
+              }}
+            >
+              <Tab value="todos" label="Unidade atual" />
+              <Tab value="secretaria" label="Só na Secretaria" />
+              <Tab value="canil" label="Só no Canil" />
+            </Tabs>
+          ) : null}
+
           <FilterBarProdutos
             busca={busca}
             categoria={categoria}
@@ -181,42 +264,47 @@ export function PaginaListagemProdutos() {
           <Stack sx={{ gap: 0.5 }}>
             <KpiSectionProdutos
               carregando={estado.carregando && !estado.dados}
+              statusSelecionado={status}
+              onStatusChange={setStatus}
               kpis={[
                 {
                   titulo: 'Total (filtro atual)',
                   valor: kpis.totalRecorte,
                   icon: <Inventory2OutlinedIcon />,
-                  cor: 'primary.main',
+                  statusFiltro: 'todos',
                 },
                 {
                   titulo: 'Ativos',
                   valor: kpis.ativos,
                   icon: <TaskAltOutlinedIcon />,
-                  cor: 'success.main',
+                  statusFiltro: 'ativo',
                 },
                 {
                   titulo: 'Baixo estoque',
                   valor: kpis.baixo,
                   icon: <ReportProblemOutlinedIcon />,
-                  cor: 'warning.main',
+                  statusFiltro: 'baixo',
                 },
                 {
                   titulo: 'Próximo vencimento',
                   valor: kpis.aVencer,
                   icon: <EventOutlinedIcon />,
-                  cor: 'info.main',
+                  statusFiltro: 'a_vencer',
                 },
                 {
                   titulo: 'Sem estoque',
                   valor: kpis.semEstoque,
                   icon: <RemoveShoppingCartOutlinedIcon />,
-                  cor: 'error.main',
+                  statusFiltro: 'sem_estoque',
                 },
               ]}
             />
             <Typography variant="caption" sx={estilos.legenda}>
-              Indicadores refletem todos os produtos que obedecem à busca, categoria e datas (sem o filtro de status).
-              O filtro de status restringe apenas a tabela e a paginação.
+              {aba === 'todos'
+                ? 'Toque em um card para filtrar a tabela. Os indicadores refletem busca, categoria e datas (sem o filtro de status). Toque de novo no card ativo para limpar o filtro.'
+                : aba === 'secretaria'
+                  ? 'Produtos com saldo apenas na Secretaria. Toque em um card para filtrar a tabela; toque de novo para limpar o filtro de status.'
+                  : 'Produtos com saldo apenas no Canil. Toque em um card para filtrar a tabela; toque de novo para limpar o filtro de status.'}
             </Typography>
           </Stack>
 
@@ -236,7 +324,7 @@ export function PaginaListagemProdutos() {
                   onVisualizar={(id) => navigate(`/produtos/${id}`)}
                   onEditar={(id) => navigate(`/produtos/${id}`)}
                   onExcluir={(id) => setIdExclusao(id)}
-                  onMovimentar={(id) => navigate(`/estoque/lotes/novo?idItem=${id}`)}
+                  onMovimentar={(id) => navigate(`/estoque/entradas/novo?idItem=${id}`)}
                   onRegistrarRetirada={(produto: ProdutoLeituraDto, lote: ItemEstoqueDto) => {
                     if (!lote.lote?.trim()) {
                       setSnackbar({ open: true, mensagem: MENSAGEM_LOTE_INVALIDO_RETIRADA, tipo: 'error' });
@@ -265,7 +353,11 @@ export function PaginaListagemProdutos() {
                 <Box sx={estilos.estadoVazio}>
                   <Typography variant="h6">Nenhum produto encontrado</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Ajuste os filtros, troque de página ou cadastre um novo produto.
+                    {aba === 'todos'
+                      ? 'Ajuste os filtros, troque de página ou cadastre um novo produto.'
+                      : aba === 'secretaria'
+                        ? 'Não há produtos com saldo exclusivo na Secretaria.'
+                        : 'Não há produtos com saldo exclusivo no Canil.'}
                   </Typography>
                 </Box>
               )}
@@ -294,7 +386,9 @@ export function PaginaListagemProdutos() {
       <Dialog open={idExclusao != null} onClose={() => setIdExclusao(null)}>
         <DialogTitle>Confirmar exclusão</DialogTitle>
         <DialogContent>
-          <Typography variant="body2">Deseja realmente excluir este produto?</Typography>
+          <Typography variant="body2">
+            Deseja excluir este produto apenas da unidade atual? O cadastro nas outras unidades não será alterado.
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIdExclusao(null)}>Cancelar</Button>

@@ -53,7 +53,7 @@ namespace Backend.Controllers
                 });
             }
 
-            return Ok(produto);
+            return Ok((ProdutosLeituraDTO)produto);
         }
 
         [HttpPost]
@@ -89,8 +89,17 @@ namespace Backend.Controllers
             try
             {
                 var produtoAtualizado = await _service.AtualizarAsync(id, dto);
+                if (produtoAtualizado == null)
+                {
+                    return NotFound(new ErrorResponse
+                    {
+                        Title = "Recurso não encontrado",
+                        Status = StatusCodes.Status404NotFound,
+                        Details = "Produto não encontrado"
+                    });
+                }
 
-                return Ok(produtoAtualizado);
+                return Ok((ProdutosLeituraDTO)produtoAtualizado);
             }
             catch (ModelIncompletaException ex)
             {

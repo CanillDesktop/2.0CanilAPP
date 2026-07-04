@@ -21,6 +21,7 @@ import {
 import { motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { useSnackbarRetornoListagem } from '../../../shared/hooks/useSnackbarRetornoListagem';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
@@ -41,6 +42,7 @@ const MotionBox = motion(Box);
 export function PaginaListagemMedicamentos() {
   const { estado, carregar } = useListaMedicamentosPaginados();
   const { excluir, carregando: carregandoExclusao } = useMutacaoMedicamento();
+  const { unidadeAtivaId } = useUnidadeEstoque();
   const navigate = useNavigate();
   const estilos = useEstilosListagem();
   const [busca, setBusca] = useState('');
@@ -92,8 +94,9 @@ export function PaginaListagemMedicamentos() {
   }, [debouncedBusca, prioridade, publicoAlvo, status, dataEntrega, dataValidade]);
 
   const recarregar = useCallback(async () => {
+    if (unidadeAtivaId == null) return;
     await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
-  }, [carregar, montarFiltroApi, page, rowsPerPage]);
+  }, [carregar, montarFiltroApi, page, rowsPerPage, unidadeAtivaId]);
 
   useEffect(() => {
     void recarregar();
@@ -185,42 +188,44 @@ export function PaginaListagemMedicamentos() {
           <Stack sx={{ gap: 0.5 }}>
             <KpiSectionMedicamentos
               carregando={estado.carregando && !estado.dados}
+              statusSelecionado={status}
+              onStatusChange={setStatus}
               kpis={[
                 {
                   titulo: 'Total (filtro atual)',
                   valor: kpis.totalRecorte,
                   icon: <Inventory2OutlinedIcon />,
-                  cor: 'primary.main',
+                  statusFiltro: 'todos',
                 },
                 {
                   titulo: 'Ativos',
                   valor: kpis.ativos,
                   icon: <TaskAltOutlinedIcon />,
-                  cor: 'success.main',
+                  statusFiltro: 'ativo',
                 },
                 {
                   titulo: 'Baixo estoque',
                   valor: kpis.baixo,
                   icon: <ReportProblemOutlinedIcon />,
-                  cor: 'warning.main',
+                  statusFiltro: 'baixo',
                 },
                 {
                   titulo: 'Próximo vencimento',
                   valor: kpis.aVencer,
                   icon: <EventOutlinedIcon />,
-                  cor: 'info.main',
+                  statusFiltro: 'a_vencer',
                 },
                 {
                   titulo: 'Sem estoque',
                   valor: kpis.semEstoque,
                   icon: <RemoveShoppingCartOutlinedIcon />,
-                  cor: 'error.main',
+                  statusFiltro: 'sem_estoque',
                 },
               ]}
             />
             <Typography variant="caption" sx={estilos.legenda}>
-              Indicadores refletem todos os medicamentos que obedecem à busca, prioridade, público-alvo e datas (sem o
-              filtro de status). O filtro de status restringe apenas a tabela e a paginação.
+              Toque em um card para filtrar a tabela. Os indicadores refletem busca, prioridade, público-alvo e datas
+              (sem o filtro de status). Toque de novo no card ativo para limpar o filtro.
             </Typography>
           </Stack>
 
@@ -240,7 +245,7 @@ export function PaginaListagemMedicamentos() {
                   onVisualizar={(id) => navigate(`/medicamentos/${id}`)}
                   onEditar={(id) => navigate(`/medicamentos/${id}`)}
                   onExcluir={(id) => setIdExclusao(id)}
-                  onMovimentar={(id) => navigate(`/estoque/lotes/novo?idItem=${id}`)}
+                  onMovimentar={(id) => navigate(`/estoque/entradas/novo?idItem=${id}`)}
                   onRegistrarRetirada={(medicamento: MedicamentoLeituraDto, lote: ItemEstoqueDto) => {
                     if (!lote.lote?.trim()) {
                       setSnackbar({ open: true, mensagem: MENSAGEM_LOTE_INVALIDO_RETIRADA, tipo: 'error' });
@@ -301,7 +306,9 @@ export function PaginaListagemMedicamentos() {
       <Dialog open={idExclusao != null} onClose={() => setIdExclusao(null)}>
         <DialogTitle>Confirmar exclusão</DialogTitle>
         <DialogContent>
-          <Typography variant="body2">Deseja realmente excluir este medicamento?</Typography>
+          <Typography variant="body2">
+            Deseja excluir este medicamento apenas da unidade atual? O cadastro nas outras unidades não será alterado.
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIdExclusao(null)}>Cancelar</Button>

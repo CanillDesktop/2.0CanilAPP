@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Dialog,
   DialogContent,
@@ -14,34 +15,56 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
 import { PainelErro } from '../../../shared/components/PainelErro';
-import { AbaCodigoAtualLeitura } from '../components/AbaCodigoAtualLeitura';
-import { AbaCodigoSegurancaAdmin } from '../components/AbaCodigoSegurancaAdmin';
+import { AbaCodigoAcesso } from '../components/AbaCodigoAcesso';
+import { AbaPermissoesUnidadeAdmin } from '../components/AbaPermissoesUnidadeAdmin';
+import { ListagemUsuariosAdminConteudo } from '../components/ListagemUsuariosAdminConteudo';
 import { FormularioUsuario } from '../components/FormularioUsuario';
-import { ListagemUsuariosResponsiva } from '../components/ListagemUsuariosResponsiva';
 import { ModalConfirmacaoSenha } from '../components/ModalConfirmacaoSenha';
 import { ModalTrocarSenha } from '../components/ModalTrocarSenha';
-import {
-  contarFiltrosGestaoUsuariosAtivos,
-  PainelFiltrosGestaoUsuarios,
-} from '../components/PainelFiltrosGestaoUsuarios';
 import { useUsuarios } from '../hooks/useUsuarios';
-import type { UsuarioCriadoDto } from '../types/tiposUsuarios';
-import { descreverPermissao, formatarTempoCadastro } from '../utils/exibirPerfilUsuario';
+import type { FiltrosUsuariosListagem, UsuarioCriadoDto } from '../types/tiposUsuarios';
+import { rotuloStatusUsuario, StatusUsuario } from '../types/tiposUsuarios';
+import {
+  descreverPermissao,
+  formatarTempoCadastro,
+  listarRotulosPermissoesUnidade,
+} from '../utils/exibirPerfilUsuario';
+import { montarUnidadesEstoqueCadastro } from '../../estoque/constants/unidadesEstoque';
+import type { EscolhaUnidadeCadastro } from '../../estoque/constants/unidadesEstoque';
 
-type AbaAdmin = 'meus-dados' | 'gestao' | 'codigo-seguranca';
-type AbaLeitura = 'meus-dados' | 'codigo-atual';
+type AbaAdmin = 'meus-dados' | 'gestao' | 'permissoes' | 'codigo-seguranca';
+type AbaLeitura = 'meus-dados' | 'codigo-acesso';
+
+type AcaoCritica = 'criar' | 'inativar' | 'remover' | 'reativar' | 'remover-definitivo';
+
+const DESCRICOES_MODAL: Record<Exclude<AcaoCritica, 'criar'>, string> = {
+  inativar: 'Informe sua senha para inativar este usuário. Ele não poderá acessar o sistema até ser reativado.',
+  remover: 'Informe sua senha para excluir logicamente este usuário. O registro permanecerá no histórico.',
+  reativar: 'Informe sua senha para reativar este usuário e restaurar o acesso ao sistema.',
+  'remover-definitivo':
+    'Informe sua senha para remover permanentemente este usuário do banco de dados. Esta ação é irreversível.',
+};
 
 export function PaginaListagemUsuarios() {
   const { usuario, recarregarSessao } = useAutenticacao();
   const { cores } = useTemaApp();
+  const {
+    vinculosUsuario,
+    carregando: carregandoUnidades,
+    erro: erroUnidades,
+  } = useUnidadeEstoque();
+  const [searchParams, setSearchParams] = useSearchParams();
   const ehAdmin = (usuario?.permissao ?? 0) === 1;
   const {
     usuarios,
+    paginacao,
     usuarioAtual,
     carregandoLista,
     carregandoAcao,
@@ -54,15 +77,21 @@ export function PaginaListagemUsuarios() {
     trocarSenha,
     criarUsuario,
     executarAcaoCritica,
-    filtrarUsuarios,
   } = useUsuarios(usuario, ehAdmin);
 
   const [buscaInput, setBuscaInput] = useState('');
   const [busca, setBusca] = useState('');
-  const [status, setStatus] = useState<'todos' | 'ativos' | 'inativos'>('todos');
+  const [status, setStatus] = useState<NonNullable<FiltrosUsuariosListagem['status']>>('ativos');
   const [pagina, setPagina] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [filtrosGestaoExpandidos, setFiltrosGestaoExpandidos] = useState(false);
-  const [abaAdmin, setAbaAdmin] = useState<AbaAdmin>('meus-dados');
+  const [filtrosPermissoesExpandidos, setFiltrosPermissoesExpandidos] = useState(false);
+  const abaInicial = (searchParams.get('aba') as AbaAdmin | null) ?? 'meus-dados';
+  const [abaAdmin, setAbaAdmin] = useState<AbaAdmin>(
+    abaInicial === 'gestao' || abaInicial === 'permissoes' || abaInicial === 'codigo-seguranca'
+      ? abaInicial
+      : 'meus-dados',
+  );
   const [abaLeitura, setAbaLeitura] = useState<AbaLeitura>('meus-dados');
   const [dialogEditarAberto, setDialogEditarAberto] = useState(false);
   const [dialogTrocarSenhaAberto, setDialogTrocarSenhaAberto] = useState(false);
@@ -70,9 +99,16 @@ export function PaginaListagemUsuarios() {
   const [alvoEdicao, setAlvoEdicao] = useState<UsuarioCriadoDto | null>(null);
   const [confirmacao, setConfirmacao] = useState<{
     aberto: boolean;
-    acao: 'criar' | 'inativar' | 'remover' | null;
+    acao: AcaoCritica | null;
     usuarioAlvo?: UsuarioCriadoDto;
-    payloadCriacao?: { primeiroNome: string; sobrenome?: string | null; email: string; senha: string; permissao: number };
+    payloadCriacao?: {
+      primeiroNome: string;
+      sobrenome?: string | null;
+      email: string;
+      senha: string;
+      permissao: number;
+      unidadeCadastro: EscolhaUnidadeCadastro;
+    };
   }>({ aberto: false, acao: null });
 
   useEffect(() => {
@@ -80,22 +116,30 @@ export function PaginaListagemUsuarios() {
     return () => window.clearTimeout(t);
   }, [buscaInput]);
 
-  useEffect(() => {
-    void carregarUsuarios();
-  }, [carregarUsuarios]);
-
-  const usuariosFiltrados = useMemo(() => filtrarUsuarios({ busca, status }), [busca, filtrarUsuarios, status]);
-  const pageSize = 8;
-  const totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / pageSize));
-  const paginaAtual = Math.min(pagina, totalPaginas);
-  const usuariosPaginados = useMemo(() => {
-    const inicio = (paginaAtual - 1) * pageSize;
-    return usuariosFiltrados.slice(inicio, inicio + pageSize);
-  }, [paginaAtual, usuariosFiltrados]);
+  const recarregarLista = useCallback(() => {
+    void carregarUsuarios({ busca, status, pageNumber: pagina, pageSize });
+  }, [busca, carregarUsuarios, pagina, pageSize, status]);
 
   useEffect(() => {
-    if (pagina > totalPaginas) setPagina(totalPaginas);
-  }, [pagina, totalPaginas]);
+    recarregarLista();
+  }, [recarregarLista]);
+
+  useEffect(() => {
+    const aba = searchParams.get('aba') as AbaAdmin | null;
+    if (aba === 'gestao' || aba === 'permissoes' || aba === 'codigo-seguranca') {
+      setAbaAdmin(aba);
+    }
+  }, [searchParams]);
+
+  function alterarAba(novaAba: AbaAdmin) {
+    setAbaAdmin(novaAba);
+    if (novaAba === 'meus-dados') {
+      searchParams.delete('aba');
+    } else {
+      searchParams.set('aba', novaAba);
+    }
+    setSearchParams(searchParams, { replace: true });
+  }
 
   async function salvarEdicao(dados: {
     primeiroNome: string;
@@ -118,6 +162,7 @@ export function PaginaListagemUsuarios() {
     if (atualizado) {
       setDialogEditarAberto(false);
       if (usuario?.id === alvoEdicao.id) recarregarSessao();
+      recarregarLista();
     }
   }
 
@@ -133,8 +178,9 @@ export function PaginaListagemUsuarios() {
     email?: string;
     senha?: string;
     permissao?: number;
+    unidadeCadastro?: EscolhaUnidadeCadastro;
   }) {
-    if (!dados.email || !dados.senha || !dados.permissao) return;
+    if (!dados.email || !dados.senha || !dados.permissao || !dados.unidadeCadastro) return;
     setConfirmacao({
       aberto: true,
       acao: 'criar',
@@ -144,6 +190,7 @@ export function PaginaListagemUsuarios() {
         email: dados.email,
         senha: dados.senha,
         permissao: dados.permissao,
+        unidadeCadastro: dados.unidadeCadastro,
       },
     });
   }
@@ -151,69 +198,196 @@ export function PaginaListagemUsuarios() {
   async function confirmarAcaoCritica(senhaConfirmacao: string) {
     if (!confirmacao.acao) return;
     if (confirmacao.acao === 'criar' && confirmacao.payloadCriacao) {
-      const criado = await criarUsuario({ ...confirmacao.payloadCriacao, senhaConfirmacao });
+      const criado = await criarUsuario({
+        ...confirmacao.payloadCriacao,
+        senhaConfirmacao,
+        unidadesEstoque: montarUnidadesEstoqueCadastro(confirmacao.payloadCriacao.unidadeCadastro),
+      });
       if (criado) {
         setDialogNovoAberto(false);
         setConfirmacao({ aberto: false, acao: null });
+        recarregarLista();
       }
       return;
     }
-    if (!confirmacao.usuarioAlvo?.id) return;
-    const tipoAcao = confirmacao.acao as 'inativar' | 'remover';
-    const reativando = tipoAcao === 'inativar' && confirmacao.usuarioAlvo.isDeleted;
+    if (!confirmacao.usuarioAlvo?.id || confirmacao.acao === 'criar') return;
+
+    const acao = confirmacao.acao;
+    const mensagens: Record<typeof acao, string> = {
+      inativar: 'Usuário inativado com sucesso.',
+      remover: 'Usuário excluído com sucesso.',
+      reativar: 'Usuário reativado com sucesso.',
+      'remover-definitivo': 'Usuário removido permanentemente do sistema.',
+    };
+
     const sucessoAcao = await executarAcaoCritica(
-      tipoAcao,
+      acao,
       confirmacao.usuarioAlvo.id,
       { senhaConfirmacao },
-      tipoAcao === 'inativar'
-        ? reativando
-          ? 'Usuário reativado com sucesso.'
-          : 'Usuário inativado com sucesso.'
-        : 'Usuário removido com sucesso.',
+      mensagens[acao],
     );
-    if (sucessoAcao) setConfirmacao({ aberto: false, acao: null });
+    if (sucessoAcao) {
+      setConfirmacao({ aberto: false, acao: null });
+      recarregarLista();
+    }
   }
-
-  const listaVaziaSemFiltro = ehAdmin && !carregandoLista && usuarios.length === 0 && !erro;
-  const listaFiltradaVazia =
-    ehAdmin && !carregandoLista && usuarios.length > 0 && usuariosFiltrados.length === 0 && !erro;
 
   const editandoProprioUsuario = Boolean(alvoEdicao?.id && usuario?.id === alvoEdicao.id);
 
-  const filtrosGestaoAtivos = useMemo(
-    () => contarFiltrosGestaoUsuariosAtivos(buscaInput, status),
-    [buscaInput, status],
-  );
+  const statusSessao = usuario?.status ?? (usuario?.isDeleted ? StatusUsuario.Inativo : StatusUsuario.Ativo);
+
+  const sxCampoDado = {
+    color: cores.textPrimary,
+    fontSize: { xs: '0.88rem', sm: '1rem' },
+    lineHeight: 1.45,
+  } as const;
 
   const cardMeusDados = (
     <Card sx={{ borderRadius: 3, bgcolor: cores.bgCard, border: `1px solid ${cores.border}`, boxShadow: cores.sombraCard }}>
-      <CardContent>
-        <Stack spacing={1.5}>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: cores.textPrimary }}>
+      <CardContent sx={{ p: { xs: 1.5, sm: 2.5 }, '&:last-child': { pb: { xs: 1.5, sm: 2.5 } } }}>
+        <Stack spacing={{ xs: 1.25, sm: 1.5 }}>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, color: cores.textPrimary, fontSize: { xs: '1.05rem', sm: '1.25rem' } }}
+          >
             Meus dados
           </Typography>
-          <Typography variant="body1" sx={{ color: cores.textPrimary }}>
+          <Typography sx={sxCampoDado}>
             <strong>Nome:</strong> {usuario?.primeiroNome ?? ''} {usuario?.sobrenome ?? ''}
           </Typography>
-          <Typography variant="body1" sx={{ color: cores.textPrimary }}>
+          <Typography sx={{ ...sxCampoDado, wordBreak: 'break-word' }}>
             <strong>Email:</strong> {usuario?.email ?? 'Não informado'}
           </Typography>
-          <Typography variant="body1" sx={{ color: cores.textPrimary }}>
+          <Typography sx={sxCampoDado}>
             <strong>Tempo cadastrado:</strong> {formatarTempoCadastro(usuario?.dataHoraCriacao)}
           </Typography>
-          <Typography variant="body1" sx={{ color: cores.textPrimary }}>
+          <Typography sx={sxCampoDado}>
             <strong>Permissão:</strong> {descreverPermissao(usuario?.permissao ?? -1)}
           </Typography>
-          <Typography variant="body1" sx={{ color: cores.textPrimary }}>
-            <strong>Status:</strong> {usuario?.isDeleted ? 'Inativo' : 'Ativo'}
+          <Typography sx={sxCampoDado}>
+            <strong>Status:</strong> {rotuloStatusUsuario(statusSessao as 1 | 2 | 3)}
           </Typography>
-          <Typography variant="body2" sx={{ color: cores.textSecondary, pt: 0.5 }}>
-            Você pode atualizar nome, sobrenome e email. A permissão só pode ser alterada por um administrador ao
-            editar outro usuário na lista (quando houver outro admin ativo no sistema).
+
+          <Box sx={{ pt: 0.25 }}>
+            <Typography
+              sx={{
+                color: cores.textPrimary,
+                fontWeight: 700,
+                mb: 1,
+                fontSize: { xs: '0.88rem', sm: '1rem' },
+              }}
+            >
+              Unidades e permissões
+            </Typography>
+            {carregandoUnidades ? (
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <CircularProgress size={18} />
+                <Typography variant="body2" sx={{ color: cores.textSecondary }}>
+                  Carregando permissões…
+                </Typography>
+              </Stack>
+            ) : erroUnidades ? (
+              <Typography variant="body2" sx={{ color: cores.acaoExcluir }}>
+                Não foi possível carregar suas unidades e permissões.
+              </Typography>
+            ) : vinculosUsuario.length === 0 ? (
+              <Typography variant="body2" sx={{ color: cores.textSecondary }}>
+                Nenhuma unidade de estoque atribuída à sua conta.
+              </Typography>
+            ) : (
+              <Stack spacing={1.5}>
+                {vinculosUsuario.map((vinculo) => {
+                  const permissoes = listarRotulosPermissoesUnidade(vinculo);
+                  return (
+                    <Box
+                      key={vinculo.idUnidadeEstoque}
+                      sx={{
+                        p: { xs: 1.25, sm: 1.5 },
+                        borderRadius: 2,
+                        border: `1px solid ${cores.border}`,
+                        bgcolor: cores.bgPainel,
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          color: cores.textPrimary,
+                          fontWeight: 700,
+                          fontSize: { xs: '0.88rem', sm: '1rem' },
+                        }}
+                      >
+                        {vinculo.nomeUnidade}
+                        {vinculo.siglaUnidade ? (
+                          <Typography
+                            component="span"
+                            sx={{
+                              color: cores.textSecondary,
+                              fontWeight: 400,
+                              ml: 0.75,
+                              fontSize: { xs: '0.78rem', sm: '0.875rem' },
+                            }}
+                          >
+                            ({vinculo.siglaUnidade})
+                          </Typography>
+                        ) : null}
+                      </Typography>
+                      {permissoes.length === 0 ? (
+                        <Typography
+                          sx={{
+                            color: cores.textSecondary,
+                            mt: 0.75,
+                            fontSize: { xs: '0.78rem', sm: '0.875rem' },
+                          }}
+                        >
+                          Sem permissões nesta unidade.
+                        </Typography>
+                      ) : (
+                        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+                          {permissoes.map((rotulo) => (
+                            <Chip
+                              key={rotulo}
+                              label={rotulo}
+                              size="small"
+                              sx={{
+                                height: 24,
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                bgcolor: cores.chipBg,
+                                border: `1px solid ${cores.chipBorder}`,
+                                color: cores.textPrimary,
+                              }}
+                            />
+                          ))}
+                        </Stack>
+                      )}
+                    </Box>
+                  );
+                })}
+              </Stack>
+            )}
+          </Box>
+
+          <Typography
+            sx={{
+              color: cores.textSecondary,
+              pt: 0.25,
+              fontSize: { xs: '0.78rem', sm: '0.875rem' },
+              lineHeight: 1.45,
+            }}
+          >
+            Você pode atualizar nome, sobrenome e email. A permissão de perfil e as permissões por unidade só podem
+            ser alteradas por um administrador.
           </Typography>
-          <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1, pt: 1, flexWrap: 'wrap' }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 1, pt: 0.5, flexWrap: 'wrap' }}>
             <Button
               variant="contained"
+              fullWidth={false}
+              sx={{
+                minHeight: 40,
+                textTransform: 'none',
+                fontWeight: 700,
+                borderRadius: 2,
+                width: { xs: '100%', sm: 'auto' },
+              }}
               onClick={() => {
                 if (usuarioAtual?.id != null) {
                   setAlvoEdicao(usuarioAtual);
@@ -225,6 +399,13 @@ export function PaginaListagemUsuarios() {
             </Button>
             <Button
               variant="outlined"
+              sx={{
+                minHeight: 40,
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
+                width: { xs: '100%', sm: 'auto' },
+              }}
               onClick={() => {
                 limparFeedback();
                 setDialogTrocarSenhaAberto(true);
@@ -232,7 +413,17 @@ export function PaginaListagemUsuarios() {
             >
               Alterar senha
             </Button>
-            <Button variant="outlined" onClick={recarregarSessao}>
+            <Button
+              variant="outlined"
+              onClick={recarregarSessao}
+              sx={{
+                minHeight: 40,
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
+                width: { xs: '100%', sm: 'auto' },
+              }}
+            >
               Atualizar sessão
             </Button>
           </Stack>
@@ -242,88 +433,74 @@ export function PaginaListagemUsuarios() {
   );
 
   const gestaoUsuariosAdmin = (
-    <Card sx={{ borderRadius: 3, bgcolor: cores.bgCard, border: `1px solid ${cores.border}`, boxShadow: cores.sombraCard }}>
-      <CardContent>
-        <Stack spacing={2}>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: cores.textPrimary }}>
-            Gestão de usuários
-          </Typography>
-
-          <PainelFiltrosGestaoUsuarios
-            expandido={filtrosGestaoExpandidos}
-            onExpandidoChange={setFiltrosGestaoExpandidos}
-            buscaInput={buscaInput}
-            onBuscaInputChange={(valor) => {
-              setBuscaInput(valor);
-              setPagina(1);
-            }}
-            status={status}
-            onStatusChange={(valor) => {
-              setStatus(valor);
-              setPagina(1);
-            }}
-            filtrosAtivos={filtrosGestaoAtivos}
-            carregandoLista={carregandoLista}
-            carregandoAcao={carregandoAcao}
-            onCadastrar={() => setDialogNovoAberto(true)}
-          />
-
-          {erro ? <Alert severity="error">{erro}</Alert> : null}
-
-          {carregandoLista ? (
-            <Stack direction="row" spacing={1.5} sx={{ py: 3, justifyContent: 'center', alignItems: 'center' }}>
-              <CircularProgress size={28} />
-              <Typography variant="body2" sx={{ color: cores.textSecondary }}>
-                Carregando usuários…
-              </Typography>
-            </Stack>
-          ) : null}
-
-          {listaVaziaSemFiltro ? (
-            <Alert severity="info">Nenhum usuário cadastrado no sistema ainda.</Alert>
-          ) : null}
-
-          {listaFiltradaVazia ? (
-            <Alert severity="warning">Nenhum usuário corresponde à busca ou ao filtro de status.</Alert>
-          ) : null}
-
-          {!carregandoLista && usuariosFiltrados.length > 0 ? (
-            <>
-              <ListagemUsuariosResponsiva
-                usuarios={usuariosPaginados}
-                carregando={carregandoAcao}
-                onEditar={(u) => {
-                  setAlvoEdicao(u);
-                  setDialogEditarAberto(true);
-                }}
-                onInativar={(u) => setConfirmacao({ aberto: true, acao: 'inativar', usuarioAlvo: u })}
-                onRemover={(u) => setConfirmacao({ aberto: true, acao: 'remover', usuarioAlvo: u })}
-              />
-              <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                <Button
-                  variant="outlined"
-                  disabled={paginaAtual <= 1 || usuariosFiltrados.length === 0}
-                  onClick={() => setPagina((v) => Math.max(1, v - 1))}
-                >
-                  Anterior
-                </Button>
-                <Button variant="outlined" disabled>
-                  {usuariosFiltrados.length === 0 ? '0 / 0' : `${paginaAtual} / ${totalPaginas}`}
-                </Button>
-                <Button
-                  variant="outlined"
-                  disabled={paginaAtual >= totalPaginas || usuariosFiltrados.length === 0}
-                  onClick={() => setPagina((v) => Math.min(totalPaginas, v + 1))}
-                >
-                  Próxima
-                </Button>
-              </Stack>
-            </>
-          ) : null}
-        </Stack>
-      </CardContent>
-    </Card>
+    <ListagemUsuariosAdminConteudo
+      modo="gestao"
+      titulo="Gestão de usuários"
+      usuarios={usuarios}
+      paginacao={paginacao}
+      usuarioLogadoId={usuario?.id}
+      carregandoLista={carregandoLista}
+      carregandoAcao={carregandoAcao}
+      erro={erro}
+      buscaInput={buscaInput}
+      buscaAplicada={busca}
+      onBuscaInputChange={(valor) => {
+        setBuscaInput(valor);
+        setPagina(1);
+      }}
+      status={status}
+      onStatusChange={(valor) => {
+        setStatus(valor);
+        setPagina(1);
+      }}
+      pagina={pagina}
+      onPaginaChange={setPagina}
+      pageSize={pageSize}
+      onPageSizeChange={setPageSize}
+      filtrosExpandidos={filtrosGestaoExpandidos}
+      onFiltrosExpandidosChange={setFiltrosGestaoExpandidos}
+      onCadastrar={() => setDialogNovoAberto(true)}
+      onEditar={(u) => {
+        setAlvoEdicao(u);
+        setDialogEditarAberto(true);
+      }}
+      onInativar={(u) => setConfirmacao({ aberto: true, acao: 'inativar', usuarioAlvo: u })}
+      onReativar={(u) => setConfirmacao({ aberto: true, acao: 'reativar', usuarioAlvo: u })}
+      onRemover={(u) => setConfirmacao({ aberto: true, acao: 'remover', usuarioAlvo: u })}
+      onRemoverDefinitivo={(u) =>
+        setConfirmacao({ aberto: true, acao: 'remover-definitivo', usuarioAlvo: u })
+      }
+    />
   );
+
+  const propsListagemCompartilhada = {
+    usuarios,
+    paginacao,
+    usuarioLogadoId: usuario?.id,
+    carregandoLista,
+    carregandoAcao,
+    erro,
+    buscaInput,
+    buscaAplicada: busca,
+    onBuscaInputChange: (valor: string) => {
+      setBuscaInput(valor);
+      setPagina(1);
+    },
+    status,
+    onStatusChange: (valor: NonNullable<FiltrosUsuariosListagem['status']>) => {
+      setStatus(valor);
+      setPagina(1);
+    },
+    pagina,
+    onPaginaChange: setPagina,
+    pageSize,
+    onPageSizeChange: setPageSize,
+  };
+
+  const descricaoModal =
+    confirmacao.acao && confirmacao.acao !== 'criar'
+      ? DESCRICOES_MODAL[confirmacao.acao]
+      : 'Informe a senha do usuário logado para concluir esta ação crítica.';
 
   return (
     <ShellComSidebar
@@ -338,26 +515,42 @@ export function PaginaListagemUsuarios() {
         <>
           <Tabs
             value={abaAdmin}
-            onChange={(_, v) => setAbaAdmin(v as AbaAdmin)}
+            onChange={(_, v) => alterarAba(v as AbaAdmin)}
             textColor="inherit"
             indicatorColor="primary"
             variant="scrollable"
             scrollButtons="auto"
             sx={{
-              mb: 2,
+              mb: { xs: 1.5, sm: 2 },
+              minHeight: { xs: 44, sm: 48 },
               borderBottom: `1px solid ${cores.border}`,
-              '& .MuiTab-root': { color: cores.textMuted, textTransform: 'none', fontWeight: 600 },
+              '& .MuiTab-root': {
+                color: cores.textMuted,
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                minHeight: { xs: 44, sm: 48 },
+                px: { xs: 1.25, sm: 2 },
+              },
               '& .Mui-selected': { color: cores.textPrimary },
             }}
           >
             <Tab value="meus-dados" label="Meus dados" />
             <Tab value="gestao" label="Gestão de usuários" />
-            <Tab value="codigo-seguranca" label="Código de segurança" />
+            <Tab value="permissoes" label="Permissões unidade" />
+            <Tab value="codigo-seguranca" label="Código de acesso" />
           </Tabs>
 
           {abaAdmin === 'meus-dados' ? cardMeusDados : null}
           {abaAdmin === 'gestao' ? gestaoUsuariosAdmin : null}
-          {abaAdmin === 'codigo-seguranca' ? <AbaCodigoSegurancaAdmin /> : null}
+          {abaAdmin === 'permissoes' ? (
+            <AbaPermissoesUnidadeAdmin
+              {...propsListagemCompartilhada}
+              filtrosExpandidos={filtrosPermissoesExpandidos}
+              onFiltrosExpandidosChange={setFiltrosPermissoesExpandidos}
+            />
+          ) : null}
+          {abaAdmin === 'codigo-seguranca' ? <AbaCodigoAcesso podeEditar /> : null}
         </>
       ) : (
         <>
@@ -369,18 +562,26 @@ export function PaginaListagemUsuarios() {
             variant="scrollable"
             scrollButtons="auto"
             sx={{
-              mb: 2,
+              mb: { xs: 1.5, sm: 2 },
+              minHeight: { xs: 44, sm: 48 },
               borderBottom: `1px solid ${cores.border}`,
-              '& .MuiTab-root': { color: cores.textMuted, textTransform: 'none', fontWeight: 600 },
+              '& .MuiTab-root': {
+                color: cores.textMuted,
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                minHeight: { xs: 44, sm: 48 },
+                px: { xs: 1.25, sm: 2 },
+              },
               '& .Mui-selected': { color: cores.textPrimary },
             }}
           >
             <Tab value="meus-dados" label="Meus dados" />
-            <Tab value="codigo-atual" label="Código atual" />
+            <Tab value="codigo-acesso" label="Código de acesso" />
           </Tabs>
 
           {abaLeitura === 'meus-dados' ? cardMeusDados : null}
-          {abaLeitura === 'codigo-atual' ? <AbaCodigoAtualLeitura /> : null}
+          {abaLeitura === 'codigo-acesso' ? <AbaCodigoAcesso podeEditar={false} /> : null}
         </>
       )}
 
@@ -417,7 +618,13 @@ export function PaginaListagemUsuarios() {
         <DialogContent>
           <Box sx={{ pt: 0.5 }}>
             <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
-            <FormularioUsuario incluirEmailSenha incluirPermissao carregando={carregandoAcao} onSubmit={abrirConfirmacaoCriacao} />
+            <FormularioUsuario
+              incluirEmailSenha
+              incluirPermissao
+              incluirUnidade
+              carregando={carregandoAcao}
+              onSubmit={abrirConfirmacaoCriacao}
+            />
           </Box>
         </DialogContent>
       </Dialog>
@@ -439,15 +646,7 @@ export function PaginaListagemUsuarios() {
       <ModalConfirmacaoSenha
         aberto={confirmacao.aberto}
         titulo="Confirmação obrigatória"
-        descricao={
-          confirmacao.acao === 'inativar' && confirmacao.usuarioAlvo?.isDeleted
-            ? 'Informe sua senha para reativar este usuário.'
-            : confirmacao.acao === 'inativar'
-              ? 'Informe sua senha para inativar este usuário.'
-              : confirmacao.acao === 'remover'
-                ? 'Informe sua senha para remover este usuário permanentemente.'
-                : 'Informe a senha do usuário logado para concluir esta ação crítica.'
-        }
+        descricao={descricaoModal}
         carregando={carregandoAcao}
         erro={erro}
         errosValidacao={errosValidacao}

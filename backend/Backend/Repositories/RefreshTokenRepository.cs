@@ -60,5 +60,21 @@ namespace Backend.Repositories
             _context.RefreshTokens.Update(refreshToken);
             await _context.SaveChangesAsync();
         }
+
+        public async Task RevokeAllTokensForUserAsync(int userId)
+        {
+            var agora = DateTime.UtcNow;
+            var tokens = await _context.RefreshTokens
+                .Where(t => t.UserId == userId && t.RevokedAt == null && t.ExpiresAt > agora)
+                .ToListAsync();
+
+            if (tokens.Count == 0)
+                return;
+
+            foreach (var token in tokens)
+                token.RevokedAt = agora;
+
+            await _context.SaveChangesAsync();
+        }
     }
 }

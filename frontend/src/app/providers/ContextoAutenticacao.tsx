@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { UsuarioSessao } from '../../shared/types/usuarioSessao';
 import { obterAccessToken, obterUsuarioArmazenado } from '../../shared/services/armazenamentoSessao';
+import { limparUnidadeAtivaId } from '../../shared/services/armazenamentoUnidadeEstoque';
 import { servicoAutenticacao } from '../../domains/autenticacao/services/servicoAutenticacao';
 import { registrarOuvinteSessaoEncerrada } from '../../domains/autenticacao/services/gerenciadorRenovacaoSessao';
 
@@ -28,6 +29,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
 
   const sair = useCallback(async () => {
     const resultado = await servicoAutenticacao.sair();
+    limparUnidadeAtivaId();
     setSessao({ autenticado: false, usuario: null });
     return resultado;
   }, []);

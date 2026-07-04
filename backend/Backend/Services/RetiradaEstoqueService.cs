@@ -1,6 +1,7 @@
 ﻿using Backend.Context;
 using Backend.DTOs.Estoque;
 using Backend.Exceptions;
+using Backend.Models.Enums;
 using Backend.Models.Estoque;
 using Backend.Pagination;
 using Backend.Repositories;
@@ -16,17 +17,20 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
     private readonly IRetiradaEstoqueRepository _retiradaRepository;
     private readonly CanilAppDbContext _context;
     private readonly IUserSessionService _userSessionService;
+    private readonly IUnidadeEstoqueContextService _unidadeContext;
     private readonly ILogger<RetiradaEstoqueService> _logger;
 
     public RetiradaEstoqueService(
         IRetiradaEstoqueRepository retiradaRepository,
         CanilAppDbContext context,
         IUserSessionService userSessionService,
+        IUnidadeEstoqueContextService unidadeContext,
         ILogger<RetiradaEstoqueService> logger)
     {
         _retiradaRepository = retiradaRepository;
         _context = context;
         _userSessionService = userSessionService;
+        _unidadeContext = unidadeContext;
         _logger = logger;
     }
 
@@ -119,7 +123,7 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
         {
             var recId = dto.IdUsuarioRecebedor.Value;
             var recebedorExiste =
-                await _context.Usuarios.AsNoTracking().AnyAsync(u => u.Id == recId && !u.IsDeleted);
+                await _context.Usuarios.AsNoTracking().AnyAsync(u => u.Id == recId && u.Status == StatusUsuario.Ativo);
             if (!recebedorExiste)
                 throw new ModelIncompletaException("Usuário recebedor informado não foi encontrado ou está inativo.");
         }
@@ -128,14 +132,25 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
 
         try
         {
-            // Lote é único globalmente; o código do item pai é a referência autoritativa.
+            var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
+            await _unidadeContext.GarantirSaidaAsync(idUnidade);
+
             var chave = await _context.ItensEstoque.AsNoTracking()
-                .Where(e => e.Lote == dto.Lote && !e.IsDeleted)
-                .Select(e => new { e.Id, e.Lote, e.Codigo, e.DataValidade })
+                .Where(e => e.Lote == dto.Lote && e.Codigo == dto.Codigo && e.IdUnidadeEstoque == idUnidade && !e.IsDeleted)
+                .Select(e => new { e.Id, e.Lote, e.Codigo, e.DataValidade, e.Quantidade })
                 .FirstOrDefaultAsync();
 
             if (chave == null)
             {
+                var loteExisteComOutroCodigo = await _context.ItensEstoque.AsNoTracking()
+                    .AnyAsync(e => e.Lote == dto.Lote && e.IdUnidadeEstoque == idUnidade && !e.IsDeleted);
+
+                if (loteExisteComOutroCodigo)
+                {
+                    throw new RegraDeNegocioInfringidaException(
+                        "O código informado não corresponde ao item do lote. Operação cancelada.");
+                }
+
                 throw new ArgumentNullException(null,
                     $"Item de estoque de lote {dto.Lote} não encontrado");
             }
@@ -153,24 +168,25 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
             var now = DateTime.UtcNow;
             var editor = _userSessionService.EditedBy ?? string.Empty;
 
-            // Item 10: lote vencido exige confirmação explícita; quando autorizado, fica registrado no histórico.
             var estavaVencido = chave.DataValidade.HasValue && chave.DataValidade.Value.Date < now.Date;
             if (estavaVencido && !confirmarLoteVencido)
             {
                 throw new LoteVencidoPrecisaConfirmacaoException(chave.DataValidade!.Value);
             }
 
+            dto.IdUnidadeEstoque = idUnidade;
             dto.DataHoraRetirada = now;
             dto.Status = RetiradaEstoqueStatus.Confirmada;
             dto.EstavaVencido = estavaVencido;
             dto.DataValidadeLote = chave.DataValidade;
 
-            // Item 9: valida o usuário retirante antes de gravar (evita violação de FK -> 500).
+            int? idUsuarioLogado = null;
             if (int.TryParse(_userSessionService.UserId, out var usuarioLogado) && usuarioLogado > 0)
             {
                 var retiranteExiste = await _context.Usuarios.AsNoTracking()
-                    .AnyAsync(u => u.Id == usuarioLogado && !u.IsDeleted);
+                    .AnyAsync(u => u.Id == usuarioLogado && u.Status == StatusUsuario.Ativo);
                 dto.IdUsuarioRetirante = retiranteExiste ? usuarioLogado : null;
+                idUsuarioLogado = retiranteExiste ? usuarioLogado : null;
             }
             else
             {
@@ -181,6 +197,7 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
                 .Where(e =>
                     e.Id == chave.Id
                     && e.Lote == chave.Lote
+                    && e.IdUnidadeEstoque == idUnidade
                     && !e.IsDeleted
                     && e.Quantidade >= dto.Quantidade)
                 .ExecuteUpdateAsync(setters => setters
@@ -196,11 +213,13 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
                     EstoqueConcurrencyMessages.SaldoInsuficienteOuEstoqueAlterado);
             }
 
-            // Item 18: lote zerado -> soft delete com auditoria (usuário e data).
+            var saldoApos = chave.Quantidade - dto.Quantidade;
+
             await _context.ItensEstoque
                 .Where(e =>
                     e.Id == chave.Id
                     && e.Lote == chave.Lote
+                    && e.IdUnidadeEstoque == idUnidade
                     && !e.IsDeleted
                     && e.Quantidade == 0)
                 .ExecuteUpdateAsync(setters => setters
@@ -209,25 +228,30 @@ public class RetiradaEstoqueService : IRetiradaEstoqueService
                     .SetProperty(e => e.DataHoraAtualizacao, _ => now)
                     .SetProperty(e => e.EditadorPor, _ => editor));
 
-            // Item 19: sem nenhum lote ativo restante -> soft delete do item pai (na mesma transação).
-            var aindaTemLoteAtivo = await _context.ItensEstoque
-                .AnyAsync(e => e.Id == chave.Id && !e.IsDeleted && e.Quantidade > 0);
-
-            if (!aindaTemLoteAtivo)
-            {
-                var itemPai = await _context.Set<ItemComEstoqueBaseModel>()
-                    .FirstOrDefaultAsync(p => p.Id == chave.Id && !p.IsDeleted);
-
-                if (itemPai != null)
-                {
-                    itemPai.IsDeleted = true;
-                    itemPai.DataHoraAtualizacao = now;
-                    itemPai.EditadorPor = editor;
-                }
-            }
+            // Não remove o item do catálogo global: saldo zerado em uma unidade
+            // não deve apagar o cadastro nas demais unidades.
 
             await _retiradaRepository.CreateAsync(dto, saveChanges: false);
             await _context.SaveChangesAsync();
+
+            if (idUsuarioLogado is int uid)
+            {
+                _context.MovimentacoesEstoque.Add(new MovimentacaoEstoqueModel
+                {
+                    IdUnidadeEstoque = idUnidade,
+                    IdItem = chave.Id,
+                    Lote = chave.Lote,
+                    Quantidade = -dto.Quantidade,
+                    SaldoAposMovimentacao = saldoApos,
+                    TipoMovimentacao = TipoMovimentacaoEstoqueEnum.Saida,
+                    IdRetirada = dto.Id,
+                    IdUsuario = uid,
+                    DataHoraMovimentacao = now,
+                    Observacao = dto.Observacao,
+                });
+                await _context.SaveChangesAsync();
+            }
+
             await transaction.CommitAsync();
 
             _logger.LogInformation(

@@ -55,7 +55,7 @@ namespace Backend.Controllers
                 });
             }
 
-            return Ok(medicamento);
+            return Ok((MedicamentoLeituraDTO)medicamento);
         }
 
 
@@ -94,8 +94,17 @@ namespace Backend.Controllers
             try
             {
                 var medicamentoAtualizado = await _service.AtualizarAsync(id, dto);
+                if (medicamentoAtualizado == null)
+                {
+                    return NotFound(new ErrorResponse
+                    {
+                        Title = "Recurso não encontrado",
+                        Status = StatusCodes.Status404NotFound,
+                        Details = "Medicamento não encontrado"
+                    });
+                }
 
-                return Ok(medicamentoAtualizado);
+                return Ok((MedicamentoLeituraDTO)medicamentoAtualizado);
             }
             catch (ModelIncompletaException ex)
             {

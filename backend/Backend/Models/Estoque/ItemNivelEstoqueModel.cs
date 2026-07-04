@@ -5,26 +5,38 @@ namespace Backend.Models.Estoque;
 
 public class ItemNivelEstoqueModel : BaseModel
 {
+    public int IdUnidadeEstoque { get; set; } = UnidadeEstoqueIds.Secretaria;
     public int NivelMinimoEstoque { get; set; }
 
     [JsonIgnore]
     public ItemComEstoqueBaseModel ItemBase { get; set; } = null!;
 
-    public static implicit operator ItemNivelEstoqueDTO(ItemNivelEstoqueModel model)
+    [JsonIgnore]
+    public UnidadeEstoqueModel? UnidadeEstoque { get; set; }
+
+    public static implicit operator ItemNivelEstoqueDTO(ItemNivelEstoqueModel? model)
     {
-        return new ItemNivelEstoqueDTO()
+        if (model is null)
+            return new ItemNivelEstoqueDTO();
+
+        return new ItemNivelEstoqueDTO
         {
             Id = model.Id,
-            NivelMinimoEstoque = model.NivelMinimoEstoque
+            IdUnidadeEstoque = model.IdUnidadeEstoque,
+            NivelMinimoEstoque = model.NivelMinimoEstoque,
         };
     }
 
-    public static implicit operator ItemNivelEstoqueModel(ItemNivelEstoqueDTO dto)
+    public static implicit operator ItemNivelEstoqueModel(ItemNivelEstoqueDTO? dto)
     {
-        return new ItemNivelEstoqueModel()
+        if (dto is null)
+            return new ItemNivelEstoqueModel();
+
+        return new ItemNivelEstoqueModel
         {
             Id = dto.Id,
-            NivelMinimoEstoque = dto.NivelMinimoEstoque
+            IdUnidadeEstoque = dto.IdUnidadeEstoque,
+            NivelMinimoEstoque = dto.NivelMinimoEstoque,
         };
     }
 }

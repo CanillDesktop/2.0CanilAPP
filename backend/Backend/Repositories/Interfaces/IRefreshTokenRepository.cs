@@ -8,5 +8,6 @@ namespace Backend.Repositories.Interfaces
         Task<RefreshToken?> GetRefreshTokenAsync(string refreshTokenHash);
         Task<RefreshToken?> ReplaceRefreshTokenAsync(RefreshToken oldToken, RefreshToken newToken);
         Task RevokeRefreshTokenAsync(RefreshToken refreshToken);
+        Task RevokeAllTokensForUserAsync(int userId);
     }
 }

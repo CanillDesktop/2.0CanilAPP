@@ -17,6 +17,7 @@ export type ProdutoLeituraDto = {
   descricaoSimples?: string | null;
   descricaoDetalhada?: string | null;
   unidade: number;
+  unidadeRotulo?: string | null;
   categoria: number;
   itemNivelEstoque: ItemNivelEstoqueDto;
   itensEstoque: ItemEstoqueDto[];
@@ -36,6 +37,9 @@ export type ProdutoCadastroDto = {
 
 export type ProdutoStatusEstoqueFiltro = StatusEstoqueFiltro;
 
+/** Produtos com saldo apenas na unidade indicada (requer acesso às duas unidades). */
+export type ProdutoExclusivoUnidadeFiltro = 'secretaria' | 'canil';
+
 export type ProdutoFiltro = {
   /** Busca em código OU descrição (OR), server-side */
   termo?: string;
@@ -43,6 +47,8 @@ export type ProdutoFiltro = {
   dataEntrega?: string;
   dataValidade?: string;
   statusEstoque?: ProdutoStatusEstoqueFiltro;
+  /** Quando definido, lista só produtos com saldo exclusivo nessa unidade. */
+  exclusivoUnidade?: ProdutoExclusivoUnidadeFiltro;
 };
 
 export type ProdutoPaginacaoDto = ItensPaginacaoDto;

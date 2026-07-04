@@ -2,6 +2,7 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { larguraConteudoPagina, paddingPaginaDetalhe } from '../../../shared/theme/estilosLayoutPagina';
 import { CabecalhoDetalheItem } from '../../../shared/components/detalheItem/CabecalhoDetalheItem';
 import { InfoCardDetalheItem } from '../../../shared/components/detalheItem/InfoCardDetalheItem';
@@ -12,6 +13,7 @@ import { PainelErro } from '../../../shared/components/PainelErro';
 import type { LoteDetalhe } from '../../../shared/types/loteDetalhe';
 import { mapearItensEstoqueParaLotes, textoProximoVencimento } from '../../../shared/utils/mapearLotesDetalhe';
 import { MENSAGEM_PRODUTO_SEM_NOME_RETIRADA, montarRetiradaNavegacaoState } from '../../estoque/utils/retiradaNavegacao';
+import { useUnidadesMedida } from '../../unidades-medida/hooks/useUnidadesMedida';
 import { useMedicamentoDetalhe, useMutacaoMedicamento } from '../hooks/useMedicamentos';
 
 const OPCOES_PRIORIDADE: Record<number, string> = {
@@ -41,14 +43,17 @@ export function PaginaDetalheMedicamento() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { cores } = useTemaApp();
+  const { unidadeAtivaId } = useUnidadeEstoque();
+  const { rotuloPorId } = useUnidadesMedida(undefined, false);
 
   const { estado, carregar } = useMedicamentoDetalhe(Number.isFinite(id) ? id : undefined);
   const { excluir, carregando, erro, errosValidacao } = useMutacaoMedicamento();
   const [erroRetirada, setErroRetirada] = useState<string | null>(null);
 
   useEffect(() => {
+    if (unidadeAtivaId == null) return;
     void carregar();
-  }, [carregar, location.search]);
+  }, [carregar, location.search, unidadeAtivaId]);
 
   const m = estado.dados;
 
@@ -63,7 +68,7 @@ export function PaginaDetalheMedicamento() {
 
   async function aoExcluir() {
     if (!Number.isFinite(id)) return;
-    if (!window.confirm('Confirma excluir este medicamento?')) return;
+    if (!window.confirm('Excluir este medicamento apenas da unidade atual? As outras unidades não serão alteradas.')) return;
     const resultado = await excluir(id);
     if (resultado.ok) navigate('/medicamentos');
   }
@@ -132,7 +137,8 @@ export function PaginaDetalheMedicamento() {
               { rotulo: 'Descrição', valor: m.descricao },
               { rotulo: 'Prioridade', valor: rotuloPrioridade(m.prioridade) },
               { rotulo: 'Público-alvo', valor: rotuloPublicoAlvo(m.publicoAlvo) },
-              { rotulo: 'Nível mínimo', valor: m.itemNivelEstoque.nivelMinimoEstoque },
+              { rotulo: 'Unidade', valor: m.unidadeRotulo ?? rotuloPorId(m.unidade) },
+              { rotulo: 'Nível mínimo', valor: m.itemNivelEstoque?.nivelMinimoEstoque ?? 0 },
             ]}
           />
 

@@ -5,42 +5,59 @@ import type { UsuarioSessao } from '../../../shared/types/usuarioSessao';
 import { usuariosService } from '../services/usuariosService';
 import type {
   ConfirmacaoSenhaDto,
-  FiltrosUsuarios,
+  FiltrosUsuariosListagem,
   TrocarSenhaDto,
   UsuarioAtualizacaoDto,
   UsuarioCadastroComConfirmacaoDto,
   UsuarioCriadoDto,
+  UsuariosPaginadosDto,
 } from '../types/tiposUsuarios';
-
-function normalizar(valor?: string | null): string {
-  return (valor ?? '').trim().toLowerCase();
-}
+import { StatusUsuario } from '../types/tiposUsuarios';
 
 /** Orquestra listagem e mutações de usuários (API + estado). */
 export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
   const [usuarios, setUsuarios] = useState<UsuarioCriadoDto[]>([]);
+  const [paginacao, setPaginacao] = useState<Omit<UsuariosPaginadosDto, 'items'>>({
+    totalCount: 0,
+    pageNumber: 1,
+    pageSize: 10,
+    totalPages: 1,
+    hasPrevious: false,
+    hasNext: false,
+  });
   const [carregandoLista, setCarregandoLista] = useState(false);
   const [carregandoAcao, setCarregandoAcao] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [errosValidacao, setErrosValidacao] = useState<string[] | null>(null);
   const [sucesso, setSucesso] = useState<string | null>(null);
 
-  const carregarUsuarios = useCallback(async () => {
-    if (!ehAdmin) {
-      setUsuarios([]);
-      return;
-    }
-    setCarregandoLista(true);
-    setErro(null);
-    try {
-      const lista = await usuariosService.listar();
-      setUsuarios(lista);
-    } catch (e) {
-      setErro(extrairMensagemErroApi(e));
-    } finally {
-      setCarregandoLista(false);
-    }
-  }, [ehAdmin]);
+  const carregarUsuarios = useCallback(
+    async (filtros: FiltrosUsuariosListagem = {}) => {
+      if (!ehAdmin) {
+        setUsuarios([]);
+        return;
+      }
+      setCarregandoLista(true);
+      setErro(null);
+      try {
+        const resultado = await usuariosService.listar(filtros);
+        setUsuarios(resultado.items);
+        setPaginacao({
+          totalCount: resultado.totalCount,
+          pageNumber: resultado.pageNumber,
+          pageSize: resultado.pageSize,
+          totalPages: resultado.totalPages,
+          hasPrevious: resultado.hasPrevious,
+          hasNext: resultado.hasNext,
+        });
+      } catch (e) {
+        setErro(extrairMensagemErroApi(e));
+      } finally {
+        setCarregandoLista(false);
+      }
+    },
+    [ehAdmin],
+  );
 
   const usuarioAtual = useMemo(() => {
     if (!usuario) return null;
@@ -55,6 +72,7 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
       dataHoraCriacao: String(usuario.dataHoraCriacao),
       dataHoraAtualizacao: String(usuario.dataHoraAtualizacao),
       isDeleted: Boolean(usuario.isDeleted),
+      status: (usuario.status ?? (usuario.isDeleted ? StatusUsuario.Inativo : StatusUsuario.Ativo)) as UsuarioCriadoDto['status'],
     } satisfies UsuarioCriadoDto;
   }, [usuario, usuarios]);
 
@@ -64,36 +82,39 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
     setErrosValidacao(null);
   }, []);
 
-  const atualizarUsuario = useCallback(async (id: number, dto: UsuarioAtualizacaoDto) => {
-    setCarregandoAcao(true);
-    setErro(null);
-    setErrosValidacao(null);
-    setSucesso(null);
-    try {
-      const atualizado = await usuariosService.atualizar(id, dto);
-      setUsuarios((atual) =>
-        atual.some((u) => u.id === id) ? atual.map((u) => (u.id === id ? atualizado : u)) : atual,
-      );
-      if (usuario?.id === id) {
-        mesclarUsuarioArmazenado({
-          primeiroNome: atualizado.primeiroNome,
-          sobrenome: atualizado.sobrenome ?? '',
-          email: atualizado.email,
-          dataHoraAtualizacao: new Date(atualizado.dataHoraAtualizacao),
-        });
+  const atualizarUsuario = useCallback(
+    async (id: number, dto: UsuarioAtualizacaoDto) => {
+      setCarregandoAcao(true);
+      setErro(null);
+      setErrosValidacao(null);
+      setSucesso(null);
+      try {
+        const atualizado = await usuariosService.atualizar(id, dto);
+        setUsuarios((atual) =>
+          atual.some((u) => u.id === id) ? atual.map((u) => (u.id === id ? atualizado : u)) : atual,
+        );
+        if (usuario?.id === id) {
+          mesclarUsuarioArmazenado({
+            primeiroNome: atualizado.primeiroNome,
+            sobrenome: atualizado.sobrenome ?? '',
+            email: atualizado.email,
+            dataHoraAtualizacao: new Date(atualizado.dataHoraAtualizacao),
+          });
+        }
+        setSucesso('Dados do usuário atualizados com sucesso.');
+        return atualizado;
+      } catch (e) {
+        setErro(extrairMensagemErroApi(e));
+        if (e instanceof ErroApi && e.errors) {
+          setErrosValidacao(e.extrairMensagemErros());
+        }
+        return null;
+      } finally {
+        setCarregandoAcao(false);
       }
-      setSucesso('Dados do usuário atualizados com sucesso.');
-      return atualizado;
-    } catch (e) {
-      setErro(extrairMensagemErroApi(e));
-      if (e instanceof ErroApi && e.errors) {
-        setErrosValidacao(e.extrairMensagemErros());
-      }
-      return null;
-    } finally {
-      setCarregandoAcao(false);
-    }
-  }, [usuario?.id]);
+    },
+    [usuario?.id],
+  );
 
   const trocarSenha = useCallback(async (id: number, dto: TrocarSenhaDto): Promise<boolean> => {
     setCarregandoAcao(true);
@@ -122,7 +143,6 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
     setSucesso(null);
     try {
       const novo = await usuariosService.criar(dto);
-      setUsuarios((atual) => [novo, ...atual]);
       setSucesso('Usuário cadastrado com sucesso.');
       return novo;
     } catch (e) {
@@ -138,7 +158,7 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
 
   const executarAcaoCritica = useCallback(
     async (
-      acao: 'inativar' | 'remover',
+      acao: 'inativar' | 'remover' | 'reativar' | 'remover-definitivo',
       id: number,
       dto: ConfirmacaoSenhaDto,
       descricaoSucesso: string,
@@ -149,21 +169,17 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
       setSucesso(null);
       try {
         if (acao === 'inativar') await usuariosService.inativar(id, dto);
-        else await usuariosService.remover(id, dto);
+        else if (acao === 'reativar') await usuariosService.reativar(id, dto);
+        else if (acao === 'remover-definitivo') await usuariosService.remover(id, dto, true);
+        else await usuariosService.remover(id, dto, false);
 
-        setUsuarios((atual) => {
-          if (acao === 'remover') return atual.filter((item) => item.id !== id);
-          return atual.map((item) =>
-            item.id === id ? { ...item, isDeleted: !item.isDeleted } : item,
-          );
-        });
         setSucesso(descricaoSucesso);
         return true;
       } catch (e) {
         setErro(extrairMensagemErroApi(e));
         if (e instanceof ErroApi && e.errors) {
-        setErrosValidacao(e.extrairMensagemErros());
-      }
+          setErrosValidacao(e.extrairMensagemErros());
+        }
         return false;
       } finally {
         setCarregandoAcao(false);
@@ -172,25 +188,9 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
     [],
   );
 
-  const filtrarUsuarios = useCallback(
-    (filtros: FiltrosUsuarios) => {
-      const termo = normalizar(filtros.busca);
-      return usuarios.filter((item) => {
-        const nomeCompleto = `${item.primeiroNome} ${item.sobrenome ?? ''}`;
-        const atendeBusca =
-          !termo || normalizar(nomeCompleto).includes(termo) || normalizar(item.email).includes(termo);
-        if (!atendeBusca) return false;
-
-        if (filtros.status === 'ativos') return !item.isDeleted;
-        if (filtros.status === 'inativos') return item.isDeleted;
-        return true;
-      });
-    },
-    [usuarios],
-  );
-
   return {
     usuarios,
+    paginacao,
     usuarioAtual,
     carregandoLista,
     carregandoAcao,
@@ -202,7 +202,6 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
     trocarSenha,
     criarUsuario,
     executarAcaoCritica,
-    filtrarUsuarios,
-    errosValidacao
+    errosValidacao,
   };
 }

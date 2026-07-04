@@ -3,6 +3,7 @@ using Backend.Models.CodigoAcesso;
 using Backend.Models.Insumos;
 using Backend.Models.Medicamentos;
 using Backend.Models.Produtos;
+using Backend.Models.UnidadeMedida;
 using Backend.Models.Usuarios;
 using Backend.Models.Estoque;
 using Microsoft.EntityFrameworkCore;
@@ -27,10 +28,6 @@ public class CanilAppDbContext : DbContext
         return base.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>
-    /// Garante que cada UPDATE persista um novo valor de Versao (WHERE Versao = valor original).
-    /// Caminhos que usam ExecuteUpdate já atualizam Versao na própria instrução SQL.
-    /// </summary>
     private void BumpItemEstoqueVersaoParaAlteracoesRastreadas()
     {
         foreach (var entry in ChangeTracker.Entries<ItemEstoqueModel>())
@@ -50,6 +47,12 @@ public class CanilAppDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<CodigoAcessoModel> CodigoAcesso { get; set; }
     public DbSet<ContadorLoteModel> ContadoresLote { get; set; }
+    public DbSet<UnidadeEstoqueModel> UnidadesEstoque { get; set; }
+    public DbSet<UsuarioUnidadeEstoqueModel> UsuariosUnidadesEstoque { get; set; }
+    public DbSet<UnidadeMedidaModel> UnidadesMedida { get; set; }
+    public DbSet<MovimentacaoEstoqueModel> MovimentacoesEstoque { get; set; }
+    public DbSet<TransferenciaEstoqueModel> TransferenciasEstoque { get; set; }
+    public DbSet<TransferenciaEstoqueItemModel> TransferenciasEstoqueItens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,8 +63,38 @@ public class CanilAppDbContext : DbContext
         modelBuilder.Entity<InsumosModel>().ToTable("Insumos");
         modelBuilder.Entity<MedicamentosModel>().ToTable("Medicamentos");
 
+        modelBuilder.Entity<UnidadeEstoqueModel>(e =>
+        {
+            e.HasIndex(u => u.Sigla).IsUnique();
+            e.HasData(
+                new UnidadeEstoqueModel
+                {
+                    Id = UnidadeEstoqueIds.Secretaria,
+                    Nome = "Secretaria",
+                    Sigla = "SEC",
+                    Tipo = "ADMINISTRATIVO",
+                    Ativa = true,
+                    DataCadastro = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    DataHoraCriacao = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    DataHoraAtualizacao = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EditadorPor = "Sistema",
+                },
+                new UnidadeEstoqueModel
+                {
+                    Id = UnidadeEstoqueIds.Canil,
+                    Nome = "Canil",
+                    Sigla = "CAN",
+                    Tipo = "OPERACIONAL",
+                    Ativa = true,
+                    DataCadastro = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    DataHoraCriacao = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    DataHoraAtualizacao = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    EditadorPor = "Sistema",
+                });
+        });
+
         modelBuilder.Entity<ItemEstoqueModel>()
-            .HasKey(i => new { i.Id, i.Lote });
+            .HasKey(i => new { i.Id, i.IdUnidadeEstoque, i.Lote });
 
         modelBuilder.Entity<ItemEstoqueModel>()
             .HasOne(i => i.ItemBase)
@@ -70,26 +103,40 @@ public class CanilAppDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<ItemEstoqueModel>()
+            .HasOne(i => i.UnidadeEstoque)
+            .WithMany()
+            .HasForeignKey(i => i.IdUnidadeEstoque)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ItemEstoqueModel>()
             .Property(i => i.Versao)
             .IsConcurrencyToken();
 
-        // Lote único: a geração é controlada pelo backend e nunca reutiliza números.
         modelBuilder.Entity<ItemEstoqueModel>()
-            .HasIndex(i => i.Lote)
+            .HasIndex(i => new { i.IdUnidadeEstoque, i.Lote })
             .IsUnique();
+
+        modelBuilder.Entity<ItemEstoqueModel>()
+            .HasIndex(i => i.IdUnidadeEstoque);
 
         modelBuilder.Entity<ContadorLoteModel>()
             .Property(c => c.Versao)
             .IsConcurrencyToken();
 
         modelBuilder.Entity<ItemNivelEstoqueModel>()
-            .HasKey(i => i.Id);
+            .HasKey(i => new { i.Id, i.IdUnidadeEstoque });
 
         modelBuilder.Entity<ItemNivelEstoqueModel>()
             .HasOne(i => i.ItemBase)
-            .WithOne(p => p.ItemNivelEstoque)
-            .HasForeignKey<ItemNivelEstoqueModel>(i => i.Id)
+            .WithMany(p => p.ItensNivelEstoque)
+            .HasForeignKey(i => i.Id)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ItemNivelEstoqueModel>()
+            .HasOne(i => i.UnidadeEstoque)
+            .WithMany()
+            .HasForeignKey(i => i.IdUnidadeEstoque)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<ItemComEstoqueBaseModel>()
             .Property(i => i.Id)
@@ -135,8 +182,56 @@ public class CanilAppDbContext : DbContext
             .HasIndex(r => r.IdUsuarioRecebedor);
 
         modelBuilder.Entity<RetiradaEstoqueModel>()
+            .HasIndex(r => new { r.IdUnidadeEstoque, r.DataHoraRetirada });
+
+        modelBuilder.Entity<RetiradaEstoqueModel>()
             .Property(r => r.Status)
             .HasMaxLength(48);
+
+        modelBuilder.Entity<UsuarioUnidadeEstoqueModel>(e =>
+        {
+            e.HasKey(x => new { x.IdUsuario, x.IdUnidadeEstoque });
+            e.HasOne(x => x.Usuario)
+                .WithMany()
+                .HasForeignKey(x => x.IdUsuario)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.UnidadeEstoque)
+                .WithMany(u => u.Usuarios)
+                .HasForeignKey(x => x.IdUnidadeEstoque)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<MovimentacaoEstoqueModel>(e =>
+        {
+            e.HasKey(m => m.Id);
+            e.Property(m => m.Id).ValueGeneratedOnAdd();
+            e.HasIndex(m => new { m.IdUnidadeEstoque, m.DataHoraMovimentacao });
+            e.HasIndex(m => new { m.IdItem, m.Lote });
+            e.HasIndex(m => m.IdTransferencia);
+            e.HasOne(m => m.UnidadeEstoque).WithMany().HasForeignKey(m => m.IdUnidadeEstoque);
+            e.HasOne(m => m.Item).WithMany().HasForeignKey(m => m.IdItem);
+            e.HasOne(m => m.Transferencia).WithMany().HasForeignKey(m => m.IdTransferencia);
+            e.HasOne(m => m.Retirada).WithMany().HasForeignKey(m => m.IdRetirada);
+            e.HasOne(m => m.Usuario).WithMany().HasForeignKey(m => m.IdUsuario);
+        });
+
+        modelBuilder.Entity<TransferenciaEstoqueModel>(e =>
+        {
+            e.HasOne(t => t.UnidadeOrigem).WithMany().HasForeignKey(t => t.IdUnidadeOrigem).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(t => t.UnidadeDestino).WithMany().HasForeignKey(t => t.IdUnidadeDestino).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(t => t.UsuarioEnvio).WithMany().HasForeignKey(t => t.IdUsuarioEnvio);
+            e.HasOne(t => t.UsuarioRecebimento).WithMany().HasForeignKey(t => t.IdUsuarioRecebimento);
+            e.HasIndex(t => new { t.IdUnidadeOrigem, t.IdUnidadeDestino, t.DataTransferencia });
+            e.HasIndex(t => t.Status);
+        });
+
+        modelBuilder.Entity<TransferenciaEstoqueItemModel>(e =>
+        {
+            e.HasKey(i => i.Id);
+            e.Property(i => i.Id).ValueGeneratedOnAdd();
+            e.HasOne(i => i.Transferencia).WithMany(t => t.Itens).HasForeignKey(i => i.IdTransferencia);
+            e.HasOne(i => i.Item).WithMany().HasForeignKey(i => i.IdItem);
+        });
 
         modelBuilder.Entity<CodigoAcessoModel>()
             .HasData(new CodigoAcessoModel

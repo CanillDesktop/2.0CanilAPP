@@ -54,5 +54,7 @@ namespace Backend.Services
             oldToken.RevokedAt = DateTime.UtcNow;
         }
 
+        public Task RevokeAllTokensForUserAsync(int userId)
+            => _repository.RevokeAllTokensForUserAsync(userId);
     }
 }

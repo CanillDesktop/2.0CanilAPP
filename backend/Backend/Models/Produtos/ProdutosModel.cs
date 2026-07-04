@@ -11,7 +11,8 @@ public class ProdutosModel : ItemComEstoqueBaseModel
     public string Codigo { get; set; } = string.Empty;
     public string DescricaoSimples { get; set; } = string.Empty;
     public string DescricaoDetalhada { get; set; } = string.Empty;
-    public UnidadeEnum Unidade { get; set; }
+    /// <summary>Id da unidade de medida cadastrada (<see cref="UnidadeMedida.UnidadeMedidaModel"/>).</summary>
+    public int Unidade { get; set; }
     public CategoriaEnum Categoria { get; set; }
 
     private static string GeraIdentificador(CategoriaEnum categoria)
@@ -51,28 +52,17 @@ public class ProdutosModel : ItemComEstoqueBaseModel
             DescricaoDetalhada = dto.DescricaoDetalhada.ToLower(),
             Unidade = dto.Unidade,
             Categoria = dto.Categoria,
-            ItemNivelEstoque = new()
-            {
-                NivelMinimoEstoque = dto.NivelMinimoEstoque
-            },
-            ItensEstoque =
-            [
-                new ItemEstoqueModel()
-                {
-                    Codigo = codigoProduto,
-                    DataEntrega = dto.DataEntrega,
-                    DataValidade = dto.DataValidade,
-                    NFe = dto.NFe,
-                    Quantidade = dto.Quantidade
-                }
-            ]
+            ItensNivelEstoque = dto.NivelMinimoEstoque > 0
+                ? [new ItemNivelEstoqueModel { NivelMinimoEstoque = dto.NivelMinimoEstoque }]
+                : [],
+            ItensEstoque = [],
         };
     }
 
     public static implicit operator ProdutosLeituraDTO(ProdutosModel model)
     {
         var itensEstoque = model.ItensEstoque ?? [];
-        var nivelEstoque = model.ItemNivelEstoque;
+        var nivelEstoque = (model.ItensNivelEstoque ?? []).FirstOrDefault();
 
         return new ProdutosLeituraDTO()
         {

@@ -1,7 +1,6 @@
 import {
   Alert,
   Box,
-  Card,
   Stack,
   Tab,
   Tabs,
@@ -9,12 +8,12 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
+import { useEffect, useState, type SyntheticEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { MSG_ERRO } from '../../../shared/constants/mensagensErroUsuario';
-import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { larguraConteudoPagina, paddingPaginaShell } from '../../../shared/theme/estilosLayoutPagina';
 import { consultarEstoquePaginadoApi, obterContagensEstoqueApi } from '../api/estoqueConsultaApi';
 import { EstoqueGestaoConteudo } from '../components/EstoqueGestaoConteudo';
@@ -67,6 +66,7 @@ function mapearLinha(dto: EstoqueLinhaDto): LinhaOperacionalEstoque {
 export function PaginaListagemEstoque() {
   const navigate = useNavigate();
   const { usuario } = useAutenticacao();
+  const { unidadeAtivaId } = useUnidadeEstoque();
   const [abaTipo, setAbaTipo] = useState(lerAbaEstoqueSalva);
 
   const [carregando, setCarregando] = useState(true);
@@ -98,7 +98,6 @@ export function PaginaListagemEstoque() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { cores } = useTemaApp();
-  const estilos = useEstilosListagem();
 
   const origemAlvo: LinhaOperacionalEstoque['origem'] =
     abaTipo === 0 ? 'produto' : abaTipo === 1 ? 'medicamento' : 'insumo';
@@ -124,7 +123,7 @@ export function PaginaListagemEstoque() {
     return () => {
       ativo = false;
     };
-  }, []);
+  }, [unidadeAtivaId]);
 
   useEffect(() => {
     let ativo = true;
@@ -186,6 +185,7 @@ export function PaginaListagemEstoque() {
     orderDirection,
     page,
     rowsPerPage,
+    unidadeAtivaId,
   ]);
 
   useEffect(() => {
@@ -193,21 +193,6 @@ export function PaginaListagemEstoque() {
       setPage(totalPages);
     }
   }, [totalPages, page]);
-
-  const filtrosAtivos = useMemo(
-    () =>
-      Boolean(
-        statusFiltro ||
-          qtdMin ||
-          qtdMax ||
-          validadeDe ||
-          validadeAte ||
-          movDe ||
-          movAte ||
-          debouncedSearch.trim(),
-      ),
-    [statusFiltro, qtdMin, qtdMax, validadeDe, validadeAte, movDe, movAte, debouncedSearch],
-  );
 
   function aoMudarAba(_event: SyntheticEvent, novoValor: number) {
     setAbaTipo(novoValor);
@@ -288,32 +273,25 @@ export function PaginaListagemEstoque() {
           </Tabs>
 
           <Stack spacing={3}>
-            <Card sx={{ ...estilos.cardTabela, p: { xs: 2, sm: 3 } }}>
-              <Typography variant="subtitle1" sx={{ ...estilos.titulo, mb: 2 }}>
-                Filtros
-              </Typography>
-              <PainelFiltrosEstoque
-                isMobile={isMobile}
-                search={search}
-                onSearchChange={setSearch}
-                statusFiltro={statusFiltro}
-                onStatusChange={setStatusFiltro}
-                qtdMin={qtdMin}
-                onQtdMinChange={setQtdMin}
-                qtdMax={qtdMax}
-                onQtdMaxChange={setQtdMax}
-                validadeDe={validadeDe}
-                onValidadeDeChange={setValidadeDe}
-                validadeAte={validadeAte}
-                onValidadeAteChange={setValidadeAte}
-                movDe={movDe}
-                onMovDeChange={setMovDe}
-                movAte={movAte}
-                onMovAteChange={setMovAte}
-                onLimpar={limparFiltros}
-                filtrosAtivos={filtrosAtivos}
-              />
-            </Card>
+            <PainelFiltrosEstoque
+              search={search}
+              onSearchChange={setSearch}
+              statusFiltro={statusFiltro}
+              onStatusChange={setStatusFiltro}
+              qtdMin={qtdMin}
+              onQtdMinChange={setQtdMin}
+              qtdMax={qtdMax}
+              onQtdMaxChange={setQtdMax}
+              validadeDe={validadeDe}
+              onValidadeDeChange={setValidadeDe}
+              validadeAte={validadeAte}
+              onValidadeAteChange={setValidadeAte}
+              movDe={movDe}
+              onMovDeChange={setMovDe}
+              movAte={movAte}
+              onMovAteChange={setMovAte}
+              onLimpar={limparFiltros}
+            />
 
             {erroCarregamento ? (
               <Alert severity="error">{erroCarregamento}</Alert>

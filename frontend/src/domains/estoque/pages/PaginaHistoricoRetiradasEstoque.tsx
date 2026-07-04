@@ -17,6 +17,7 @@ import { alpha, useTheme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 import { HistoricoRetiradasDetalheDrawer } from '../components/historicoRetiradas/HistoricoRetiradasDetalheDrawer';
@@ -75,6 +76,7 @@ function KpiResumoAudit({
 export function PaginaHistoricoRetiradasEstoque() {
   const tema = useTheme();
   const { cores } = useTemaApp();
+  const { unidadeAtivaId } = useUnidadeEstoque();
   const estilos = useEstilosListagem();
   const sxPaperFiltro = {
     bgcolor: cores.bgCard,
@@ -118,7 +120,7 @@ export function PaginaHistoricoRetiradasEstoque() {
 
   useEffect(() => {
     setPage(0);
-  }, [usarIntervaloLivre, periodoRapido, dataIni, dataFim, idRetirante, idRecebedor, termoDebounced, ordenacaoDataAsc]);
+  }, [usarIntervaloLivre, periodoRapido, dataIni, dataFim, idRetirante, idRecebedor, termoDebounced, ordenacaoDataAsc, unidadeAtivaId]);
 
   const montarFiltro = useCallback((): RetiradaHistoricoFiltroDto | null => {
     if (usarIntervaloLivre) {
@@ -176,6 +178,7 @@ export function PaginaHistoricoRetiradasEstoque() {
   }
 
   const recarregar = useCallback(async () => {
+    if (unidadeAtivaId == null) return;
     const filtro = montarFiltro();
     if (!filtro) return;
     await carregar(filtro, {
@@ -183,7 +186,7 @@ export function PaginaHistoricoRetiradasEstoque() {
       pageSize: rowsPerPage,
       ordemDataAscendente: ordenacaoDataAsc,
     });
-  }, [carregar, montarFiltro, page, rowsPerPage, ordenacaoDataAsc]);
+  }, [carregar, montarFiltro, page, rowsPerPage, ordenacaoDataAsc, unidadeAtivaId]);
 
   useEffect(() => {
     void recarregar();

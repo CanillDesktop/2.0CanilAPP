@@ -17,63 +17,56 @@ namespace Backend.Services
     {
         public readonly IInsumosRepository _repository;
         public readonly IUserSessionService _userSessionService;
+        private readonly IUnidadeEstoqueContextService _unidadeContext;
+        private readonly IUnidadeMedidaService _unidadeMedidaService;
         private readonly IConfiguration _configuration;
-        private readonly ILoteGeradorService _loteGerador;
 
         public InsumosService(
             IInsumosRepository repository,
             IUserSessionService userSessionService,
-            IConfiguration configuration,
-            ILoteGeradorService loteGerador)
+            IUnidadeEstoqueContextService unidadeContext,
+            IUnidadeMedidaService unidadeMedidaService,
+            IConfiguration configuration)
         {
             _repository = repository;
             _userSessionService = userSessionService;
+            _unidadeContext = unidadeContext;
+            _unidadeMedidaService = unidadeMedidaService;
             _configuration = configuration;
-            _loteGerador = loteGerador;
         }
 
         private static void ValidarCamposObrigatorios(InsumosModel model)
         {
             if (string.IsNullOrWhiteSpace(model.DescricaoSimplificada)
                 || string.IsNullOrWhiteSpace(model.DescricaoDetalhada)
-                || !Enum.IsDefined(typeof(UnidadeInsumosEnum), (int)model.Unidade))
+                || model.Unidade <= 0)
             {
                 throw new ModelIncompletaException("Um ou mais campos obrigatórios não foram preenchidos");
             }
         }
 
-        public async Task<IEnumerable<InsumosModel>> BuscarTodosAsync()
-        {
-            var insumos = await _repository.GetAsync();
-
-            var quantidade = insumos.Count();
-            System.Diagnostics.Debug.WriteLine($"[Service] Itens vindos do banco: {quantidade}");
-
-            foreach (var insumo in insumos)
-            {
-                System.Diagnostics.Debug.WriteLine($"[Service] Item ID: {insumo.Id} - Nome: {insumo.DescricaoSimplificada}");
-            }
-
-            return insumos;
-        }
+        public async Task<IEnumerable<InsumosModel>> BuscarTodosAsync() => await _repository.GetAsync();
 
         public async Task<InsumosModel?> BuscarPorIdAsync(int id) => (await _repository.GetByIdAsync(id))!;
 
         public async Task<InsumosModel?> CriarAsync(InsumosModel model)
         {
             ValidarCamposObrigatorios(model);
+            await _unidadeMedidaService.GarantirAplicavelAsync(model.Unidade, TipoItemUnidadeMedida.Insumo);
 
-            var itemInicial = model.ItensEstoque?.FirstOrDefault();
-            if (itemInicial != null && itemInicial.Quantidade > 0)
+            model.ItensEstoque = [];
+            var nivelMinimo = model.ItensNivelEstoque.FirstOrDefault()?.NivelMinimoEstoque ?? 0;
+            model.ItensNivelEstoque = [];
+
+            var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
+            await _unidadeContext.GarantirConsultaAsync(idUnidade);
+
+            // Presença na unidade ativa (mesmo com nível 0): cadastro não afeta outras unidades.
+            model.ItensNivelEstoque.Add(new ItemNivelEstoqueModel
             {
-                itemInicial.Codigo = model.Codigo;
-                itemInicial.Lote = await _loteGerador.GerarLoteInsumoAsync(model.Unidade, model.DescricaoSimplificada);
-                model.ItensEstoque = new List<ItemEstoqueModel> { itemInicial };
-            }
-            else
-            {
-                model.ItensEstoque = new List<ItemEstoqueModel>();
-            }
+                IdUnidadeEstoque = idUnidade,
+                NivelMinimoEstoque = nivelMinimo,
+            });
 
             model.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
 
@@ -84,61 +77,46 @@ namespace Backend.Services
         {
             try
             {
-                Debug.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-                Debug.WriteLine($"[InsumosService] 🔄 Atualizando insumo: {id} - {model.DescricaoSimplificada} ");
-
                 var insumoExistente = await _repository.GetByIdAsync(id);
 
                 if (insumoExistente == null)
                 {
-                    Debug.WriteLine($"[InsumosService] ❌ Insumo não encontrado");
                     throw new ArgumentNullException(null, $"Insumo de id {id} não encontrado");
                 }
 
                 ValidarCamposObrigatorios(model);
+                await _unidadeMedidaService.GarantirAplicavelAsync(model.Unidade, TipoItemUnidadeMedida.Insumo);
 
-                Debug.WriteLine($"[InsumosService] ✅ Insumo encontrado: ID={insumoExistente.Id}");
+                var idUnidade = await _unidadeContext.ObterUnidadeAtivaIdAsync();
+                await _unidadeContext.GarantirConsultaAsync(idUnidade);
 
                 insumoExistente.DescricaoSimplificada = model.DescricaoSimplificada;
                 insumoExistente.DescricaoDetalhada = model.DescricaoDetalhada;
                 insumoExistente.Unidade = model.Unidade;
 
-                // Entrada de novo estoque na edição: o lote é sempre gerado pelo backend.
-                var itemEstoque = model.ItensEstoque?.FirstOrDefault();
-                if (itemEstoque != null && itemEstoque.Quantidade > 0)
+                var nivelInformado = model.ItensNivelEstoque.FirstOrDefault()?.NivelMinimoEstoque;
+                if (nivelInformado is int minimo)
                 {
-                    var novoLote = new ItemEstoqueModel
+                    var nivelExistente = insumoExistente.ObterNivelEstoque(idUnidade);
+                    if (nivelExistente is null)
                     {
-                        Id = insumoExistente.Id,
-                        Codigo = insumoExistente.Codigo,
-                        Lote = await _loteGerador.GerarLoteInsumoAsync(
-                            insumoExistente.Unidade,
-                            insumoExistente.DescricaoSimplificada),
-                        Quantidade = itemEstoque.Quantidade,
-                        DataEntrega = itemEstoque.DataEntrega,
-                        DataValidade = itemEstoque.DataValidade,
-                        NFe = itemEstoque.NFe,
-                        DataHoraCriacao = DateTime.UtcNow
-                    };
-
-                    insumoExistente.ItensEstoque ??= new List<ItemEstoqueModel>();
-                    insumoExistente.ItensEstoque.Add(novoLote);
-                }
-
-                if (insumoExistente.ItemNivelEstoque != null)
-                {
-                    insumoExistente.ItemNivelEstoque.NivelMinimoEstoque = model.ItemNivelEstoque.NivelMinimoEstoque;
-                    Debug.WriteLine($"[InsumosService] ✅ Nível mínimo atualizado: {model.ItemNivelEstoque.NivelMinimoEstoque}");
+                        insumoExistente.ItensNivelEstoque.Add(new ItemNivelEstoqueModel
+                        {
+                            Id = insumoExistente.Id,
+                            IdUnidadeEstoque = idUnidade,
+                            NivelMinimoEstoque = minimo,
+                        });
+                    }
+                    else
+                    {
+                        nivelExistente.NivelMinimoEstoque = minimo;
+                    }
                 }
 
                 insumoExistente.DataHoraAtualizacao = DateTime.UtcNow;
-                Debug.WriteLine($"[InsumosService] 🔥 DataHoraAtualizacao atualizado: {insumoExistente.DataHoraAtualizacao}");
                 insumoExistente.EditadorPor = _userSessionService.EditedBy ?? string.Empty;
 
-                var resultado = await _repository.UpdateAsync(insumoExistente);
-                Debug.WriteLine($"[InsumosService] ✅ Insumo salvo com sucesso!");
-                Debug.WriteLine("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-                return resultado;
+                return await _repository.UpdateAsync(insumoExistente);
             }
             catch (ArgumentNullException ex)
             {
@@ -153,34 +131,26 @@ namespace Backend.Services
             catch (Exception ex)
             {
                 Debug.WriteLine($"[InsumosService] ❌ Erro ao atualizar insumo: {ex.Message}");
-                Debug.WriteLine($"StackTrace: {ex.StackTrace}");
                 throw;
             }
         }
 
         public async Task<bool> DeletarAsync(int id)
         {
-            var insumo = await BuscarPorIdAsync(id);
-
-            if (insumo == null) return false;
-
-            insumo.IsDeleted = true;
-            insumo.DataHoraAtualizacao = DateTime.UtcNow;
-
-            return await _repository.DeleteAsync(insumo);
+            var editor = _userSessionService.EditedBy ?? string.Empty;
+            return await _repository.DeleteNaUnidadeAtivaAsync(id, editor);
         }
 
         public async Task<ItemComEstoqueListaPaginadaDTO<InsumosLeituraDTO>> BuscarPaginadoAsync(
             InsumosFiltro filtro,
-            ItensPaginationParameters produtosParameters,
+            ItensPaginationParameters paginationParameters,
             CancellationToken cancellationToken = default)
         {
             var diasDataLimiteVencimento = _configuration.GetValue("RegrasDeNegocio:DiasDataLimiteVencimentoItens", 30);
+            var consulta = await _repository.ConsultarPaginadoAsync(filtro, paginationParameters, diasDataLimiteVencimento, cancellationToken);
 
-            var consulta = await _repository.ConsultarPaginadoAsync(filtro, produtosParameters, diasDataLimiteVencimento, cancellationToken);
-
-            var pageNumber = Math.Max(produtosParameters.PageNumber, 1);
-            var pageSize = produtosParameters.PageSize;
+            var pageNumber = Math.Max(paginationParameters.PageNumber, 1);
+            var pageSize = paginationParameters.PageSize;
             var totalPages = consulta.TotalCount == 0
                 ? 0
                 : (int)Math.Ceiling(consulta.TotalCount / (double)pageSize);
