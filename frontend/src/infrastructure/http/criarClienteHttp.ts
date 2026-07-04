@@ -23,9 +23,13 @@ export function criarClienteHttp(): AxiosInstance {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    const unidadeId = obterUnidadeAtivaId();
-    if (unidadeId != null) {
-      config.headers[HEADER_UNIDADE_ESTOQUE] = String(unidadeId);
+    // Respeita unidade já definida na chamada; senão usa a unidade ativa persistida.
+    const headerUnidade = config.headers.get?.(HEADER_UNIDADE_ESTOQUE) ?? config.headers[HEADER_UNIDADE_ESTOQUE];
+    if (headerUnidade == null || headerUnidade === '') {
+      const unidadeId = obterUnidadeAtivaId();
+      if (unidadeId != null) {
+        config.headers[HEADER_UNIDADE_ESTOQUE] = String(unidadeId);
+      }
     }
     return config;
   });

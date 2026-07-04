@@ -1,5 +1,6 @@
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import {
+  Box,
   Button,
   Card,
   CardContent,
@@ -14,6 +15,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import type { UsuarioCriadoDto } from '../types/tiposUsuarios';
 import { rotuloStatusUsuario, StatusUsuario } from '../types/tiposUsuarios';
 
@@ -40,31 +42,76 @@ function corStatus(status: number): 'success' | 'default' | 'error' {
   return 'error';
 }
 
+function nomeCompleto(usuario: UsuarioCriadoDto) {
+  return `${usuario.primeiroNome} ${usuario.sobrenome ?? ''}`.trim();
+}
+
 function AcoesUsuario({
   usuario,
   usuarioLogadoId,
   carregando,
+  compacto,
   onEditar,
   onInativar,
   onReativar,
   onRemover,
   onRemoverDefinitivo,
-}: Props & { usuario: UsuarioCriadoDto }) {
+}: {
+  usuario: UsuarioCriadoDto;
+  usuarioLogadoId?: number | null;
+  carregando?: boolean;
+  compacto?: boolean;
+  onEditar: (usuario: UsuarioCriadoDto) => void;
+  onInativar: (usuario: UsuarioCriadoDto) => void;
+  onReativar: (usuario: UsuarioCriadoDto) => void;
+  onRemover: (usuario: UsuarioCriadoDto) => void;
+  onRemoverDefinitivo: (usuario: UsuarioCriadoDto) => void;
+}) {
   const ehProprioUsuario = usuarioLogadoId != null && usuario.id === usuarioLogadoId;
   const bloqueioAuto = carregando || ehProprioUsuario;
+  const sxBotao = compacto
+    ? {
+        flex: '1 1 calc(50% - 4px)',
+        minWidth: 0,
+        minHeight: 40,
+        textTransform: 'none' as const,
+        fontWeight: 600,
+        fontSize: '0.8rem',
+        borderRadius: 2,
+      }
+    : undefined;
 
   return (
-    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-      <Button size="small" onClick={() => onEditar(usuario)} disabled={carregando}>
+    <Stack
+      direction="row"
+      sx={{
+        flexWrap: 'wrap',
+        justifyContent: compacto ? 'stretch' : 'flex-end',
+        gap: compacto ? 0.75 : 1,
+      }}
+    >
+      <Button size="small" onClick={() => onEditar(usuario)} disabled={carregando} sx={sxBotao}>
         Editar
       </Button>
 
       {usuario.status === StatusUsuario.Ativo ? (
         <>
-          <Button size="small" color="warning" onClick={() => onInativar(usuario)} disabled={bloqueioAuto}>
+          <Button
+            size="small"
+            color="warning"
+            onClick={() => onInativar(usuario)}
+            disabled={bloqueioAuto}
+            sx={sxBotao}
+          >
             Inativar
           </Button>
-          <Button size="small" color="error" onClick={() => onRemover(usuario)} disabled={bloqueioAuto}>
+          <Button
+            size="small"
+            color="error"
+            onClick={() => onRemover(usuario)}
+            disabled={bloqueioAuto}
+            sx={sxBotao}
+          >
             Excluir
           </Button>
         </>
@@ -72,10 +119,22 @@ function AcoesUsuario({
 
       {usuario.status === StatusUsuario.Inativo ? (
         <>
-          <Button size="small" color="success" onClick={() => onReativar(usuario)} disabled={carregando}>
+          <Button
+            size="small"
+            color="success"
+            onClick={() => onReativar(usuario)}
+            disabled={carregando}
+            sx={sxBotao}
+          >
             Reativar
           </Button>
-          <Button size="small" color="error" onClick={() => onRemover(usuario)} disabled={bloqueioAuto}>
+          <Button
+            size="small"
+            color="error"
+            onClick={() => onRemover(usuario)}
+            disabled={bloqueioAuto}
+            sx={sxBotao}
+          >
             Excluir
           </Button>
         </>
@@ -88,11 +147,137 @@ function AcoesUsuario({
           variant="outlined"
           onClick={() => onRemoverDefinitivo(usuario)}
           disabled={carregando}
+          sx={compacto ? { ...sxBotao, flex: '1 1 100%' } : undefined}
         >
           Remover definitivamente
         </Button>
       ) : null}
     </Stack>
+  );
+}
+
+function CardUsuarioMobile({
+  usuario,
+  modoPermissoes,
+  usuarioLogadoId,
+  carregando,
+  onAbrirPermissoes,
+  onEditar,
+  onInativar,
+  onReativar,
+  onRemover,
+  onRemoverDefinitivo,
+}: {
+  usuario: UsuarioCriadoDto;
+  modoPermissoes: boolean;
+  usuarioLogadoId?: number | null;
+  carregando?: boolean;
+  onAbrirPermissoes?: (usuario: UsuarioCriadoDto) => void;
+  onEditar: (usuario: UsuarioCriadoDto) => void;
+  onInativar: (usuario: UsuarioCriadoDto) => void;
+  onReativar: (usuario: UsuarioCriadoDto) => void;
+  onRemover: (usuario: UsuarioCriadoDto) => void;
+  onRemoverDefinitivo: (usuario: UsuarioCriadoDto) => void;
+}) {
+  const { cores } = useTemaApp();
+
+  return (
+    <Card
+      elevation={0}
+      sx={{
+        borderRadius: 2,
+        border: `1px solid ${cores.border}`,
+        bgcolor: cores.bgCard,
+        ...(modoPermissoes ? { cursor: 'pointer' } : {}),
+      }}
+      onClick={modoPermissoes ? () => onAbrirPermissoes?.(usuario) : undefined}
+    >
+      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+        <Stack spacing={1.25}>
+          <Stack direction="row" sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                sx={{
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  lineHeight: 1.3,
+                  color: cores.textPrimary,
+                }}
+              >
+                {nomeCompleto(usuario)}
+              </Typography>
+              <Typography
+                sx={{
+                  mt: 0.35,
+                  fontSize: '0.78rem',
+                  lineHeight: 1.35,
+                  color: cores.textMuted,
+                  wordBreak: 'break-word',
+                }}
+              >
+                {usuario.email}
+              </Typography>
+            </Box>
+            <Chip
+              label={rotuloStatusUsuario(usuario.status)}
+              color={corStatus(usuario.status)}
+              size="small"
+              sx={{ height: 24, fontWeight: 700, fontSize: '0.7rem', flexShrink: 0 }}
+            />
+          </Stack>
+
+          <Chip
+            label={rotuloPermissao(usuario.permissao)}
+            size="small"
+            sx={{
+              alignSelf: 'flex-start',
+              height: 24,
+              fontWeight: 600,
+              fontSize: '0.7rem',
+              bgcolor: cores.chipBg,
+              border: `1px solid ${cores.chipBorder}`,
+              color: cores.textPrimary,
+            }}
+          />
+
+          {modoPermissoes ? (
+            <Button
+              size="small"
+              variant="contained"
+              fullWidth
+              startIcon={<AdminPanelSettingsOutlinedIcon />}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAbrirPermissoes?.(usuario);
+              }}
+              sx={{
+                minHeight: 40,
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.82rem',
+                borderRadius: 2,
+              }}
+            >
+              Definir permissões
+            </Button>
+          ) : (
+            <Box sx={{ pt: 0.25 }}>
+              <AcoesUsuario
+                usuario={usuario}
+                usuarioLogadoId={usuarioLogadoId}
+                carregando={carregando}
+                compacto
+                onEditar={onEditar}
+                onInativar={onInativar}
+                onReativar={onReativar}
+                onRemover={onRemover}
+                onRemoverDefinitivo={onRemoverDefinitivo}
+              />
+            </Box>
+          )}
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -111,53 +296,29 @@ export function ListagemUsuariosResponsiva({
   const theme = useTheme();
   const mobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  function abrirPermissoes(usuario: UsuarioCriadoDto) {
-    onAbrirPermissoes?.(usuario);
+  if (mobile) {
+    return (
+      <Stack spacing={1.25}>
+        {usuarios.map((usuario) => (
+          <CardUsuarioMobile
+            key={usuario.id}
+            usuario={usuario}
+            modoPermissoes={modoPermissoes}
+            usuarioLogadoId={usuarioLogadoId}
+            carregando={carregando}
+            onAbrirPermissoes={onAbrirPermissoes}
+            onEditar={onEditar}
+            onInativar={onInativar}
+            onReativar={onReativar}
+            onRemover={onRemover}
+            onRemoverDefinitivo={onRemoverDefinitivo}
+          />
+        ))}
+      </Stack>
+    );
   }
 
   if (modoPermissoes) {
-    if (mobile) {
-      return (
-        <Stack spacing={1.5}>
-          {usuarios.map((usuario) => (
-            <Card
-              key={usuario.id}
-              sx={{ cursor: 'pointer' }}
-              onClick={() => abrirPermissoes(usuario)}
-            >
-              <CardContent>
-                <Stack spacing={1}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                    {usuario.primeiroNome} {usuario.sobrenome ?? ''}
-                  </Typography>
-                  <Typography variant="body2">{usuario.email}</Typography>
-                  <Stack direction="row" spacing={1}>
-                    <Chip
-                      label={rotuloStatusUsuario(usuario.status)}
-                      color={corStatus(usuario.status)}
-                      size="small"
-                    />
-                    <Chip label={rotuloPermissao(usuario.permissao)} size="small" />
-                  </Stack>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={<AdminPanelSettingsOutlinedIcon />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      abrirPermissoes(usuario);
-                    }}
-                  >
-                    Definir permissões
-                  </Button>
-                </Stack>
-              </CardContent>
-            </Card>
-          ))}
-        </Stack>
-      );
-    }
-
     return (
       <Table size="small">
         <TableHead>
@@ -175,11 +336,9 @@ export function ListagemUsuariosResponsiva({
               key={usuario.id}
               hover
               sx={{ cursor: 'pointer' }}
-              onClick={() => abrirPermissoes(usuario)}
+              onClick={() => onAbrirPermissoes?.(usuario)}
             >
-              <TableCell>
-                {usuario.primeiroNome} {usuario.sobrenome ?? ''}
-              </TableCell>
+              <TableCell>{nomeCompleto(usuario)}</TableCell>
               <TableCell>{usuario.email}</TableCell>
               <TableCell>
                 <Chip
@@ -196,7 +355,7 @@ export function ListagemUsuariosResponsiva({
                   startIcon={<AdminPanelSettingsOutlinedIcon />}
                   onClick={(e) => {
                     e.stopPropagation();
-                    abrirPermissoes(usuario);
+                    onAbrirPermissoes?.(usuario);
                   }}
                 >
                   Permissões
@@ -206,44 +365,6 @@ export function ListagemUsuariosResponsiva({
           ))}
         </TableBody>
       </Table>
-    );
-  }
-
-  if (mobile) {
-    return (
-      <Stack spacing={1.5}>
-        {usuarios.map((usuario) => (
-          <Card key={usuario.id}>
-            <CardContent>
-              <Stack spacing={1}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  {usuario.primeiroNome} {usuario.sobrenome ?? ''}
-                </Typography>
-                <Typography variant="body2">{usuario.email}</Typography>
-                <Stack direction="row" spacing={1}>
-                  <Chip
-                    label={rotuloStatusUsuario(usuario.status)}
-                    color={corStatus(usuario.status)}
-                    size="small"
-                  />
-                  <Chip label={rotuloPermissao(usuario.permissao)} size="small" />
-                </Stack>
-                <AcoesUsuario
-                  usuario={usuario}
-                  usuarios={usuarios}
-                  usuarioLogadoId={usuarioLogadoId}
-                  carregando={carregando}
-                  onEditar={onEditar}
-                  onInativar={onInativar}
-                  onReativar={onReativar}
-                  onRemover={onRemover}
-                  onRemoverDefinitivo={onRemoverDefinitivo}
-                />
-              </Stack>
-            </CardContent>
-          </Card>
-        ))}
-      </Stack>
     );
   }
 
@@ -261,9 +382,7 @@ export function ListagemUsuariosResponsiva({
       <TableBody>
         {usuarios.map((usuario) => (
           <TableRow key={usuario.id}>
-            <TableCell>
-              {usuario.primeiroNome} {usuario.sobrenome ?? ''}
-            </TableCell>
+            <TableCell>{nomeCompleto(usuario)}</TableCell>
             <TableCell>{usuario.email}</TableCell>
             <TableCell>
               <Chip
@@ -276,7 +395,6 @@ export function ListagemUsuariosResponsiva({
             <TableCell align="right">
               <AcoesUsuario
                 usuario={usuario}
-                usuarios={usuarios}
                 usuarioLogadoId={usuarioLogadoId}
                 carregando={carregando}
                 onEditar={onEditar}

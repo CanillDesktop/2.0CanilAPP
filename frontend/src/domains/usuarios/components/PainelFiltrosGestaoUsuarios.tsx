@@ -71,31 +71,50 @@ export function PainelFiltrosGestaoUsuarios({
       <AccordionSummary
         expandIcon={<ExpandMoreIcon sx={{ color: cores.textMuted }} />}
         sx={{
-          minHeight: 52,
-          px: 2,
-          '& .MuiAccordionSummary-content': { alignItems: 'center', gap: 1, my: 1 },
+          minHeight: { xs: 48, sm: 52 },
+          px: { xs: 1.5, sm: 2 },
+          '& .MuiAccordionSummary-content': {
+            alignItems: 'center',
+            gap: 1,
+            my: { xs: 0.75, sm: 1 },
+            flexWrap: 'wrap',
+          },
         }}
       >
-        <FilterListIcon sx={{ color: cores.focus, fontSize: 20 }} />
-        <Typography sx={{ fontWeight: 700, color: cores.textPrimary, flex: 1 }}>
+        <FilterListIcon sx={{ color: cores.focus, fontSize: { xs: 18, sm: 20 } }} />
+        <Typography
+          sx={{
+            fontWeight: 700,
+            color: cores.textPrimary,
+            flex: 1,
+            fontSize: { xs: '0.88rem', sm: '1rem' },
+          }}
+        >
           {tituloAccordion}
         </Typography>
         {filtrosAtivos > 0 ? (
           <Chip
             size="small"
-            label={`${filtrosAtivos} filtro${filtrosAtivos > 1 ? 's' : ''} ativo${filtrosAtivos > 1 ? 's' : ''}`}
-            sx={{ bgcolor: cores.hoverSurfaceStrong, color: cores.textPrimary, fontWeight: 600 }}
+            label={`${filtrosAtivos} ativo${filtrosAtivos > 1 ? 's' : ''}`}
+            sx={{
+              height: 24,
+              bgcolor: cores.hoverSurfaceStrong,
+              color: cores.textPrimary,
+              fontWeight: 700,
+              fontSize: '0.7rem',
+            }}
           />
         ) : null}
       </AccordionSummary>
-      <AccordionDetails sx={{ px: 2, pb: 2, pt: 0 }}>
-        <Stack spacing={1.5}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} sx={{ alignItems: { md: 'center' } }}>
+      <AccordionDetails sx={{ px: { xs: 1.5, sm: 2 }, pb: { xs: 1.5, sm: 2 }, pt: 0 }}>
+        <Stack spacing={1.25}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25} sx={{ alignItems: { md: 'center' } }}>
             <TextField
               label="Buscar por nome/email"
               value={buscaInput}
               onChange={(e) => onBuscaInputChange(e.target.value)}
               fullWidth
+              size="small"
               disabled={carregandoLista}
               sx={sxCampo}
             />
@@ -104,6 +123,7 @@ export function PainelFiltrosGestaoUsuarios({
               value={status}
               onChange={(e) => onStatusChange(e.target.value as StatusFiltro)}
               select
+              size="small"
               sx={{ minWidth: { xs: '100%', md: 200 }, ...sxCampo }}
               disabled={carregandoLista}
             >
@@ -117,7 +137,14 @@ export function PainelFiltrosGestaoUsuarios({
                 variant="contained"
                 onClick={onCadastrar}
                 disabled={carregandoAcao || carregandoLista}
-                sx={{ whiteSpace: 'nowrap', alignSelf: { xs: 'stretch', md: 'center' } }}
+                sx={{
+                  whiteSpace: 'nowrap',
+                  alignSelf: { xs: 'stretch', md: 'center' },
+                  minHeight: 40,
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  borderRadius: 2,
+                }}
               >
                 Cadastrar usuário
               </Button>

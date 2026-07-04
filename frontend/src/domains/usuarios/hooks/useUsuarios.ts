@@ -20,7 +20,7 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
   const [paginacao, setPaginacao] = useState<Omit<UsuariosPaginadosDto, 'items'>>({
     totalCount: 0,
     pageNumber: 1,
-    pageSize: 8,
+    pageSize: 10,
     totalPages: 1,
     hasPrevious: false,
     hasNext: false,

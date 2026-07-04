@@ -96,12 +96,13 @@ export function FormularioLogin({ aoAutenticar }: Props) {
             label="E-mail (login)"
             type="email"
             value={login}
-            onChange={(e) => setLogin(e.target.value)}
+            onChange={(e) => setLogin(e.target.value.toLowerCase())}
             autoComplete="username"
             required
             fullWidth
             sx={campoSx}
             slotProps={{
+              htmlInput: { autoCapitalize: 'none', autoCorrect: 'off', spellCheck: false },
               input: {
                 startAdornment: (
                   <InputAdornment position="start">

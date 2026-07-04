@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Backend.Exceptions;
 using Backend.Models;
 using Backend.Services.Interfaces;
@@ -42,11 +43,22 @@ public class AuthController : ControllerBase
             });
         }
 
+        var login = request.Login.Trim().ToLowerInvariant();
+        if (!new EmailAddressAttribute().IsValid(login))
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Dados inválidos",
+                Status = StatusCodes.Status400BadRequest,
+                Details = "Formato de e-mail inválido."
+            });
+        }
+
         try
         {
-            _logger.LogInformation("Solicitação de login recebida para {Login}.", request.Login);
+            _logger.LogInformation("Solicitação de login recebida para {Login}.", login);
 
-            var result = await _authService.AuthenticateAsync(request.Login, request.Senha, cancellationToken);
+            var result = await _authService.AuthenticateAsync(login, request.Senha, cancellationToken);
 
             if (result?.TokenResponse == null)
             {

@@ -53,8 +53,8 @@ public class CodigoSegurancaController : ControllerBase
         return Ok(new VersaoCodigoAcessoResponseDTO { Versao = versao });
     }
 
-    /// <summary>Consulta o código de acesso vigente (somente administrador).</summary>
-    [Authorize(Roles = "ADMIN")]
+    /// <summary>Consulta o código de acesso vigente (qualquer usuário autenticado).</summary>
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<CodigoAcessoResponseDTO>> Obter(CancellationToken cancellationToken)
     {

@@ -38,15 +38,22 @@ export function useCodigoSeguranca(ehAdmin: boolean) {
       setCodigo(dto?.codigo?.trim() ? dto.codigo : null);
     } catch (e) {
       setApiDisponivel(false);
-      const local = lerCodigoLocal();
-      setCodigo(local?.trim() ? local : null);
+      // Fallback local só para admin (legado de edição offline); leitura sempre vem do servidor.
+      if (ehAdmin) {
+        const local = lerCodigoLocal();
+        setCodigo(local?.trim() ? local : null);
+      } else {
+        setCodigo(null);
+      }
       if (e instanceof ErroApi && e.statusCode !== 404) {
         setErro(extrairMensagemErroApi(e));
+      } else if (!ehAdmin) {
+        setErro('Não foi possível carregar o código de acesso.');
       }
     } finally {
       setCarregando(false);
     }
-  }, []);
+  }, [ehAdmin]);
 
   useEffect(() => {
     void carregar();
