@@ -234,6 +234,7 @@ public class Program
             builder.Services.AddScoped<IUnidadeMedidaService, UnidadeMedidaService>();
             builder.Services.AddScoped<IEntradaEstoqueService, EntradaEstoqueService>();
             builder.Services.AddScoped<ITransferenciaEstoqueService, TransferenciaEstoqueService>();
+            builder.Services.AddScoped<ITransferenciaEstoqueExportService, TransferenciaEstoqueExportService>();
 
             builder.Services.AddHttpContextAccessor();
 

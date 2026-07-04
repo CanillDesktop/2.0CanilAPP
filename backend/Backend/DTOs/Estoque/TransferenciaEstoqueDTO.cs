@@ -26,6 +26,10 @@ public class TransferenciaEstoqueLeituraDTO
     public int IdUnidadeDestino { get; set; }
     public string UnidadeDestinoNome { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    /// <summary>
+    /// Perspectiva na unidade ativa: <c>Saida</c> (origem) ou <c>Entrada</c> (destino).
+    /// </summary>
+    public string TipoMovimento { get; set; } = string.Empty;
     public DateTime DataTransferencia { get; set; }
     public string UsuarioEnvio { get; set; } = string.Empty;
     public string? UsuarioRecebimento { get; set; }

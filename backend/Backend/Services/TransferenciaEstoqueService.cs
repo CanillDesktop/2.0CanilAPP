@@ -141,7 +141,7 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
         await _context.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        return await MontarLeituraAsync(transferencia.Id, cancellationToken)
+        return await MontarLeituraAsync(transferencia.Id, idOrigem, cancellationToken)
             ?? throw new RecursoNaoEncontradoException("Transferência não encontrada após criação.");
     }
 
@@ -159,6 +159,13 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
 
         if (transferencia.Status != TransferenciaEstoqueStatusEnum.Enviada)
             throw new RegraDeNegocioInfringidaException("Somente transferências enviadas podem ser recebidas.");
+
+        var idUnidadeAtiva = await _unidadeContext.ObterUnidadeAtivaIdAsync(cancellationToken);
+        if (idUnidadeAtiva != transferencia.IdUnidadeDestino)
+        {
+            throw new RegraDeNegocioInfringidaException(
+                "Recebimento só pode ser confirmado na unidade de destino da transferência.");
+        }
 
         await _unidadeContext.GarantirTransferenciaReceberAsync(transferencia.IdUnidadeDestino, cancellationToken);
 
@@ -234,16 +241,19 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
         await _context.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
 
-        return await MontarLeituraAsync(idTransferencia, cancellationToken)
+        return await MontarLeituraAsync(idTransferencia, idUnidadeAtiva, cancellationToken)
             ?? throw new RecursoNaoEncontradoException("Transferência não encontrada após recebimento.");
     }
 
     public async Task<IReadOnlyList<TransferenciaEstoqueLeituraDTO>> ListarAsync(CancellationToken cancellationToken = default)
     {
-        var unidades = await _unidadeContext.ObterUnidadesPermitidasAsync(cancellationToken);
+        var idUnidadeAtiva = await _unidadeContext.ObterUnidadeAtivaIdAsync(cancellationToken);
+        await _unidadeContext.GarantirConsultaAsync(idUnidadeAtiva, cancellationToken);
+
+        // Apenas transferências em que a unidade ativa é origem (saída) ou destino (entrada).
         var ids = await _context.TransferenciasEstoque.AsNoTracking()
             .Where(t => !t.IsDeleted
-                && (unidades.Contains(t.IdUnidadeOrigem) || unidades.Contains(t.IdUnidadeDestino)))
+                && (t.IdUnidadeOrigem == idUnidadeAtiva || t.IdUnidadeDestino == idUnidadeAtiva))
             .OrderByDescending(t => t.DataTransferencia)
             .Select(t => t.Id)
             .ToListAsync(cancellationToken);
@@ -251,7 +261,7 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
         var resultado = new List<TransferenciaEstoqueLeituraDTO>();
         foreach (var id in ids)
         {
-            var leitura = await MontarLeituraAsync(id, cancellationToken);
+            var leitura = await MontarLeituraAsync(id, idUnidadeAtiva, cancellationToken);
             if (leitura is not null)
                 resultado.Add(leitura);
         }
@@ -273,7 +283,10 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
         throw new RecursoNaoEncontradoException("Item da transferência não encontrado.");
     }
 
-    private async Task<TransferenciaEstoqueLeituraDTO?> MontarLeituraAsync(int id, CancellationToken cancellationToken)
+    private async Task<TransferenciaEstoqueLeituraDTO?> MontarLeituraAsync(
+        int id,
+        int idUnidadeAtiva,
+        CancellationToken cancellationToken)
     {
         var t = await _context.TransferenciasEstoque.AsNoTracking()
             .Include(x => x.UnidadeOrigem)
@@ -300,6 +313,12 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
             });
         }
 
+        var tipoMovimento = t.IdUnidadeOrigem == idUnidadeAtiva
+            ? "Saida"
+            : t.IdUnidadeDestino == idUnidadeAtiva
+                ? "Entrada"
+                : string.Empty;
+
         return new TransferenciaEstoqueLeituraDTO
         {
             Id = t.Id,
@@ -308,6 +327,7 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
             IdUnidadeDestino = t.IdUnidadeDestino,
             UnidadeDestinoNome = t.UnidadeDestino?.Nome ?? string.Empty,
             Status = t.Status.ToString().ToUpperInvariant(),
+            TipoMovimento = tipoMovimento,
             DataTransferencia = t.DataTransferencia,
             UsuarioEnvio = $"{t.UsuarioEnvio?.PrimeiroNome} {t.UsuarioEnvio?.Sobrenome}".Trim(),
             UsuarioRecebimento = t.UsuarioRecebimento is null

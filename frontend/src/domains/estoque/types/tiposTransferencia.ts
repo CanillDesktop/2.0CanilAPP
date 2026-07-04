@@ -18,6 +18,9 @@ export type TransferenciaEstoqueItemLeituraDto = {
   quantidade: number;
 };
 
+/** Perspectiva na unidade ativa: saída (origem) ou entrada (destino). */
+export type TransferenciaTipoMovimento = 'Saida' | 'Entrada' | string;
+
 export type TransferenciaEstoqueLeituraDto = {
   id: number;
   idUnidadeOrigem: number;
@@ -25,6 +28,8 @@ export type TransferenciaEstoqueLeituraDto = {
   idUnidadeDestino: number;
   unidadeDestinoNome: string;
   status: string;
+  /** Saida = enviada pela unidade ativa; Entrada = recebida/aguardando na unidade ativa. */
+  tipoMovimento: TransferenciaTipoMovimento;
   dataTransferencia: string;
   usuarioEnvio: string;
   usuarioRecebimento?: string | null;
