@@ -12,4 +12,6 @@ export type UsuarioSessao = {
   isDeleted: boolean;
   /** 1=Ativo, 2=Inativo, 3=Excluido */
   status?: number;
+  /** Permissões globais carregadas no login (códigos estáveis). */
+  permissoesCodigos?: string[];
 };

@@ -229,6 +229,9 @@ public class Program
             builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             builder.Services.AddScoped<IUserSessionService, UserSessionService>();
             builder.Services.AddScoped<ICodigoAcessoService, CodigoAcessoService>();
+            builder.Services.AddScoped<IPermissaoAuthorizationService, PermissaoAuthorizationService>();
+            builder.Services.AddScoped<IPermissaoCatalogoService, PermissaoCatalogoService>();
+            builder.Services.AddScoped<IUsuarioPermissaoAtribuicaoService, UsuarioPermissaoAtribuicaoService>();
             builder.Services.AddScoped<IUnidadeEstoqueContextService, UnidadeEstoqueContextService>();
             builder.Services.AddScoped<IUnidadeMedidaRepository, UnidadeMedidaRepository>();
             builder.Services.AddScoped<IUnidadeMedidaService, UnidadeMedidaService>();
@@ -249,6 +252,7 @@ public class Program
                 {
                     db.Database.Migrate();
                     UnidadeEstoqueSeed.GarantirVinculosUsuariosAsync(db).GetAwaiter().GetResult();
+                    PermissaoSeed.GarantirCatalogoEAtribuicoesAsync(db).GetAwaiter().GetResult();
                 }
                 catch (Exception ex)
                 {

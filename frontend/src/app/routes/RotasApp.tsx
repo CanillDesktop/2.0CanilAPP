@@ -2,7 +2,9 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { LeiautePrincipal } from '../../shared/components/LeiautePrincipal';
 import { GuardaPreLogin } from '../../shared/components/GuardaPreLogin';
 import { RotaProtegida } from '../../shared/components/RotaProtegida';
-import { RotaProtegidaPorPapel } from '../../shared/components/RotaProtegidaPorPapel';
+import { RotaProtegidaPorPermissao } from '../../shared/components/RotaProtegidaPorPermissao';
+import { PERMISSAO } from '../../shared/constants/permissoesCodigos';
+import { PaginaCatalogoPermissoes } from '../../domains/permissoes/pages/PaginaCatalogoPermissoes';
 import { RotaProtegidaCatalogoMedidas } from '../../shared/components/RotaProtegidaCatalogoMedidas';
 import { PaginaAcessoNegado } from '../../shared/pages/PaginaAcessoNegado';
 import { PaginaDetalheSessao } from '../../domains/autenticacao/pages/PaginaDetalheSessao';
@@ -50,9 +52,26 @@ export function RotasApp() {
           <Route path="perfil" element={<Navigate to="/usuarios" replace />} />
           <Route path="usuarios" element={<PaginaListagemUsuarios />} />
 
-          <Route element={<RotaProtegidaPorPapel roles={['ADMIN']} />}>
+          <Route element={<RotaProtegidaPorPermissao permissoes={[PERMISSAO.usuariosCriar]} />}>
             <Route path="usuarios/novo" element={<PaginaCadastroUsuario />} />
+          </Route>
+
+          <Route
+            element={
+              <RotaProtegidaPorPermissao permissoes={[PERMISSAO.usuariosGerenciarVinculosUnidade]} />
+            }
+          >
             <Route path="usuarios/permissoes" element={<PaginaPermissoesUsuarios />} />
+          </Route>
+
+          <Route
+            element={
+              <RotaProtegidaPorPermissao
+                permissoes={[PERMISSAO.permissoesCatalogoVisualizar, PERMISSAO.permissoesCatalogoGerenciar]}
+              />
+            }
+          >
+            <Route path="permissoes/catalogo" element={<PaginaCatalogoPermissoes />} />
           </Route>
 
           <Route element={<RotaProtegidaCatalogoMedidas />}>

@@ -22,5 +22,6 @@ public class UsuarioResponseDTO
     public DateTime? ReactivatedAt { get; set; }
     public string? ReactivatedBy { get; set; }
     public int TokenVersion { get; set; } = 1;
+    public List<string> PermissoesCodigos { get; set; } = [];
     public List<UsuarioUnidadeEstoqueDTO> UnidadesEstoque { get; set; } = [];
 }

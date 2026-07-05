@@ -6,6 +6,8 @@ import {
   CardContent,
   CircularProgress,
   Stack,
+  Tab,
+  Tabs,
   Typography,
 } from '@mui/material';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
@@ -16,18 +18,24 @@ import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
+import { podeGerenciarAtribuicaoPermissoes } from '../../../shared/utils/possuiPermissao';
+import { FormularioAtribuicaoPermissoesUsuario } from '../components/FormularioAtribuicaoPermissoesUsuario';
 import { FormularioPermissoesUnidade } from '../components/FormularioPermissoesUnidade';
 import { usuariosService } from '../services/usuariosService';
 import type { UsuarioCriadoDto } from '../types/tiposUsuarios';
+
+type AbaPermissoes = 'unidade' | 'atribuicoes';
 
 export function PaginaPermissoesUsuarios() {
   const { usuario } = useAutenticacao();
   const { cores } = useTemaApp();
   const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const ehAdmin = (usuario?.permissao ?? 0) === 1;
+  const [params, setParams] = useSearchParams();
+  const podeGerenciar = podeGerenciarAtribuicaoPermissoes(usuario);
 
   const usuarioIdParam = Number(params.get('usuarioId')) || null;
+  const abaParam = params.get('aba');
+  const abaAtiva: AbaPermissoes = abaParam === 'atribuicoes' ? 'atribuicoes' : 'unidade';
 
   const [usuarioAlvo, setUsuarioAlvo] = useState<UsuarioCriadoDto | null>(null);
   const [carregando, setCarregando] = useState(false);
@@ -48,21 +56,31 @@ export function PaginaPermissoesUsuarios() {
   }, []);
 
   useEffect(() => {
-    if (!ehAdmin || !usuarioIdParam) {
+    if (!podeGerenciar || !usuarioIdParam) {
       setUsuarioAlvo(null);
       return;
     }
     void carregarUsuario(usuarioIdParam);
-  }, [carregarUsuario, ehAdmin, usuarioIdParam]);
+  }, [carregarUsuario, podeGerenciar, usuarioIdParam]);
 
   function voltarParaUsuarios() {
     navigate('/usuarios?aba=permissoes');
   }
 
+  function mudarAba(novaAba: AbaPermissoes) {
+    const next = new URLSearchParams(params);
+    if (novaAba === 'unidade') {
+      next.delete('aba');
+    } else {
+      next.set('aba', novaAba);
+    }
+    setParams(next, { replace: true });
+  }
+
   return (
     <ShellComSidebar
-      titulo="Permissões por unidade"
-      subtitulo="Defina o acesso do usuário à Secretaria e ao Canil"
+      titulo="Permissões do usuário"
+      subtitulo="Vínculos por unidade de estoque e atribuição detalhada de permissões"
     >
       <Stack spacing={2}>
         <Box>
@@ -81,8 +99,10 @@ export function PaginaPermissoesUsuarios() {
           </Button>
         </Box>
 
-        {!ehAdmin ? (
-          <Alert severity="warning">Somente administradores podem gerenciar permissões por unidade.</Alert>
+        {!podeGerenciar ? (
+          <Alert severity="warning">
+            Você não tem permissão para gerenciar permissões de usuários.
+          </Alert>
         ) : !usuarioIdParam ? (
           <Alert severity="info">
             Nenhum usuário selecionado. Volte à{' '}
@@ -97,6 +117,14 @@ export function PaginaPermissoesUsuarios() {
           </Alert>
         ) : (
           <Card sx={{ borderRadius: 3, bgcolor: cores.bgCard, border: `1px solid ${cores.border}`, boxShadow: cores.sombraCard }}>
+            <Tabs
+              value={abaAtiva}
+              onChange={(_, v: AbaPermissoes) => mudarAba(v)}
+              sx={{ px: 2, pt: 1, borderBottom: `1px solid ${cores.border}` }}
+            >
+              <Tab value="unidade" label="Unidade de estoque" sx={{ textTransform: 'none', fontWeight: 600 }} />
+              <Tab value="atribuicoes" label="Permissões completas" sx={{ textTransform: 'none', fontWeight: 600 }} />
+            </Tabs>
             <CardContent>
               {carregando ? (
                 <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', py: 2 }}>
@@ -108,7 +136,11 @@ export function PaginaPermissoesUsuarios() {
               ) : erro ? (
                 <PainelErro mensagem={erro} />
               ) : usuarioAlvo?.id ? (
-                <FormularioPermissoesUnidade usuario={usuarioAlvo} />
+                abaAtiva === 'unidade' ? (
+                  <FormularioPermissoesUnidade usuario={usuarioAlvo} />
+                ) : (
+                  <FormularioAtribuicaoPermissoesUsuario usuario={usuarioAlvo} />
+                )
               ) : (
                 <Alert severity="warning">Usuário não encontrado.</Alert>
               )}

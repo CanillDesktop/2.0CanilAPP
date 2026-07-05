@@ -7,24 +7,18 @@ import { useAutenticacao } from '../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../app/providers/ContextoTemaApp';
 import { MSG_ERRO } from '../constants/mensagensErroUsuario';
 import { SidebarEstoque } from '../../domains/estoque/components/SidebarEstoque';
-import { mapearPapelUsuario } from '../types/papelUsuario';
 import { BotaoAlternarTema } from './BotaoAlternarTema';
 import { SeletorUnidadeEstoque } from './SeletorUnidadeEstoque';
 
 export function AppShellAutenticado() {
   const navigate = useNavigate();
-  const { usuario, sair } = useAutenticacao();
+  const { sair } = useAutenticacao();
   const { cores } = useTemaApp();
   const [menuAberto, setMenuAberto] = useState(false);
-  const papelUsuario = mapearPapelUsuario(usuario?.permissao);
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: cores.bgShell }}>
-      <SidebarEstoque
-        aberto={menuAberto}
-        aoFechar={() => setMenuAberto(false)}
-        papelUsuario={papelUsuario}
-      />
+      <SidebarEstoque aberto={menuAberto} aoFechar={() => setMenuAberto(false)} />
 
       <Stack
         component="header"

@@ -21,7 +21,7 @@ export function AbaPermissoesUnidadeAdmin(props: Props) {
       {...props}
       modo="permissoes"
       titulo="Permissões por unidade"
-      descricao="Selecione um usuário para definir consulta, entradas, saídas e transferências na Secretaria e no Canil."
+      descricao="Selecione um usuário para definir vínculos de estoque ou atribuir permissões completas (aba Permissões completas)."
       onAbrirPermissoes={abrirPermissoes}
     />
   );

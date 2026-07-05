@@ -4,11 +4,17 @@ import {
   inativarUsuarioApi,
   listarUnidadesEstoqueUsuarioApi,
   listarUsuariosApi,
+  obterPermissoesAtribuicoesUsuarioApi,
   obterUsuarioPorIdApi,
   reativarUsuarioApi,
   removerUsuarioApi,
+  salvarPermissoesAtribuicoesUsuarioApi,
   trocarSenhaUsuarioApi,
 } from '../api/usuariosApi';
+import type {
+  UsuarioPermissoesEditorDto,
+  UsuarioPermissoesSalvarDto,
+} from '../../permissoes/types/tiposPermissoes';
 import type {
   ConfirmacaoSenhaDto,
   FiltrosUsuariosListagem,
@@ -47,5 +53,11 @@ export const servicoUsuarios = {
   },
   async obterPorId(id: number): Promise<UsuarioCriadoDto> {
     return obterUsuarioPorIdApi(id);
+  },
+  async obterPermissoesAtribuicoes(id: number): Promise<UsuarioPermissoesEditorDto> {
+    return obterPermissoesAtribuicoesUsuarioApi(id);
+  },
+  async salvarPermissoesAtribuicoes(id: number, dto: UsuarioPermissoesSalvarDto): Promise<void> {
+    await salvarPermissoesAtribuicoesUsuarioApi(id, dto);
   },
 };

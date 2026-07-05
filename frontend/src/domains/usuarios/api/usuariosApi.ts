@@ -1,5 +1,9 @@
 import { obterClienteHttp } from '../../../infrastructure/http/clienteHttpSingleton';
 import type {
+  UsuarioPermissoesEditorDto,
+  UsuarioPermissoesSalvarDto,
+} from '../../permissoes/types/tiposPermissoes';
+import type {
   ConfirmacaoSenhaDto,
   FiltrosUsuariosListagem,
   TrocarSenhaDto,
@@ -79,4 +83,18 @@ export async function inativarUsuarioApi(id: number, dto: ConfirmacaoSenhaDto): 
 export async function reativarUsuarioApi(id: number, dto: ConfirmacaoSenhaDto): Promise<void> {
   const cliente = obterClienteHttp();
   await cliente.patch(`/api/Usuarios/${id}/reativar`, dto);
+}
+
+export async function obterPermissoesAtribuicoesUsuarioApi(id: number): Promise<UsuarioPermissoesEditorDto> {
+  const cliente = obterClienteHttp();
+  const { data } = await cliente.get<UsuarioPermissoesEditorDto>(`/api/Usuarios/${id}/permissoes-atribuicoes`);
+  return data;
+}
+
+export async function salvarPermissoesAtribuicoesUsuarioApi(
+  id: number,
+  dto: UsuarioPermissoesSalvarDto,
+): Promise<void> {
+  const cliente = obterClienteHttp();
+  await cliente.put(`/api/Usuarios/${id}/permissoes-atribuicoes`, dto);
 }

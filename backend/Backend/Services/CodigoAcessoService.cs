@@ -6,6 +6,7 @@ using Backend.Context;
 using Backend.DTOs.CodigoAcesso;
 using Backend.Exceptions;
 using Backend.Models.CodigoAcesso;
+using Backend.Models.Permissoes;
 using Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,10 +18,12 @@ public partial class CodigoAcessoService : ICodigoAcessoService
     private const int ComprimentoMaximo = 64;
 
     private readonly CanilAppDbContext _context;
+    private readonly IPermissaoAuthorizationService _authorization;
 
-    public CodigoAcessoService(CanilAppDbContext context)
+    public CodigoAcessoService(CanilAppDbContext context, IPermissaoAuthorizationService authorization)
     {
         _context = context;
+        _authorization = authorization;
     }
 
     public async Task<CodigoAcessoResponseDTO> ObterAsync(CancellationToken cancellationToken = default)
@@ -35,6 +38,8 @@ public partial class CodigoAcessoService : ICodigoAcessoService
 
     public async Task<CodigoAcessoResponseDTO> AtualizarAsync(string? codigo, string? editadoPor, CancellationToken cancellationToken = default)
     {
+        await _authorization.GarantirPermissaoAsync(PermissaoCodigos.CodigoSegurancaEditar, cancellationToken: cancellationToken);
+
         var valor = (codigo ?? string.Empty).Trim();
 
         if (string.IsNullOrEmpty(valor))

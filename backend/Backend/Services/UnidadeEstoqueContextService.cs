@@ -1,8 +1,8 @@
 using Backend.Context;
 using Backend.DTOs.Estoque;
 using Backend.Exceptions;
-using Backend.Models.Enums;
 using Backend.Models.Estoque;
+using Backend.Models.Permissoes;
 using Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,22 +15,25 @@ public class UnidadeEstoqueContextService : IUnidadeEstoqueContextService
     private readonly CanilAppDbContext _context;
     private readonly IUserSessionService _userSession;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IPermissaoAuthorizationService _authorization;
 
-    private IReadOnlyList<UsuarioUnidadeEstoqueModel>? _vinculosCache;
+    private IReadOnlyList<int>? _unidadesPermitidasCache;
     private int? _unidadeAtivaCache;
 
     public UnidadeEstoqueContextService(
         CanilAppDbContext context,
         IUserSessionService userSession,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IPermissaoAuthorizationService authorization)
     {
         _context = context;
         _userSession = userSession;
         _httpContextAccessor = httpContextAccessor;
+        _authorization = authorization;
     }
 
     public bool EhAdministrador() =>
-        string.Equals(_userSession.Role, nameof(PermissoesEnum.ADMIN), StringComparison.OrdinalIgnoreCase);
+        _authorization.EhAdministradorAsync().GetAwaiter().GetResult();
 
     public async Task<ContextoUnidadeEstoqueDTO> ObterContextoAsync(CancellationToken cancellationToken = default)
     {
@@ -69,49 +72,75 @@ public class UnidadeEstoqueContextService : IUnidadeEstoqueContextService
 
     public async Task<IReadOnlyList<int>> ObterUnidadesPermitidasAsync(CancellationToken cancellationToken = default)
     {
+        if (_unidadesPermitidasCache is not null)
+            return _unidadesPermitidasCache;
+
         var unidades = await ObterUnidadesDisponiveisInternoAsync(cancellationToken);
-        return unidades.Select(u => u.Id).ToList();
+        _unidadesPermitidasCache = unidades.Select(u => u.Id).ToList();
+        return _unidadesPermitidasCache;
     }
 
     public Task GarantirConsultaAsync(int idUnidadeEstoque, CancellationToken cancellationToken = default) =>
-        GarantirPermissaoAsync(idUnidadeEstoque, v => v.PodeConsultar || v.PodeEntrada || v.PodeSaida
-            || v.PodeTransferirEnviar || v.PodeTransferirReceber, cancellationToken);
+        GarantirQualquerPermissaoUnidadeAsync(
+            idUnidadeEstoque,
+            [
+                PermissaoCodigos.EstoqueConsultar,
+                PermissaoCodigos.EstoqueEntrada,
+                PermissaoCodigos.EstoqueSaida,
+                PermissaoCodigos.EstoqueTransferirEnviar,
+                PermissaoCodigos.EstoqueTransferirReceber,
+            ],
+            cancellationToken);
 
     public Task GarantirEntradaAsync(int idUnidadeEstoque, CancellationToken cancellationToken = default) =>
-        GarantirPermissaoAsync(idUnidadeEstoque, v => v.PodeEntrada, cancellationToken);
+        GarantirPermissaoUnidadeAsync(idUnidadeEstoque, PermissaoCodigos.EstoqueEntrada, cancellationToken);
 
     public Task GarantirSaidaAsync(int idUnidadeEstoque, CancellationToken cancellationToken = default) =>
-        GarantirPermissaoAsync(idUnidadeEstoque, v => v.PodeSaida, cancellationToken);
+        GarantirPermissaoUnidadeAsync(idUnidadeEstoque, PermissaoCodigos.EstoqueSaida, cancellationToken);
 
     public Task GarantirTransferenciaEnviarAsync(int idUnidadeOrigem, CancellationToken cancellationToken = default) =>
-        GarantirPermissaoAsync(idUnidadeOrigem, v => v.PodeTransferirEnviar, cancellationToken);
+        GarantirPermissaoUnidadeAsync(idUnidadeOrigem, PermissaoCodigos.EstoqueTransferirEnviar, cancellationToken);
 
     public Task GarantirTransferenciaReceberAsync(int idUnidadeDestino, CancellationToken cancellationToken = default) =>
-        GarantirPermissaoAsync(idUnidadeDestino, v => v.PodeTransferirReceber, cancellationToken);
+        GarantirPermissaoUnidadeAsync(idUnidadeDestino, PermissaoCodigos.EstoqueTransferirReceber, cancellationToken);
 
-    private async Task GarantirPermissaoAsync(
+    private async Task GarantirPermissaoUnidadeAsync(
         int idUnidadeEstoque,
-        Func<UsuarioUnidadeEstoqueModel, bool> predicado,
+        string codigoPermissao,
         CancellationToken cancellationToken)
     {
-        if (EhAdministrador())
+        await GarantirUnidadeExisteAsync(idUnidadeEstoque, cancellationToken);
+        await _authorization.GarantirPermissaoAsync(codigoPermissao, idUnidadeEstoque, cancellationToken);
+    }
+
+    private async Task GarantirQualquerPermissaoUnidadeAsync(
+        int idUnidadeEstoque,
+        IReadOnlyList<string> codigos,
+        CancellationToken cancellationToken)
+    {
+        await GarantirUnidadeExisteAsync(idUnidadeEstoque, cancellationToken);
+
+        foreach (var codigo in codigos)
         {
-            var existe = await _context.UnidadesEstoque.AsNoTracking()
-                .AnyAsync(u => u.Id == idUnidadeEstoque && u.Ativa && !u.IsDeleted, cancellationToken);
-            if (!existe)
-                throw new RegraDeNegocioInfringidaException("Unidade de estoque inválida ou inativa.");
-            return;
+            if (await _authorization.PossuiPermissaoAsync(codigo, idUnidadeEstoque, cancellationToken: cancellationToken))
+                return;
         }
 
-        var vinculos = await ObterVinculosAsync(cancellationToken);
-        var vinculo = vinculos.FirstOrDefault(v => v.IdUnidadeEstoque == idUnidadeEstoque);
-        if (vinculo is null || !predicado(vinculo))
-            throw new AcessoNegadoException("Sem permissão para operar nesta unidade de estoque.");
+        throw new AcessoNegadoException("Sem permissão para operar nesta unidade de estoque.");
+    }
+
+    private async Task GarantirUnidadeExisteAsync(int idUnidadeEstoque, CancellationToken cancellationToken)
+    {
+        var existe = await _context.UnidadesEstoque.AsNoTracking()
+            .AnyAsync(u => u.Id == idUnidadeEstoque && u.Ativa && !u.IsDeleted, cancellationToken);
+
+        if (!existe)
+            throw new RegraDeNegocioInfringidaException("Unidade de estoque inválida ou inativa.");
     }
 
     private async Task<IReadOnlyList<UnidadeEstoqueDTO>> ObterUnidadesDisponiveisInternoAsync(CancellationToken cancellationToken)
     {
-        if (EhAdministrador())
+        if (await _authorization.EhAdministradorAsync(cancellationToken: cancellationToken))
         {
             return await _context.UnidadesEstoque.AsNoTracking()
                 .Where(u => u.Ativa && !u.IsDeleted)
@@ -127,11 +156,14 @@ public class UnidadeEstoqueContextService : IUnidadeEstoqueContextService
                 .ToListAsync(cancellationToken);
         }
 
-        var vinculos = await ObterVinculosAsync(cancellationToken);
-        var ids = vinculos
-            .Where(v => v.PodeConsultar || v.PodeEntrada || v.PodeSaida || v.PodeTransferirEnviar || v.PodeTransferirReceber)
-            .Select(v => v.IdUnidadeEstoque)
-            .ToList();
+        if (!int.TryParse(_userSession.UserId, out var userId) || userId <= 0)
+            throw new AcessoNegadoException("Usuário não autenticado.");
+
+        var resumo = await _authorization.ObterResumoAsync(userId, cancellationToken);
+        var ids = resumo.PorUnidade.Select(u => u.IdUnidadeEstoque).Distinct().ToList();
+
+        if (ids.Count == 0)
+            return [];
 
         return await _context.UnidadesEstoque.AsNoTracking()
             .Where(u => ids.Contains(u.Id) && u.Ativa && !u.IsDeleted)
@@ -145,20 +177,5 @@ public class UnidadeEstoqueContextService : IUnidadeEstoqueContextService
                 Ativa = u.Ativa,
             })
             .ToListAsync(cancellationToken);
-    }
-
-    private async Task<IReadOnlyList<UsuarioUnidadeEstoqueModel>> ObterVinculosAsync(CancellationToken cancellationToken)
-    {
-        if (_vinculosCache is not null)
-            return _vinculosCache;
-
-        if (!int.TryParse(_userSession.UserId, out var userId) || userId <= 0)
-            throw new AcessoNegadoException("Usuário não autenticado.");
-
-        _vinculosCache = await _context.UsuariosUnidadesEstoque.AsNoTracking()
-            .Where(v => v.IdUsuario == userId)
-            .ToListAsync(cancellationToken);
-
-        return _vinculosCache;
     }
 }
