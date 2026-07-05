@@ -48,7 +48,7 @@ export function FormularioCadastroUsuario() {
       email,
       senha,
       senhaConfirmacao,
-      permissao: 2,
+      idCargo: 2,
       unidadesEstoque: montarUnidadesEstoqueCadastro(unidadeCadastro),
     };
     await cadastrar(dto);
@@ -188,8 +188,8 @@ export function FormularioCadastroUsuario() {
 
         <Typography variant="caption" sx={{ color: cores.textMuted, lineHeight: 1.5 }}>
           Enquanto o sistema tiver menos de <strong>dois</strong> usuários cadastrados, novas contas recebem
-          permissão de <strong>Administrador</strong> automaticamente. Depois disso, a permissão padrão é{' '}
-          <strong>Leitura</strong>; um administrador pode alterá-la em Usuários.
+          permissão de <strong>Administrador</strong> automaticamente. Depois disso, o cargo padrão é{' '}
+          <strong>Grupo Padrão</strong>; um administrador pode alterá-lo em Usuários.
         </Typography>
 
         <Button

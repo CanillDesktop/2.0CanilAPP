@@ -1,4 +1,3 @@
-using Backend.Models.Enums;
 using Backend.DTOs.Estoque;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -38,11 +37,17 @@ public class AtualizarUsuarioRequestDTO
         set => _email = string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();
     }
 
-    [DisplayName("Permissão")]
-    public PermissoesEnum? Permissao { get; set; }
+    [DisplayName("Cargo")]
+    public int? IdCargo { get; set; }
 
     [DisplayName("Gerenciar unidades de medida")]
     public bool? PodeGerenciarUnidadesMedida { get; set; }
 
     public List<UsuarioUnidadeEstoqueAtribuicaoDTO>? UnidadesEstoque { get; set; }
+
+    [DisplayName("Nova senha")]
+    [MinLength(6, ErrorMessage = "{0} deve ter no mínimo {1} caracteres")]
+    [MaxLength(100, ErrorMessage = "{0} deve ter no máximo {1} caracteres")]
+    [RegularExpression(@"^\S+$", ErrorMessage = "{0} não pode conter espaços")]
+    public string? Senha { get; set; }
 }

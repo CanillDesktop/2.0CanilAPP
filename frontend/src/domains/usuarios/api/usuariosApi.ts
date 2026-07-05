@@ -11,8 +11,10 @@ import type {
   UsuarioCadastroComConfirmacaoDto,
   UsuarioCriadoDto,
   UsuarioResumoFiltroDto,
+  UsuarioSenhaResumoDto,
   UsuarioUnidadeEstoqueDto,
   UsuariosPaginadosDto,
+  RedefinirSenhaOutroUsuarioDto,
 } from '../types/tiposUsuarios';
 import { mapaStatusApi } from '../types/tiposUsuarios';
 export async function criarUsuarioApi(dto: UsuarioCadastroComConfirmacaoDto): Promise<UsuarioCriadoDto> {
@@ -61,6 +63,20 @@ export async function atualizarUsuarioApi(id: number, dto: UsuarioAtualizacaoDto
 export async function trocarSenhaUsuarioApi(id: number, dto: TrocarSenhaDto): Promise<void> {
   const cliente = obterClienteHttp();
   await cliente.patch(`/api/Usuarios/${id}/alterar-senha`, dto);
+}
+
+export async function obterResumoSenhaUsuarioApi(id: number): Promise<UsuarioSenhaResumoDto> {
+  const cliente = obterClienteHttp();
+  const { data } = await cliente.get<UsuarioSenhaResumoDto>(`/api/Usuarios/${id}/senha-resumo`);
+  return data;
+}
+
+export async function redefinirSenhaOutroUsuarioApi(
+  id: number,
+  dto: RedefinirSenhaOutroUsuarioDto,
+): Promise<void> {
+  const cliente = obterClienteHttp();
+  await cliente.patch(`/api/Usuarios/${id}/redefinir-senha`, dto);
 }
 
 export async function removerUsuarioApi(

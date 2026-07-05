@@ -68,8 +68,20 @@ public class UsuariosController : ControllerBase
     [HttpGet("{id}/unidades-estoque")]
     public async Task<ActionResult<IReadOnlyList<UsuarioUnidadeEstoqueDTO>>> GetUnidadesEstoque(int id, CancellationToken cancellationToken)
     {
-        var unidades = await _service.ObterUnidadesEstoqueAsync(id, cancellationToken);
-        return Ok(unidades);
+        try
+        {
+            var unidades = await _service.ObterUnidadesEstoqueAsync(id, cancellationToken);
+            return Ok(unidades);
+        }
+        catch (AcessoNegadoException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ErrorResponse
+            {
+                Title = "Acesso negado",
+                Status = StatusCodes.Status403Forbidden,
+                Details = ex.Message,
+            });
+        }
     }
 
     [Authorize]
@@ -194,6 +206,15 @@ public class UsuariosController : ControllerBase
                 Details = ex.Message ?? "Falha ao atualizar usuário"
             });
         }
+        catch (AcessoNegadoException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ErrorResponse
+            {
+                Title = "Acesso negado",
+                Status = StatusCodes.Status403Forbidden,
+                Details = ex.Message,
+            });
+        }
     }
 
     [Authorize]
@@ -230,6 +251,90 @@ public class UsuariosController : ControllerBase
     }
 
     [Authorize]
+    [HttpGet("{id}/senha-resumo")]
+    public async Task<ActionResult<UsuarioSenhaResumoDTO>> GetSenhaResumo(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _service.ObterResumoSenhaAsync(id, cancellationToken));
+        }
+        catch (ArgumentNullException ex)
+        {
+            return NotFound(new ErrorResponse
+            {
+                Title = "Usuário não encontrado",
+                Status = StatusCodes.Status404NotFound,
+                Details = ex.Message ?? "Usuário não encontrado",
+            });
+        }
+        catch (AcessoNegadoException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ErrorResponse
+            {
+                Title = "Acesso negado",
+                Status = StatusCodes.Status403Forbidden,
+                Details = ex.Message,
+            });
+        }
+    }
+
+    [Authorize]
+    [HttpPatch("{id}/redefinir-senha")]
+    public async Task<IActionResult> RedefinirSenha(int id, [FromBody] RedefinirSenhaOutroUsuarioRequestDTO dto)
+    {
+        try
+        {
+            await _service.RedefinirSenhaOutroUsuarioAsync(id, dto.NovaSenha ?? string.Empty, dto.SenhaConfirmacao);
+            return NoContent();
+        }
+        catch (ArgumentNullException ex)
+        {
+            return NotFound(new ErrorResponse
+            {
+                Title = "Usuário não encontrado",
+                Status = StatusCodes.Status404NotFound,
+                Details = ex.Message ?? "Usuário não encontrado",
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ErrorResponse
+            {
+                Title = "Falha ao redefinir senha",
+                Status = StatusCodes.Status400BadRequest,
+                Details = ex.Message ?? "Falha ao redefinir senha",
+            });
+        }
+        catch (RegraDeNegocioInfringidaException ex)
+        {
+            return UnprocessableEntity(new ErrorResponse
+            {
+                Title = "Falha ao redefinir senha",
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Details = ex.Message,
+            });
+        }
+        catch (ConflitoDeNegocioException ex)
+        {
+            return Conflict(new ErrorResponse
+            {
+                Title = "Não é possível redefinir a senha",
+                Status = StatusCodes.Status409Conflict,
+                Details = ex.Message,
+            });
+        }
+        catch (AcessoNegadoException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ErrorResponse
+            {
+                Title = "Acesso negado",
+                Status = StatusCodes.Status403Forbidden,
+                Details = ex.Message,
+            });
+        }
+    }
+
+    [Authorize]
     [HttpPatch("{id}/alterar-senha")]
     public async Task<IActionResult> AlterarSenha(int id, [FromBody] TrocarSenhaRequestDTO dto)
     {
@@ -245,6 +350,15 @@ public class UsuariosController : ControllerBase
                 Title = "Falha ao alterar senha",
                 Status = StatusCodes.Status400BadRequest,
                 Details = ex.Message ?? "Falha ao alterar senha"
+            });
+        }
+        catch (RegraDeNegocioInfringidaException ex)
+        {
+            return UnprocessableEntity(new ErrorResponse
+            {
+                Title = "Falha ao alterar senha",
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Details = ex.Message,
             });
         }
         catch (AcessoNegadoException ex)

@@ -232,6 +232,8 @@ public class Program
             builder.Services.AddScoped<IPermissaoAuthorizationService, PermissaoAuthorizationService>();
             builder.Services.AddScoped<IPermissaoCatalogoService, PermissaoCatalogoService>();
             builder.Services.AddScoped<IUsuarioPermissaoAtribuicaoService, UsuarioPermissaoAtribuicaoService>();
+            builder.Services.AddScoped<ICargoService, CargoService>();
+            builder.Services.AddScoped<ICargoPermissaoAtribuicaoService, CargoPermissaoAtribuicaoService>();
             builder.Services.AddScoped<IUnidadeEstoqueContextService, UnidadeEstoqueContextService>();
             builder.Services.AddScoped<IUnidadeMedidaRepository, UnidadeMedidaRepository>();
             builder.Services.AddScoped<IUnidadeMedidaService, UnidadeMedidaService>();

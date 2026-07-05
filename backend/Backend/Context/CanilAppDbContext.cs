@@ -1,4 +1,5 @@
-﻿using Backend.Models.Permissoes;
+﻿using Backend.Models.Cargos;
+using Backend.Models.Permissoes;
 using Backend.Models;
 using Backend.Models.CodigoAcesso;
 using Backend.Models.Insumos;
@@ -56,6 +57,8 @@ public class CanilAppDbContext : DbContext
     public DbSet<TransferenciaEstoqueItemModel> TransferenciasEstoqueItens { get; set; }
     public DbSet<PermissaoModel> Permissoes { get; set; }
     public DbSet<UsuarioPermissaoModel> UsuariosPermissoes { get; set; }
+    public DbSet<CargoModel> Cargos { get; set; }
+    public DbSet<CargoPermissaoModel> CargosPermissoes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -261,6 +264,40 @@ public class CanilAppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(a => a.IdUnidadeEstoque)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CargoModel>(e =>
+        {
+            e.HasIndex(c => c.Nome).IsUnique();
+            e.Property(c => c.Nome).HasMaxLength(80);
+            e.Property(c => c.Descricao).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<CargoPermissaoModel>(e =>
+        {
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id).ValueGeneratedOnAdd();
+            e.HasIndex(a => new { a.IdCargo, a.IdPermissao, a.IdUnidadeEstoque }).IsUnique();
+            e.HasOne(a => a.Cargo)
+                .WithMany()
+                .HasForeignKey(a => a.IdCargo)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(a => a.Permissao)
+                .WithMany()
+                .HasForeignKey(a => a.IdPermissao)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(a => a.UnidadeEstoque)
+                .WithMany()
+                .HasForeignKey(a => a.IdUnidadeEstoque)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UsuariosModel>(e =>
+        {
+            e.HasOne(u => u.Cargo)
+                .WithMany()
+                .HasForeignKey(u => u.IdCargo)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<CodigoAcessoModel>()

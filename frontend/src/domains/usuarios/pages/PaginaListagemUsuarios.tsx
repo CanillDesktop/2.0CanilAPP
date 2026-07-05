@@ -27,14 +27,20 @@ import { AbaPermissoesUnidadeAdmin } from '../components/AbaPermissoesUnidadeAdm
 import { ListagemUsuariosAdminConteudo } from '../components/ListagemUsuariosAdminConteudo';
 import { FormularioUsuario } from '../components/FormularioUsuario';
 import { ModalConfirmacaoSenha } from '../components/ModalConfirmacaoSenha';
+import { ModalRedefinirSenhaOutroUsuario } from '../components/ModalRedefinirSenhaOutroUsuario';
 import { ModalTrocarSenha } from '../components/ModalTrocarSenha';
 import { useUsuarios } from '../hooks/useUsuarios';
-import type { FiltrosUsuariosListagem, UsuarioCriadoDto } from '../types/tiposUsuarios';
+import type { FiltrosUsuariosListagem, UsuarioCriadoDto, UsuarioSenhaResumoDto } from '../types/tiposUsuarios';
 import { rotuloStatusUsuario, StatusUsuario } from '../types/tiposUsuarios';
 import { PERMISSAO } from '../../../shared/constants/permissoesCodigos';
-import { possuiPermissao } from '../../../shared/utils/possuiPermissao';
 import {
-  descreverPermissao,
+  podeAlterarSenhaOutrosUsuarios,
+  podeGerenciarPermissoesUsuarios,
+  podeVisualizarSenhaOutrosUsuarios,
+  possuiPermissao,
+} from '../../../shared/utils/possuiPermissao';
+import {
+  descreverCargo,
   formatarTempoCadastro,
   listarRotulosPermissoesUnidade,
 } from '../utils/exibirPerfilUsuario';
@@ -64,7 +70,11 @@ export function PaginaListagemUsuarios() {
   } = useUnidadeEstoque();
   const [searchParams, setSearchParams] = useSearchParams();
   const ehAdmin = possuiPermissao(usuario, PERMISSAO.usuariosListar);
+  const podeGerenciarPermissoes = podeGerenciarPermissoesUsuarios(usuario);
   const podeEditarCodigoAcesso = possuiPermissao(usuario, PERMISSAO.codigoSegurancaEditar);
+  const podeVisualizarSenhaOutros = podeVisualizarSenhaOutrosUsuarios(usuario);
+  const podeAlterarSenhaOutros = podeAlterarSenhaOutrosUsuarios(usuario);
+  const mostrarAreaGestao = ehAdmin || podeGerenciarPermissoes || podeEditarCodigoAcesso;
   const {
     usuarios,
     paginacao,
@@ -78,9 +88,11 @@ export function PaginaListagemUsuarios() {
     carregarUsuarios,
     atualizarUsuario,
     trocarSenha,
+    redefinirSenhaOutro,
+    obterResumoSenha,
     criarUsuario,
     executarAcaoCritica,
-  } = useUsuarios(usuario, ehAdmin);
+  } = useUsuarios(usuario, ehAdmin || podeGerenciarPermissoes);
 
   const [buscaInput, setBuscaInput] = useState('');
   const [busca, setBusca] = useState('');
@@ -97,6 +109,9 @@ export function PaginaListagemUsuarios() {
   );
   const [abaLeitura, setAbaLeitura] = useState<AbaLeitura>('meus-dados');
   const [dialogEditarAberto, setDialogEditarAberto] = useState(false);
+  const [dialogRedefinirSenhaAberto, setDialogRedefinirSenhaAberto] = useState(false);
+  const [resumoSenhaEdicao, setResumoSenhaEdicao] = useState<UsuarioSenhaResumoDto | null>(null);
+  const [carregandoResumoSenhaEdicao, setCarregandoResumoSenhaEdicao] = useState(false);
   const [dialogTrocarSenhaAberto, setDialogTrocarSenhaAberto] = useState(false);
   const [dialogNovoAberto, setDialogNovoAberto] = useState(false);
   const [alvoEdicao, setAlvoEdicao] = useState<UsuarioCriadoDto | null>(null);
@@ -109,10 +124,59 @@ export function PaginaListagemUsuarios() {
       sobrenome?: string | null;
       email: string;
       senha: string;
-      permissao: number;
+      idCargo: number;
       unidadeCadastro: EscolhaUnidadeCadastro;
     };
   }>({ aberto: false, acao: null });
+
+  useEffect(() => {
+    if (!dialogEditarAberto || !alvoEdicao?.id) {
+      setResumoSenhaEdicao(null);
+      return;
+    }
+    const editandoOutro = usuario?.id !== alvoEdicao.id;
+    if (!editandoOutro || !podeVisualizarSenhaOutros) {
+      setResumoSenhaEdicao(null);
+      return;
+    }
+    setCarregandoResumoSenhaEdicao(true);
+    void obterResumoSenha(alvoEdicao.id)
+      .then(setResumoSenhaEdicao)
+      .finally(() => setCarregandoResumoSenhaEdicao(false));
+  }, [dialogEditarAberto, alvoEdicao?.id, usuario?.id, podeVisualizarSenhaOutros, obterResumoSenha]);
+
+  useEffect(() => {
+    if (!dialogRedefinirSenhaAberto || !alvoEdicao?.id || !podeVisualizarSenhaOutros) return;
+    setCarregandoResumoSenhaEdicao(true);
+    void obterResumoSenha(alvoEdicao.id)
+      .then(setResumoSenhaEdicao)
+      .finally(() => setCarregandoResumoSenhaEdicao(false));
+  }, [dialogRedefinirSenhaAberto, alvoEdicao?.id, podeVisualizarSenhaOutros, obterResumoSenha]);
+
+  function abrirEdicaoUsuario(u: UsuarioCriadoDto) {
+    setAlvoEdicao(u);
+    setDialogEditarAberto(true);
+  }
+
+  function abrirRedefinirSenhaUsuario(u: UsuarioCriadoDto) {
+    limparFeedback();
+    setAlvoEdicao(u);
+    setDialogRedefinirSenhaAberto(true);
+  }
+
+  async function confirmarRedefinirSenhaOutro(novaSenha: string, senhaConfirmacao: string) {
+    if (!alvoEdicao?.id) return;
+    const ok = await redefinirSenhaOutro(alvoEdicao.id, { novaSenha, senhaConfirmacao });
+    if (ok) {
+      setDialogRedefinirSenhaAberto(false);
+      if (podeVisualizarSenhaOutros) {
+        setCarregandoResumoSenhaEdicao(true);
+        void obterResumoSenha(alvoEdicao.id)
+          .then(setResumoSenhaEdicao)
+          .finally(() => setCarregandoResumoSenhaEdicao(false));
+      }
+    }
+  }
 
   useEffect(() => {
     const t = window.setTimeout(() => setBusca(buscaInput), 350);
@@ -148,7 +212,7 @@ export function PaginaListagemUsuarios() {
     primeiroNome: string;
     sobrenome?: string | null;
     email?: string;
-    permissao?: number;
+    idCargo?: number;
   }) {
     if (!alvoEdicao?.id) return;
     const emailTrim = dados.email?.trim();
@@ -157,8 +221,8 @@ export function PaginaListagemUsuarios() {
       primeiroNome: dados.primeiroNome,
       sobrenome: dados.sobrenome,
       email: emailTrim,
-      ...(ehAdmin && usuario?.id !== alvoEdicao.id && dados.permissao !== undefined
-        ? { permissao: dados.permissao }
+      ...(podeGerenciarPermissoes && usuario?.id !== alvoEdicao.id && dados.idCargo !== undefined
+        ? { idCargo: dados.idCargo }
         : {}),
     };
     const atualizado = await atualizarUsuario(alvoEdicao.id, dto);
@@ -180,10 +244,10 @@ export function PaginaListagemUsuarios() {
     sobrenome?: string | null;
     email?: string;
     senha?: string;
-    permissao?: number;
+    idCargo?: number;
     unidadeCadastro?: EscolhaUnidadeCadastro;
   }) {
-    if (!dados.email || !dados.senha || !dados.permissao || !dados.unidadeCadastro) return;
+    if (!dados.email || !dados.senha || !dados.idCargo || !dados.unidadeCadastro) return;
     setConfirmacao({
       aberto: true,
       acao: 'criar',
@@ -192,7 +256,7 @@ export function PaginaListagemUsuarios() {
         sobrenome: dados.sobrenome,
         email: dados.email,
         senha: dados.senha,
-        permissao: dados.permissao,
+        idCargo: dados.idCargo,
         unidadeCadastro: dados.unidadeCadastro,
       },
     });
@@ -265,7 +329,7 @@ export function PaginaListagemUsuarios() {
             <strong>Tempo cadastrado:</strong> {formatarTempoCadastro(usuario?.dataHoraCriacao)}
           </Typography>
           <Typography sx={sxCampoDado}>
-            <strong>Permissão:</strong> {descreverPermissao(usuario?.permissao ?? -1)}
+            <strong>Cargo:</strong> {descreverCargo(usuario)}
           </Typography>
           <Typography sx={sxCampoDado}>
             <strong>Status:</strong> {rotuloStatusUsuario(statusSessao as 1 | 2 | 3)}
@@ -463,10 +527,8 @@ export function PaginaListagemUsuarios() {
       filtrosExpandidos={filtrosGestaoExpandidos}
       onFiltrosExpandidosChange={setFiltrosGestaoExpandidos}
       onCadastrar={() => setDialogNovoAberto(true)}
-      onEditar={(u) => {
-        setAlvoEdicao(u);
-        setDialogEditarAberto(true);
-      }}
+      onEditar={abrirEdicaoUsuario}
+      onRedefinirSenha={podeAlterarSenhaOutros ? abrirRedefinirSenhaUsuario : undefined}
       onInativar={(u) => setConfirmacao({ aberto: true, acao: 'inativar', usuarioAlvo: u })}
       onReativar={(u) => setConfirmacao({ aberto: true, acao: 'reativar', usuarioAlvo: u })}
       onRemover={(u) => setConfirmacao({ aberto: true, acao: 'remover', usuarioAlvo: u })}
@@ -509,12 +571,12 @@ export function PaginaListagemUsuarios() {
     <ShellComSidebar
       titulo="Usuários"
       subtitulo={
-        ehAdmin
+        mostrarAreaGestao
           ? 'Seus dados, permissão da conta e gestão de outras contas'
-          : 'Seus dados e permissão da conta (apenas administradores alteram permissões de outros usuários)'
+          : 'Seus dados e permissão da conta'
       }
     >
-      {ehAdmin ? (
+      {mostrarAreaGestao ? (
         <>
           <Tabs
             value={abaAdmin}
@@ -539,21 +601,23 @@ export function PaginaListagemUsuarios() {
             }}
           >
             <Tab value="meus-dados" label="Meus dados" />
-            <Tab value="gestao" label="Gestão de usuários" />
-            <Tab value="permissoes" label="Permissões unidade" />
-            <Tab value="codigo-seguranca" label="Código de acesso" />
+            {ehAdmin ? <Tab value="gestao" label="Gestão de usuários" /> : null}
+            {podeGerenciarPermissoes ? <Tab value="permissoes" label="Permissões unidade" /> : null}
+            {podeEditarCodigoAcesso ? <Tab value="codigo-seguranca" label="Código de acesso" /> : null}
           </Tabs>
 
           {abaAdmin === 'meus-dados' ? cardMeusDados : null}
-          {abaAdmin === 'gestao' ? gestaoUsuariosAdmin : null}
-          {abaAdmin === 'permissoes' ? (
+          {abaAdmin === 'gestao' && ehAdmin ? gestaoUsuariosAdmin : null}
+          {abaAdmin === 'permissoes' && podeGerenciarPermissoes ? (
             <AbaPermissoesUnidadeAdmin
               {...propsListagemCompartilhada}
               filtrosExpandidos={filtrosPermissoesExpandidos}
               onFiltrosExpandidosChange={setFiltrosPermissoesExpandidos}
             />
           ) : null}
-          {abaAdmin === 'codigo-seguranca' ? <AbaCodigoAcesso podeEditar={podeEditarCodigoAcesso} /> : null}
+          {abaAdmin === 'codigo-seguranca' && podeEditarCodigoAcesso ? (
+            <AbaCodigoAcesso podeEditar={podeEditarCodigoAcesso} />
+          ) : null}
         </>
       ) : (
         <>
@@ -602,13 +666,25 @@ export function PaginaListagemUsuarios() {
             <FormularioUsuario
               usuario={alvoEdicao}
               incluirEmailEdicao
-              permissaoEdicao={
-                alvoEdicao && ehAdmin && usuario?.id !== alvoEdicao.id
+              cargoEdicao={
+                alvoEdicao && podeGerenciarPermissoes && usuario?.id !== alvoEdicao.id
                   ? 'editavel'
                   : alvoEdicao
                     ? 'somenteLeitura'
                     : 'oculto'
               }
+              podeVisualizarSenhaOutro={
+                Boolean(alvoEdicao && usuario?.id !== alvoEdicao.id && podeVisualizarSenhaOutros)
+              }
+              podeAlterarSenhaOutro={
+                Boolean(alvoEdicao && usuario?.id !== alvoEdicao.id && podeAlterarSenhaOutros)
+              }
+              resumoSenhaOutro={resumoSenhaEdicao}
+              carregandoResumoSenhaOutro={carregandoResumoSenhaEdicao}
+              onAbrirRedefinirSenha={() => {
+                setDialogEditarAberto(false);
+                setDialogRedefinirSenhaAberto(true);
+              }}
               carregando={carregandoAcao}
               onSubmit={salvarEdicao}
             />
@@ -623,7 +699,7 @@ export function PaginaListagemUsuarios() {
             <PainelErro mensagem={erro} errosValidacao={errosValidacao} />
             <FormularioUsuario
               incluirEmailSenha
-              incluirPermissao
+              incluirCargo
               incluirUnidade
               carregando={carregandoAcao}
               onSubmit={abrirConfirmacaoCriacao}
@@ -631,6 +707,25 @@ export function PaginaListagemUsuarios() {
           </Box>
         </DialogContent>
       </Dialog>
+
+      <ModalRedefinirSenhaOutroUsuario
+        aberto={dialogRedefinirSenhaAberto}
+        carregando={carregandoAcao}
+        erro={erro}
+        errosValidacao={errosValidacao}
+        resumoSenha={resumoSenhaEdicao}
+        carregandoResumo={carregandoResumoSenhaEdicao}
+        nomeUsuario={
+          alvoEdicao ? `${alvoEdicao.primeiroNome} ${alvoEdicao.sobrenome ?? ''}`.trim() : undefined
+        }
+        onFechar={() => {
+          if (!carregandoAcao) {
+            limparFeedback();
+            setDialogRedefinirSenhaAberto(false);
+          }
+        }}
+        onConfirmar={confirmarRedefinirSenhaOutro}
+      />
 
       <ModalTrocarSenha
         aberto={dialogTrocarSenhaAberto}

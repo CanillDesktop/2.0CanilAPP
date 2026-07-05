@@ -6,10 +6,12 @@ import { usuariosService } from '../services/usuariosService';
 import type {
   ConfirmacaoSenhaDto,
   FiltrosUsuariosListagem,
+  RedefinirSenhaOutroUsuarioDto,
   TrocarSenhaDto,
   UsuarioAtualizacaoDto,
   UsuarioCadastroComConfirmacaoDto,
   UsuarioCriadoDto,
+  UsuarioSenhaResumoDto,
   UsuariosPaginadosDto,
 } from '../types/tiposUsuarios';
 import { StatusUsuario } from '../types/tiposUsuarios';
@@ -68,7 +70,7 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
       email: usuario.email,
       primeiroNome: usuario.primeiroNome,
       sobrenome: usuario.sobrenome,
-      permissao: usuario.permissao,
+      idCargo: usuario.idCargo,
       dataHoraCriacao: String(usuario.dataHoraCriacao),
       dataHoraAtualizacao: String(usuario.dataHoraAtualizacao),
       isDeleted: Boolean(usuario.isDeleted),
@@ -136,6 +138,37 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
     }
   }, []);
 
+  const redefinirSenhaOutro = useCallback(
+    async (id: number, dto: RedefinirSenhaOutroUsuarioDto): Promise<boolean> => {
+      setCarregandoAcao(true);
+      setErro(null);
+      setErrosValidacao(null);
+      setSucesso(null);
+      try {
+        await usuariosService.redefinirSenhaOutro(id, dto);
+        setSucesso('Senha redefinida com sucesso.');
+        return true;
+      } catch (e) {
+        setErro(extrairMensagemErroApi(e));
+        if (e instanceof ErroApi && e.errors) {
+          setErrosValidacao(e.extrairMensagemErros());
+        }
+        return false;
+      } finally {
+        setCarregandoAcao(false);
+      }
+    },
+    [],
+  );
+
+  const obterResumoSenha = useCallback(async (id: number): Promise<UsuarioSenhaResumoDto | null> => {
+    try {
+      return await usuariosService.obterResumoSenha(id);
+    } catch {
+      return null;
+    }
+  }, []);
+
   const criarUsuario = useCallback(async (dto: UsuarioCadastroComConfirmacaoDto) => {
     setCarregandoAcao(true);
     setErro(null);
@@ -200,6 +233,8 @@ export function useUsuarios(usuario: UsuarioSessao | null, ehAdmin: boolean) {
     carregarUsuarios,
     atualizarUsuario,
     trocarSenha,
+    redefinirSenhaOutro,
+    obterResumoSenha,
     criarUsuario,
     executarAcaoCritica,
     errosValidacao,
