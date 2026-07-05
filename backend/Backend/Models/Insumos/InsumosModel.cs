@@ -2,6 +2,7 @@
 using Backend.DTOs.Insumos;
 using Backend.Models.Enums;
 using Backend.Models.Estoque;
+using Backend.Utils;
 using System.Text.RegularExpressions;
 
 namespace Backend.Models.Insumos;
@@ -57,7 +58,7 @@ public class InsumosModel : ItemComEstoqueBaseModel
             DescricaoDetalhada = model.DescricaoDetalhada,
             Unidade = model.Unidade,
             ItemNivelEstoque = nivelEstoque,
-            ItensEstoque = [.. itensEstoque.Select(e => (ItemEstoqueDTO)e)]
+            ItensEstoque = [.. ItemEstoqueOrdenacao.MaisRecentesPrimeiro(itensEstoque).Select(e => (ItemEstoqueDTO)e)]
         };
     }
 }

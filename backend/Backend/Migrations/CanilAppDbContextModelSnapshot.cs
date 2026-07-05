@@ -448,7 +448,7 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("IdUnidadeDestino")
+                    b.Property<int?>("IdUnidadeDestino")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("IdUnidadeOrigem")
@@ -467,6 +467,13 @@ namespace Backend.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Observacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResponsavelEnvio")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ResponsavelRecebimento")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
@@ -1033,8 +1040,7 @@ namespace Backend.Migrations
                     b.HasOne("Backend.Models.Estoque.UnidadeEstoqueModel", "UnidadeDestino")
                         .WithMany()
                         .HasForeignKey("IdUnidadeDestino")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Backend.Models.Estoque.UnidadeEstoqueModel", "UnidadeOrigem")
                         .WithMany()

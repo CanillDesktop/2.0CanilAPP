@@ -13,4 +13,5 @@ export type ItemEstoqueDto = {
   dataEntrega: string;
   nfe?: string | null;
   dataValidade?: string | null;
+  dataHoraCriacao?: string | null;
 };

@@ -28,12 +28,12 @@ namespace Backend.Controllers
         [HttpGet]
         public async Task<ActionResult<ItemComEstoqueListaPaginadaDTO<ProdutosLeituraDTO>>> Get(
             [FromQuery] ProdutosFiltro? filtro,
-            [FromQuery] ItensPaginationParameters? paginationParameters,
+            [FromQuery] EstoqueConsultaParameters? paginationParameters,
             CancellationToken cancellationToken)
         {
             var resultado = await _service.BuscarPaginadoAsync(
                 filtro ?? new ProdutosFiltro(),
-                paginationParameters ?? new ItensPaginationParameters(),
+                paginationParameters ?? new EstoqueConsultaParameters(),
                 cancellationToken);
 
             return Ok(resultado);

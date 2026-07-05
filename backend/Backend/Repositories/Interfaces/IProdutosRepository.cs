@@ -8,7 +8,7 @@ public interface IProdutosRepository : ICRUDEstoqueRepository<ProdutosModel>
 {
     Task<ConsultaPaginada<ProdutosModel>> ConsultarPaginadoAsync(
         ProdutosFiltro filtro,
-        ItensPaginationParameters paginationParameters,
+        EstoqueConsultaParameters paginationParameters,
         int diasDataLimiteVencimento,
         CancellationToken cancellationToken = default);
 }

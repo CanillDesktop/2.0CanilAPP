@@ -25,7 +25,9 @@ internal static class FiltroHelper
     public static IQueryable<T> ComNavegacoesUnidade<T>(IQueryable<T> query, int idUnidadeEstoque)
         where T : ItemComEstoqueBaseModel =>
         query
-            .Include(p => p.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted))
+            .Include(p => p.ItensEstoque
+                .Where(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted)
+                .OrderByDescending(e => e.DataHoraCriacao))
             .Include(p => p.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidadeEstoque && !n.IsDeleted));
 
     public static IQueryable<T> AplicarStatusEstoque<T>(

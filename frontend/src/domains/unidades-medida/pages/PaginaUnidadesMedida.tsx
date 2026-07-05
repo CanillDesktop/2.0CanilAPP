@@ -1,9 +1,12 @@
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicationOutlinedIcon from '@mui/icons-material/MedicationOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import StraightenOutlinedIcon from '@mui/icons-material/StraightenOutlined';
+import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import {
   Alert,
   Box,
@@ -41,6 +44,11 @@ import {
 } from '../api/unidadesMedidaApi';
 import type { UnidadeMedidaCadastroDto, UnidadeMedidaDto } from '../types/tiposUnidadeMedida';
 import { rotuloUnidadeMedida } from '../types/tiposUnidadeMedida';
+import {
+  ordenarUnidadesMedida,
+  type CampoOrdenacaoUnidadeMedida,
+  type DirecaoOrdenacao,
+} from '../utils/ordenacaoUnidadesMedida';
 
 const ROWS_POR_PAGINA_PADRAO = 10;
 
@@ -52,6 +60,61 @@ const formVazio = (): UnidadeMedidaCadastroDto => ({
   aplicavelInsumo: false,
   ativa: true,
 });
+
+function CabecalhoOrdenavel({
+  label,
+  field,
+  orderBy,
+  orderDirection,
+  onSort,
+  align = 'left',
+}: {
+  label: string;
+  field: CampoOrdenacaoUnidadeMedida;
+  orderBy: CampoOrdenacaoUnidadeMedida;
+  orderDirection: DirecaoOrdenacao;
+  onSort: (field: CampoOrdenacaoUnidadeMedida) => void;
+  align?: 'left' | 'right';
+}) {
+  const { cores, celulaCabecalho } = useEstilosListagem();
+  const ativo = orderBy === field;
+
+  return (
+    <TableCell
+      align={align}
+      onClick={() => onSort(field)}
+      sx={{
+        ...celulaCabecalho,
+        borderColor: cores.borderSuave,
+        cursor: 'pointer',
+        userSelect: 'none',
+        whiteSpace: 'nowrap',
+        fontWeight: 800,
+        '&:hover': { bgcolor: cores.hoverSurface },
+      }}
+    >
+      <Stack
+        direction="row"
+        spacing={0.5}
+        sx={{
+          alignItems: 'center',
+          justifyContent: align === 'right' ? 'flex-end' : 'flex-start',
+        }}
+      >
+        <span>{label}</span>
+        {ativo ? (
+          orderDirection === 'asc' ? (
+            <ArrowUpwardIcon sx={{ fontSize: 18, color: cores.focus }} />
+          ) : (
+            <ArrowDownwardIcon sx={{ fontSize: 18, color: cores.focus }} />
+          )
+        ) : (
+          <UnfoldMoreIcon sx={{ fontSize: 18, color: cores.textMuted, opacity: 0.6 }} />
+        )}
+      </Stack>
+    </TableCell>
+  );
+}
 
 const TIPOS_ITEM = [
   {
@@ -91,6 +154,8 @@ export function PaginaUnidadesMedida() {
   const [erroForm, setErroForm] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(ROWS_POR_PAGINA_PADRAO);
+  const [orderBy, setOrderBy] = useState<CampoOrdenacaoUnidadeMedida>('nome');
+  const [orderDirection, setOrderDirection] = useState<DirecaoOrdenacao>('asc');
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -118,18 +183,34 @@ export function PaginaUnidadesMedida() {
     );
   }, [itens, busca]);
 
+  const ordenados = useMemo(
+    () => ordenarUnidadesMedida(filtrados, orderBy, orderDirection),
+    [filtrados, orderBy, orderDirection],
+  );
+
   useEffect(() => {
     setPage(0);
-  }, [busca]);
+  }, [busca, orderBy, orderDirection]);
 
-  const totalCount = filtrados.length;
+  const handleSort = useCallback((field: CampoOrdenacaoUnidadeMedida) => {
+    setOrderBy((atual) => {
+      if (atual === field) {
+        setOrderDirection((direcao) => (direcao === 'asc' ? 'desc' : 'asc'));
+        return atual;
+      }
+      setOrderDirection('asc');
+      return field;
+    });
+  }, []);
+
+  const totalCount = ordenados.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage) || 1);
   const pageSegura = Math.min(page, Math.max(0, totalPages - 1));
 
   const itensPagina = useMemo(() => {
     const inicio = pageSegura * rowsPerPage;
-    return filtrados.slice(inicio, inicio + rowsPerPage);
-  }, [filtrados, pageSegura, rowsPerPage]);
+    return ordenados.slice(inicio, inicio + rowsPerPage);
+  }, [ordenados, pageSegura, rowsPerPage]);
 
   useEffect(() => {
     if (page !== pageSegura) setPage(pageSegura);
@@ -324,9 +405,27 @@ export function PaginaUnidadesMedida() {
               <Table size="medium">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 800 }}>Unidade de medida</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>Disponível no cadastro de</TableCell>
-                    <TableCell sx={{ fontWeight: 800 }}>Situação</TableCell>
+                    <CabecalhoOrdenavel
+                      label="Unidade de medida"
+                      field="nome"
+                      orderBy={orderBy}
+                      orderDirection={orderDirection}
+                      onSort={handleSort}
+                    />
+                    <CabecalhoOrdenavel
+                      label="Disponível no cadastro de"
+                      field="tipos"
+                      orderBy={orderBy}
+                      orderDirection={orderDirection}
+                      onSort={handleSort}
+                    />
+                    <CabecalhoOrdenavel
+                      label="Situação"
+                      field="situacao"
+                      orderBy={orderBy}
+                      orderDirection={orderDirection}
+                      onSort={handleSort}
+                    />
                     <TableCell align="right" sx={{ fontWeight: 800 }}>
                       Ações
                     </TableCell>

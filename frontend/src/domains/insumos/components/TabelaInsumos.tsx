@@ -26,6 +26,7 @@ import {
 import { motion } from 'framer-motion';
 import { Fragment, useState } from 'react';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
+import { LotesExpandidosListagem } from '../../../shared/components/listagem/LotesExpandidosListagem';
 import { useUnidadesMedida } from '../../unidades-medida/hooks/useUnidadesMedida';
 import type { InsumoLeituraDto } from '../types/tiposInsumos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
@@ -178,29 +179,25 @@ function ExpandedRow({
   onRegistrarRetirada: (insumo: InsumoLeituraDto, lote: ItemEstoqueDto) => void;
 }) {
   const estilos = useEstilosListagem();
-  const { cores } = estilos;
 
   return (
     <TableRow>
       <TableCell colSpan={8} sx={{ p: 0 }}>
         <Collapse in={expanded} timeout="auto" unmountOnExit>
           <Box sx={estilos.linhaExpandida}>
-            {insumo.itensEstoque.length ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                {insumo.itensEstoque.map((lote, index) => (
-                  <LoteCard
-                    key={`${insumo.id}-${lote.lote ?? index}`}
-                    insumo={insumo}
-                    lote={lote}
-                    onRegistrarRetirada={onRegistrarRetirada}
-                  />
-                ))}
-              </Box>
-            ) : (
-              <Typography variant="body2" sx={{ color: cores.textMuted }}>
-                Nenhum lote cadastrado para este insumo.
-              </Typography>
-            )}
+            <LotesExpandidosListagem
+              lotes={insumo.itensEstoque}
+              nivelMinimo={insumo.itemNivelEstoque?.nivelMinimoEstoque ?? 0}
+              mensagemVazio="Nenhum lote cadastrado para este insumo."
+              renderLote={(lote, index) => (
+                <LoteCard
+                  key={`${insumo.id}-${lote.lote ?? index}`}
+                  insumo={insumo}
+                  lote={lote}
+                  onRegistrarRetirada={onRegistrarRetirada}
+                />
+              )}
+            />
           </Box>
         </Collapse>
       </TableCell>

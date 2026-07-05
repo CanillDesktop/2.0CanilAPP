@@ -125,6 +125,9 @@ public class CanilAppDbContext : DbContext
         modelBuilder.Entity<ItemEstoqueModel>()
             .HasIndex(i => i.IdUnidadeEstoque);
 
+        modelBuilder.Entity<ItemEstoqueModel>()
+            .HasIndex(i => new { i.Id, i.IdUnidadeEstoque });
+
         modelBuilder.Entity<ContadorLoteModel>()
             .Property(c => c.Versao)
             .IsConcurrencyToken();
@@ -224,7 +227,7 @@ public class CanilAppDbContext : DbContext
         modelBuilder.Entity<TransferenciaEstoqueModel>(e =>
         {
             e.HasOne(t => t.UnidadeOrigem).WithMany().HasForeignKey(t => t.IdUnidadeOrigem).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne(t => t.UnidadeDestino).WithMany().HasForeignKey(t => t.IdUnidadeDestino).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(t => t.UnidadeDestino).WithMany().HasForeignKey(t => t.IdUnidadeDestino).OnDelete(DeleteBehavior.Restrict).IsRequired(false);
             e.HasOne(t => t.UsuarioEnvio).WithMany().HasForeignKey(t => t.IdUsuarioEnvio);
             e.HasOne(t => t.UsuarioRecebimento).WithMany().HasForeignKey(t => t.IdUsuarioRecebimento);
             e.HasIndex(t => new { t.IdUnidadeOrigem, t.IdUnidadeDestino, t.DataTransferencia });

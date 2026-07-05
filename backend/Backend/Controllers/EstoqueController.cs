@@ -16,16 +16,60 @@ namespace Backend.Controllers
     {
         private readonly IEstoqueItemService _service;
         private readonly IEstoqueConsultaService _consultaService;
+        private readonly IEstoqueLookupService _lookupService;
         private readonly IEntradaEstoqueService _entradaService;
 
         public EstoqueController(
             IEstoqueItemService service,
             IEstoqueConsultaService consultaService,
+            IEstoqueLookupService lookupService,
             IEntradaEstoqueService entradaService)
         {
             _service = service;
             _consultaService = consultaService;
+            _lookupService = lookupService;
             _entradaService = entradaService;
+        }
+
+        [HttpGet("lookup/itens")]
+        [ProducesResponseType(typeof(PagedResultDto<ItemEstoqueLookupLeituraDTO>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<PagedResultDto<ItemEstoqueLookupLeituraDTO>>> LookupItens(
+            [FromQuery] EstoqueLookupItensFiltroDTO? filtro,
+            [FromQuery] PaginationParameters? parameters,
+            CancellationToken cancellationToken)
+        {
+            var resultado = await _lookupService.BuscarItensAsync(
+                filtro ?? new EstoqueLookupItensFiltroDTO(),
+                parameters ?? new PaginationParameters(),
+                cancellationToken);
+            return Ok(resultado);
+        }
+
+        [HttpGet("lookup/lotes")]
+        [ProducesResponseType(typeof(PagedResultDto<LoteEstoqueLookupLeituraDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<PagedResultDto<LoteEstoqueLookupLeituraDTO>>> LookupLotes(
+            [FromQuery] EstoqueLookupLotesFiltroDTO filtro,
+            [FromQuery] PaginationParameters? parameters,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var resultado = await _lookupService.BuscarLotesAsync(
+                    filtro,
+                    parameters ?? new PaginationParameters(),
+                    cancellationToken);
+                return Ok(resultado);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Title = "Parâmetros inválidos",
+                    Status = StatusCodes.Status400BadRequest,
+                    Details = ex.Message,
+                });
+            }
         }
 
         [HttpGet("{codigo}", Name = "GetItensEstoqueByCodigo")]

@@ -8,15 +8,22 @@ function compararValidade(a: LoteDetalhe, b: LoteDetalhe): number {
   return new Date(a.validade).getTime() - new Date(b.validade).getTime();
 }
 
+function compararLoteMaisRecente(a: ItemEstoqueDto, b: ItemEstoqueDto): number {
+  const criacaoA = a.dataHoraCriacao ? new Date(a.dataHoraCriacao).getTime() : new Date(a.dataEntrega).getTime();
+  const criacaoB = b.dataHoraCriacao ? new Date(b.dataHoraCriacao).getTime() : new Date(b.dataEntrega).getTime();
+  return criacaoB - criacaoA;
+}
+
 export function mapearItensEstoqueParaLotes(idItem: number, originais?: ItemEstoqueDto[] | null): LoteDetalhe[] {
   return (originais ?? [])
+    .slice()
+    .sort(compararLoteMaisRecente)
     .map((lote, idx) => ({
       id: `${idItem}-${lote.lote ?? idx}`,
       codigo: lote.lote ?? '',
       quantidade: lote.quantidade,
       validade: lote.dataValidade ?? null,
-    }))
-    .sort(compararValidade);
+    }));
 }
 
 export function textoProximoVencimento(lotes: LoteDetalhe[]): string {

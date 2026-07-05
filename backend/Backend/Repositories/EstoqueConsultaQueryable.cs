@@ -27,7 +27,9 @@ internal static class EstoqueConsultaQueryable
     public static IQueryable<T> ComNavegacoesUnidade<T>(IQueryable<T> query, int idUnidadeEstoque)
         where T : ItemComEstoqueBaseModel =>
         query
-            .Include(x => x.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted))
+            .Include(x => x.ItensEstoque
+                .Where(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted)
+                .OrderByDescending(e => e.DataHoraCriacao))
             .Include(x => x.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidadeEstoque && !n.IsDeleted));
 
     public static IQueryable<T> AplicarFiltrosComuns<T>(
@@ -133,8 +135,17 @@ internal static class EstoqueConsultaQueryable
     public static IQueryable<ProdutosModel> AplicarOrdenacaoProdutos(
         IQueryable<ProdutosModel> query,
         EstoqueConsultaParameters p,
-        int idUnidadeEstoque) =>
-        AplicarOrdenacao(query, p, x => x.DescricaoSimples, idUnidadeEstoque);
+        int idUnidadeEstoque)
+    {
+        var asc = p.IsSortAscending;
+
+        return p.NormalizedOrderBy switch
+        {
+            "codigo" => (asc ? query.OrderBy(x => x.Codigo) : query.OrderByDescending(x => x.Codigo)).ThenBy(x => x.Id),
+            "categoria" => (asc ? query.OrderBy(x => x.Categoria) : query.OrderByDescending(x => x.Categoria)).ThenBy(x => x.Id),
+            _ => AplicarOrdenacao(query, p, x => x.DescricaoSimples, idUnidadeEstoque),
+        };
+    }
 
     public static IQueryable<MedicamentosModel> AplicarOrdenacaoMedicamentos(
         IQueryable<MedicamentosModel> query,

@@ -2,6 +2,7 @@
 using Backend.DTOs.Medicamentos;
 using Backend.Models.Enums;
 using Backend.Models.Estoque;
+using Backend.Utils;
 using System.Text.RegularExpressions;
 
 namespace Backend.Models.Medicamentos;
@@ -65,7 +66,7 @@ public class MedicamentosModel : ItemComEstoqueBaseModel
             PublicoAlvo = model.PublicoAlvo,
             Unidade = model.Unidade,
             ItemNivelEstoque = nivelEstoque,
-            ItensEstoque = [.. itensEstoque.Select(e => (ItemEstoqueDTO)e)]
+            ItensEstoque = [.. ItemEstoqueOrdenacao.MaisRecentesPrimeiro(itensEstoque).Select(e => (ItemEstoqueDTO)e)]
         };
     }
 }

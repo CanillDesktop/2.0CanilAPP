@@ -53,12 +53,6 @@ const itensNavegacao: ItemNavegacao[] = [
     permissoes: [PERMISSAO.usuariosListar],
   },
   {
-    titulo: 'Permissões unidade',
-    rota: '/usuarios/permissoes',
-    icone: <InputOutlinedIcon />,
-    permissoes: [PERMISSAO.usuariosPermissoesGerenciar, PERMISSAO.usuariosGerenciarVinculosUnidade],
-  },
-  {
     titulo: 'Cargos',
     rota: '/cargos',
     icone: <BadgeOutlinedIcon />,

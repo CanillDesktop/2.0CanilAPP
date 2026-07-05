@@ -18,7 +18,7 @@ public class ProdutosRepository : BaseCRUDEstoqueRepository<ProdutosModel>, IPro
 
     public async Task<ConsultaPaginada<ProdutosModel>> ConsultarPaginadoAsync(
         ProdutosFiltro filtro,
-        ItensPaginationParameters paginationParameters,
+        EstoqueConsultaParameters paginationParameters,
         int diasDataLimiteVencimento,
         CancellationToken cancellationToken = default)
     {
@@ -67,8 +67,9 @@ public class ProdutosRepository : BaseCRUDEstoqueRepository<ProdutosModel>, IPro
         var comStatus = FiltroHelper.AplicarStatusEstoque(filtrada, filtro.StatusEstoque, idUnidade);
         var totalCount = await comStatus.CountAsync(cancellationToken);
 
-        var items = await FiltroHelper.ComNavegacoesUnidade(comStatus, idUnidade)
-            .OrderBy(p => p.Id)
+        var ordenada = EstoqueConsultaQueryable.AplicarOrdenacaoProdutos(comStatus, paginationParameters, idUnidade);
+
+        var items = await FiltroHelper.ComNavegacoesUnidade(ordenada, idUnidade)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);

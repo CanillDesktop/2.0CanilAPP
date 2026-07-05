@@ -20,6 +20,11 @@ import { PainelErro } from '../../../shared/components/PainelErro';
 import type { EstadoNavegacaoListagem } from '../../../shared/types/navegacaoListagem';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import {
+  type ValorCampoInteiro,
+  inteiroCampoParaEnvio,
+  valorCampoInteiroDeInput,
+} from '../../../shared/utils/campoInteiroFormulario';
 import { SeletorUnidadeMedida } from '../../unidades-medida/components/SeletorUnidadeMedida';
 import { useUnidadesMedida } from '../../unidades-medida/hooks/useUnidadesMedida';
 import { OPCOES_CATEGORIA_PRODUTO_FILTRO } from '../constants/opcoesCategoriaProduto';
@@ -33,7 +38,7 @@ const estadoInicialFormulario = () => ({
   descricaoDetalhada: '',
   unidade: 0,
   categoria: 1,
-  nivelMinimoEstoque: 0,
+  nivelMinimoEstoque: '' as ValorCampoInteiro,
 });
 
 export function FormularioProduto() {
@@ -65,7 +70,8 @@ export function FormularioProduto() {
   );
 
   const passoConfigValido = useMemo(() => {
-    return Number.isFinite(form.nivelMinimoEstoque) && form.nivelMinimoEstoque >= 0;
+    const val = form.nivelMinimoEstoque;
+    return val === '' || (Number.isFinite(val) && val >= 0);
   }, [form.nivelMinimoEstoque]);
 
   function montarDto(): ProdutoCadastroDto {
@@ -78,7 +84,7 @@ export function FormularioProduto() {
       dataEntrega: new Date().toISOString(),
       nfe: '',
       dataValidade: null,
-      nivelMinimoEstoque: form.nivelMinimoEstoque,
+      nivelMinimoEstoque: inteiroCampoParaEnvio(form.nivelMinimoEstoque),
     };
   }
 
@@ -201,7 +207,7 @@ export function FormularioProduto() {
                     type="number"
                     label="Nível mínimo de estoque"
                     value={form.nivelMinimoEstoque}
-                    onChange={(e) => setForm((p) => ({ ...p, nivelMinimoEstoque: Number(e.target.value) }))}
+                    onChange={(e) => setForm((p) => ({ ...p, nivelMinimoEstoque: valorCampoInteiroDeInput(e.target.value) }))}
                     slotProps={{ htmlInput: { min: 0 } }}
                     sx={sxCampo}
                   />

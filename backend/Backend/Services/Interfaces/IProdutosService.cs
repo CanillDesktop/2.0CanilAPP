@@ -10,6 +10,6 @@ public interface IProdutosService : ICRUDEstoqueService<ProdutosModel>
 {
     Task<ItemComEstoqueListaPaginadaDTO<ProdutosLeituraDTO>> BuscarPaginadoAsync(
         ProdutosFiltro filtro,
-        ItensPaginationParameters paginationParameters,
+        EstoqueConsultaParameters paginationParameters,
         CancellationToken cancellationToken = default);
 }

@@ -32,32 +32,62 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
         if (dto.Itens.Count == 0)
             throw new ModelIncompletaException("Informe ao menos um item na transferência.");
 
+        if (string.IsNullOrWhiteSpace(dto.ResponsavelEnvio))
+            throw new ModelIncompletaException("Informe quem está realizando a transferência.");
+
         var idOrigem = await _unidadeContext.ObterUnidadeAtivaIdAsync(cancellationToken);
         await _unidadeContext.GarantirTransferenciaEnviarAsync(idOrigem, cancellationToken);
 
-        if (dto.IdUnidadeDestino == idOrigem)
+        var semDestino = !dto.IdUnidadeDestino.HasValue || dto.IdUnidadeDestino.Value <= 0;
+
+        if (idOrigem == UnidadeEstoqueIds.Secretaria)
+        {
+            if (semDestino || dto.IdUnidadeDestino != UnidadeEstoqueIds.Canil)
+                throw new RegraDeNegocioInfringidaException("Transferências da Secretaria devem ter destino no Canil.");
+        }
+        else if (idOrigem == UnidadeEstoqueIds.Canil)
+        {
+            if (semDestino && string.IsNullOrWhiteSpace(dto.Observacao))
+                throw new ModelIncompletaException("Informe a observação quando não houver unidade de destino.");
+        }
+        else if (semDestino)
+        {
+            throw new RegraDeNegocioInfringidaException("Informe a unidade de destino.");
+        }
+
+        if (!semDestino && dto.IdUnidadeDestino == idOrigem)
             throw new RegraDeNegocioInfringidaException("Unidade de destino deve ser diferente da origem.");
+
+        if (!semDestino)
+        {
+            var destinoExiste = await _context.UnidadesEstoque.AsNoTracking()
+                .AnyAsync(u => u.Id == dto.IdUnidadeDestino && u.Ativa && !u.IsDeleted, cancellationToken);
+            if (!destinoExiste)
+                throw new RegraDeNegocioInfringidaException("Unidade de destino inválida.");
+        }
 
         if (!int.TryParse(_userSession.UserId, out var idUsuario) || idUsuario <= 0)
             throw new AcessoNegadoException("Usuário não autenticado.");
 
-        var destinoExiste = await _context.UnidadesEstoque.AsNoTracking()
-            .AnyAsync(u => u.Id == dto.IdUnidadeDestino && u.Ativa && !u.IsDeleted, cancellationToken);
-        if (!destinoExiste)
-            throw new RegraDeNegocioInfringidaException("Unidade de destino inválida.");
-
         var now = DateTime.UtcNow;
         var editor = _userSession.EditedBy ?? string.Empty;
+        var statusInicial = semDestino
+            ? TransferenciaEstoqueStatusEnum.Recebida
+            : TransferenciaEstoqueStatusEnum.Enviada;
 
         await using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
 
         var transferencia = new TransferenciaEstoqueModel
         {
             IdUnidadeOrigem = idOrigem,
-            IdUnidadeDestino = dto.IdUnidadeDestino,
+            IdUnidadeDestino = semDestino ? null : dto.IdUnidadeDestino,
             DataTransferencia = now,
             IdUsuarioEnvio = idUsuario,
-            Status = TransferenciaEstoqueStatusEnum.Enviada,
+            Status = statusInicial,
+            ResponsavelEnvio = dto.ResponsavelEnvio.Trim(),
+            ResponsavelRecebimento = string.IsNullOrWhiteSpace(dto.ResponsavelRecebimento)
+                ? null
+                : dto.ResponsavelRecebimento.Trim(),
             Observacao = dto.Observacao,
             DataHoraCriacao = now,
             DataHoraAtualizacao = now,
@@ -160,6 +190,9 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
         if (transferencia.Status != TransferenciaEstoqueStatusEnum.Enviada)
             throw new RegraDeNegocioInfringidaException("Somente transferências enviadas podem ser recebidas.");
 
+        if (!transferencia.IdUnidadeDestino.HasValue)
+            throw new RegraDeNegocioInfringidaException("Esta transferência não possui unidade de destino para recebimento.");
+
         var idUnidadeAtiva = await _unidadeContext.ObterUnidadeAtivaIdAsync(cancellationToken);
         if (idUnidadeAtiva != transferencia.IdUnidadeDestino)
         {
@@ -167,7 +200,7 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
                 "Recebimento só pode ser confirmado na unidade de destino da transferência.");
         }
 
-        await _unidadeContext.GarantirTransferenciaReceberAsync(transferencia.IdUnidadeDestino, cancellationToken);
+        await _unidadeContext.GarantirTransferenciaReceberAsync(transferencia.IdUnidadeDestino.Value, cancellationToken);
 
         var now = DateTime.UtcNow;
         var editor = _userSession.EditedBy ?? string.Empty;
@@ -180,7 +213,7 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
                 .FirstOrDefaultAsync(e =>
                     e.Id == item.IdItem
                     && e.Lote == item.Lote
-                    && e.IdUnidadeEstoque == transferencia.IdUnidadeDestino
+                    && e.IdUnidadeEstoque == transferencia.IdUnidadeDestino!.Value
                     && !e.IsDeleted, cancellationToken);
 
             var codigo = await ObterCodigoItemAsync(item.IdItem, cancellationToken);
@@ -192,7 +225,7 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
                 _context.ItensEstoque.Add(new ItemEstoqueModel
                 {
                     Id = item.IdItem,
-                    IdUnidadeEstoque = transferencia.IdUnidadeDestino,
+                    IdUnidadeEstoque = transferencia.IdUnidadeDestino!.Value,
                     Codigo = codigo,
                     Lote = item.Lote,
                     Quantidade = item.Quantidade,
@@ -209,7 +242,7 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
                     .Where(e =>
                         e.Id == item.IdItem
                         && e.Lote == item.Lote
-                        && e.IdUnidadeEstoque == transferencia.IdUnidadeDestino
+                        && e.IdUnidadeEstoque == transferencia.IdUnidadeDestino!.Value
                         && !e.IsDeleted)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(e => e.Quantidade, e => e.Quantidade + item.Quantidade)
@@ -220,7 +253,7 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
 
             var movEntrada = new MovimentacaoEstoqueModel
             {
-                IdUnidadeEstoque = transferencia.IdUnidadeDestino,
+                IdUnidadeEstoque = transferencia.IdUnidadeDestino!.Value,
                 IdItem = item.IdItem,
                 Lote = item.Lote,
                 Quantidade = item.Quantidade,
@@ -253,7 +286,8 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
         // Apenas transferências em que a unidade ativa é origem (saída) ou destino (entrada).
         var ids = await _context.TransferenciasEstoque.AsNoTracking()
             .Where(t => !t.IsDeleted
-                && (t.IdUnidadeOrigem == idUnidadeAtiva || t.IdUnidadeDestino == idUnidadeAtiva))
+                && (t.IdUnidadeOrigem == idUnidadeAtiva
+                    || (t.IdUnidadeDestino.HasValue && t.IdUnidadeDestino == idUnidadeAtiva)))
             .OrderByDescending(t => t.DataTransferencia)
             .Select(t => t.Id)
             .ToListAsync(cancellationToken);
@@ -315,9 +349,12 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
 
         var tipoMovimento = t.IdUnidadeOrigem == idUnidadeAtiva
             ? "Saida"
-            : t.IdUnidadeDestino == idUnidadeAtiva
+            : t.IdUnidadeDestino.HasValue && t.IdUnidadeDestino == idUnidadeAtiva
                 ? "Entrada"
                 : string.Empty;
+
+        var nomeUsuarioEnvio = $"{t.UsuarioEnvio?.PrimeiroNome} {t.UsuarioEnvio?.Sobrenome}".Trim();
+        var responsavelEnvio = string.IsNullOrWhiteSpace(t.ResponsavelEnvio) ? nomeUsuarioEnvio : t.ResponsavelEnvio.Trim();
 
         return new TransferenciaEstoqueLeituraDTO
         {
@@ -329,10 +366,12 @@ public class TransferenciaEstoqueService : ITransferenciaEstoqueService
             Status = t.Status.ToString().ToUpperInvariant(),
             TipoMovimento = tipoMovimento,
             DataTransferencia = t.DataTransferencia,
-            UsuarioEnvio = $"{t.UsuarioEnvio?.PrimeiroNome} {t.UsuarioEnvio?.Sobrenome}".Trim(),
+            UsuarioEnvio = nomeUsuarioEnvio,
             UsuarioRecebimento = t.UsuarioRecebimento is null
                 ? null
                 : $"{t.UsuarioRecebimento.PrimeiroNome} {t.UsuarioRecebimento.Sobrenome}".Trim(),
+            ResponsavelEnvio = responsavelEnvio,
+            ResponsavelRecebimento = t.ResponsavelRecebimento,
             Observacao = t.Observacao,
             Itens = itens,
         };

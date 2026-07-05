@@ -23,8 +23,10 @@ public static class TransferenciaEstoqueCsvExportador
         "lote",
         "quantidade",
         "status",
-        "usuario_envio",
-        "usuario_recebimento",
+        "responsavel_envio",
+        "responsavel_recebimento",
+        "usuario_sistema_envio",
+        "usuario_sistema_recebimento",
         "observacao",
     ];
 
@@ -53,7 +55,7 @@ public static class TransferenciaEstoqueCsvExportador
                 Cel(item.UnidadeMovimento),
                 item.IdUnidadeOrigem.ToString(CultureInfo.InvariantCulture),
                 Cel(item.UnidadeOrigemNome),
-                item.IdUnidadeDestino.ToString(CultureInfo.InvariantCulture),
+                item.IdUnidadeDestino?.ToString(CultureInfo.InvariantCulture) ?? string.Empty,
                 Cel(item.UnidadeDestinoNome),
                 Cel(item.Direcao),
                 Cel(item.Codigo),
@@ -61,8 +63,10 @@ public static class TransferenciaEstoqueCsvExportador
                 Cel(item.Lote),
                 item.Quantidade.ToString(CultureInfo.InvariantCulture),
                 Cel(item.Status),
-                Cel(item.UsuarioEnvio),
-                Cel(item.UsuarioRecebimento ?? string.Empty),
+                Cel(item.ResponsavelEnvio),
+                Cel(item.ResponsavelRecebimento ?? string.Empty),
+                Cel(item.UsuarioSistemaEnvio),
+                Cel(item.UsuarioSistemaRecebimento ?? string.Empty),
                 Cel(item.Observacao ?? string.Empty),
             }));
         }

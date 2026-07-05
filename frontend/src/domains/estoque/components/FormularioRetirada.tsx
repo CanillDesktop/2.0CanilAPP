@@ -22,6 +22,12 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import {
+  type ValorCampoInteiro,
+  campoInteiroPositivo,
+  inteiroCampoParaEnvio,
+  valorCampoInteiroDeInput,
+} from '../../../shared/utils/campoInteiroFormulario';
 import { listarUsuariosResumoParaRetiradasApi } from '../../usuarios/api/usuariosApi';
 import type { UsuarioResumoFiltroDto } from '../../usuarios/types/tiposUsuarios';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
@@ -60,7 +66,7 @@ export function FormularioRetirada() {
   const [usuariosResumo, setUsuariosResumo] = useState<UsuarioResumoFiltroDto[]>([]);
   const [erroUsuarios, setErroUsuarios] = useState(false);
   const [observacao, setObservacao] = useState('');
-  const [quantidade, setQuantidade] = useState(0);
+  const [quantidade, setQuantidade] = useState<ValorCampoInteiro>('');
   const [erroValidacao, setErroValidacao] = useState<string | null>(null);
   const [confirmarAberto, setConfirmarAberto] = useState(false);
   const [submitSucesso, setSubmitSucesso] = useState(false);
@@ -117,7 +123,7 @@ export function FormularioRetirada() {
   }, [data?.codItem, data?.loteCodigo]);
 
   const retiradaValida = useMemo(() => {
-    return Boolean(data) && produtoNome.length > 0 && de.trim().length > 0 && para.trim().length > 0 && quantidade > 0 && quantidade <= quantidadeDisponivel;
+    return Boolean(data) && produtoNome.length > 0 && de.trim().length > 0 && para.trim().length > 0 && campoInteiroPositivo(quantidade) && quantidade <= quantidadeDisponivel;
   }, [data, de, para, produtoNome, quantidade, quantidadeDisponivel]);
 
   function validarFormulario() {
@@ -125,7 +131,7 @@ export function FormularioRetirada() {
     if (!produtoNome) return 'A retirada deve ser iniciada com um produto valido.';
     if (!de.trim()) return 'Informe quem esta retirando.';
     if (!para.trim()) return 'Informe para quem o item sera destinado.';
-    if (!Number.isFinite(quantidade) || quantidade <= 0) return 'A quantidade deve ser maior que zero.';
+    if (!campoInteiroPositivo(quantidade)) return 'A quantidade deve ser maior que zero.';
     if (quantidade > quantidadeDisponivel) return 'A quantidade informada é maior que o disponível no lote.';
     return null;
   }
@@ -181,11 +187,13 @@ export function FormularioRetirada() {
       return;
     }
 
+    const qtd = inteiroCampoParaEnvio(quantidade);
+
     // Item 7: revalida o saldo imediatamente antes de concluir; aborta em caso de divergência.
     try {
       const atual = await servicoEstoque.obterSaldoLote(data!.codItem, data!.loteCodigo);
       setSaldoAtual(atual.quantidade);
-      if (quantidade > atual.quantidade) {
+      if (qtd > atual.quantidade) {
         setConfirmarAberto(false);
         setSubmitErro(true);
         const msg =
@@ -202,7 +210,7 @@ export function FormularioRetirada() {
 
     const payloadRetirada: RetiradaRequest = {
       loteId: data!.loteId,
-      quantidade,
+      quantidade: qtd,
       origem: de,
       destino: para,
     };
@@ -323,15 +331,15 @@ export function FormularioRetirada() {
             label="Quantidade"
             type="number"
             value={quantidade}
-            onChange={(e) => setQuantidade(Number(e.target.value))}
+            onChange={(e) => setQuantidade(valorCampoInteiroDeInput(e.target.value))}
             slotProps={{ htmlInput: { min: 1, max: quantidadeDisponivel } }}
             required
             fullWidth
-            error={Boolean(erroValidacao) && (!Number.isFinite(quantidade) || quantidade <= 0 || quantidade > quantidadeDisponivel)}
+            error={Boolean(erroValidacao) && (!campoInteiroPositivo(quantidade) || quantidade > quantidadeDisponivel)}
             helperText={
-              Boolean(erroValidacao) && quantidade > quantidadeDisponivel
+              Boolean(erroValidacao) && campoInteiroPositivo(quantidade) && quantidade > quantidadeDisponivel
                 ? 'A quantidade informada é maior que o disponível no lote'
-                : Boolean(erroValidacao) && quantidade <= 0
+                : Boolean(erroValidacao) && !campoInteiroPositivo(quantidade)
                   ? 'Quantidade deve ser maior que zero'
                   : ' '
             }
@@ -394,7 +402,7 @@ export function FormularioRetirada() {
         <DialogTitle sx={{ color: cores.textPrimary, fontWeight: 700 }}>Confirmar retirada</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ color: cores.textSecondary }}>
-            Confirma a retirada de {quantidade} unidade(s) do lote {data.loteCodigo}?
+            Confirma a retirada de {campoInteiroPositivo(quantidade) ? quantidade : ''} unidade(s) do lote {data.loteCodigo}?
           </Typography>
         </DialogContent>
         <DialogActions>
