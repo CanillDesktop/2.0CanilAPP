@@ -13,17 +13,20 @@ public class AuthService : IAuthService
 {
     private readonly IUsuariosService _usuariosService;
     private readonly IRefreshTokenService _refreshTokenService;
+    private readonly IPermissaoAuthorizationService _authorization;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IUsuariosService usuariosService,
         IRefreshTokenService refreshTokenService,
+        IPermissaoAuthorizationService authorization,
         IConfiguration configuration,
         ILogger<AuthService> logger)
     {
         _usuariosService = usuariosService;
         _refreshTokenService = refreshTokenService;
+        _authorization = authorization;
         _configuration = configuration;
         _logger = logger;
     }
@@ -34,7 +37,7 @@ public class AuthService : IAuthService
         if (usuario == null)
         {
             _logger.LogWarning("Falha de autenticação para {Login}.", login);
-            throw new ArgumentNullException(null, "Usuário ou senha inválidos.");
+            return null;
         }
 
         var refreshTokenHash = GenerateOpaqueRefreshToken();
@@ -44,6 +47,8 @@ public class AuthService : IAuthService
         await _refreshTokenService.SaveRefreshTokenAsync(refreshToken);
 
         var accessToken = CreateJwtToken(usuario);
+        var usuarioDto = (UsuarioResponseDTO)usuario;
+        usuarioDto.PermissoesCodigos = (await _authorization.ObterCodigosGlobaisAsync(usuario.Id, cancellationToken)).ToList();
 
         return new LoginResponseModel
         {
@@ -52,7 +57,7 @@ public class AuthService : IAuthService
                 AccessToken = accessToken,
                 RefreshToken = refreshToken
             },
-            Usuario = usuario
+            Usuario = usuarioDto
         };
     }
 

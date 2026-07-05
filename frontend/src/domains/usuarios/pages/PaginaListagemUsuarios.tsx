@@ -31,6 +31,8 @@ import { ModalTrocarSenha } from '../components/ModalTrocarSenha';
 import { useUsuarios } from '../hooks/useUsuarios';
 import type { FiltrosUsuariosListagem, UsuarioCriadoDto } from '../types/tiposUsuarios';
 import { rotuloStatusUsuario, StatusUsuario } from '../types/tiposUsuarios';
+import { PERMISSAO } from '../../../shared/constants/permissoesCodigos';
+import { possuiPermissao } from '../../../shared/utils/possuiPermissao';
 import {
   descreverPermissao,
   formatarTempoCadastro,
@@ -61,7 +63,8 @@ export function PaginaListagemUsuarios() {
     erro: erroUnidades,
   } = useUnidadeEstoque();
   const [searchParams, setSearchParams] = useSearchParams();
-  const ehAdmin = (usuario?.permissao ?? 0) === 1;
+  const ehAdmin = possuiPermissao(usuario, PERMISSAO.usuariosListar);
+  const podeEditarCodigoAcesso = possuiPermissao(usuario, PERMISSAO.codigoSegurancaEditar);
   const {
     usuarios,
     paginacao,
@@ -550,7 +553,7 @@ export function PaginaListagemUsuarios() {
               onFiltrosExpandidosChange={setFiltrosPermissoesExpandidos}
             />
           ) : null}
-          {abaAdmin === 'codigo-seguranca' ? <AbaCodigoAcesso podeEditar /> : null}
+          {abaAdmin === 'codigo-seguranca' ? <AbaCodigoAcesso podeEditar={podeEditarCodigoAcesso} /> : null}
         </>
       ) : (
         <>

@@ -62,8 +62,8 @@ public class CodigoSegurancaController : ControllerBase
         return Ok(dto);
     }
 
-    /// <summary>Altera o código de acesso (somente administrador).</summary>
-    [Authorize(Roles = "ADMIN")]
+    /// <summary>Altera o código de acesso (requer permissão codigo_seguranca.editar).</summary>
+    [Authorize]
     [HttpPut]
     public async Task<ActionResult<CodigoAcessoResponseDTO>> Atualizar(
         [FromBody] AtualizarCodigoAcessoRequestDTO dto,

@@ -1,3 +1,6 @@
+import type { UsuarioSessao } from '../../../shared/types/usuarioSessao';
+import { podeGerenciarCatalogoUnidadesMedida as podeGerenciarMedidas } from '../../../shared/utils/possuiPermissao';
+
 export function formatarTempoCadastro(dataHoraCriacao?: Date) {
   if (!dataHoraCriacao) return 'Não informado';
   const inicio = new Date(dataHoraCriacao);
@@ -23,13 +26,13 @@ export function descreverPermissao(permissao: number) {
   return `Nivel ${permissao}`;
 }
 
-/** Admin ou usuário com a flag de catálogo de unidades de medida. */
+/** Admin ou usuário com permissão de catálogo de unidades de medida. */
 export function podeGerenciarCatalogoUnidadesMedida(usuario?: {
   permissao?: number;
   podeGerenciarUnidadesMedida?: boolean;
+  permissoesCodigos?: string[];
 } | null): boolean {
-  if (!usuario) return false;
-  return usuario.permissao === 1 || Boolean(usuario.podeGerenciarUnidadesMedida);
+  return podeGerenciarMedidas(usuario as UsuarioSessao | null);
 }
 
 const ROTULOS_PERMISSAO_UNIDADE = [

@@ -1,10 +1,12 @@
 using Backend.Context;
+using Backend.Data;
 using Backend.DTOs.Common;
 using Backend.DTOs.Estoque;
 using Backend.DTOs.Usuario;
 using Backend.Exceptions;
 using Backend.Models.Enums;
 using Backend.Models.Estoque;
+using Backend.Models.Permissoes;
 using Backend.Models.Usuarios;
 using Backend.Pagination;
 using Backend.Repositories.Interfaces;
@@ -19,17 +21,20 @@ public class UsuariosService : IUsuariosService
     private readonly IUserSessionService _userSessionService;
     private readonly IRefreshTokenService _refreshTokenService;
     private readonly CanilAppDbContext _context;
+    private readonly IPermissaoAuthorizationService _authorization;
 
     public UsuariosService(
         IUsuariosRepository repository,
         IUserSessionService userSessionService,
         IRefreshTokenService refreshTokenService,
-        CanilAppDbContext context)
+        CanilAppDbContext context,
+        IPermissaoAuthorizationService authorization)
     {
         _repository = repository;
         _userSessionService = userSessionService;
         _refreshTokenService = refreshTokenService;
         _context = context;
+        _authorization = authorization;
     }
 
     public Task<IEnumerable<UsuariosModel>> BuscarTodosAsync()
@@ -41,6 +46,8 @@ public class UsuariosService : IUsuariosService
         UsuarioListagemParameters parameters,
         CancellationToken cancellationToken = default)
     {
+        await _authorization.GarantirPermissaoAsync(PermissaoCodigos.UsuariosListar, cancellationToken: cancellationToken);
+
         var statuses = ResolverStatusesListagem(parameters.NormalizedStatus);
         var (items, total) = await _repository.ListarPaginadoAsync(
             statuses,
@@ -84,6 +91,7 @@ public class UsuariosService : IUsuariosService
             return null;
 
         await SincronizarUnidadesEstoqueAsync(criado.Id, dto.UnidadesEstoque, criado.Permissao);
+        await PermissaoSeed.SincronizarAtribuicoesUsuarioAsync(_context, criado.Id);
         return criado;
     }
 
@@ -92,7 +100,7 @@ public class UsuariosService : IUsuariosService
         UsuariosModel model = dto;
         var atualizado = await AtualizarAsync(id, model);
 
-        if (atualizado is not null && IsAdmin())
+        if (atualizado is not null && await EhAdministradorAsync())
         {
             if (dto.PodeGerenciarUnidadesMedida is bool podeGerenciar)
             {
@@ -106,6 +114,8 @@ public class UsuariosService : IUsuariosService
 
             if (dto.UnidadesEstoque is not null)
                 await SincronizarUnidadesEstoqueAsync(id, dto.UnidadesEstoque, atualizado.Permissao);
+
+            await PermissaoSeed.SincronizarAtribuicoesUsuarioAsync(_context, id);
         }
 
         return atualizado;
@@ -115,7 +125,7 @@ public class UsuariosService : IUsuariosService
         int idUsuario,
         CancellationToken cancellationToken = default)
     {
-        if (!IsAdmin() && int.TryParse(_userSessionService.UserId, out var logado) && logado != idUsuario)
+        if (!await EhAdministradorAsync() && int.TryParse(_userSessionService.UserId, out var logado) && logado != idUsuario)
             throw new AcessoNegadoException("Sem permissão para consultar unidades de outro usuário.");
 
         return await (
@@ -165,6 +175,7 @@ public class UsuariosService : IUsuariosService
         }
 
         await _context.SaveChangesAsync();
+        await PermissaoSeed.SincronizarAtribuicoesUsuarioAsync(_context, idUsuario);
     }
 
     private static List<UsuarioUnidadeEstoqueAtribuicaoDTO> ObterAtribuicaoPadrao(PermissoesEnum permissao)
@@ -188,7 +199,7 @@ public class UsuariosService : IUsuariosService
     {
         _ = int.TryParse(_userSessionService.UserId, out int idLogado);
 
-        if (!IsAdmin() && id != idLogado)
+        if (!await EhAdministradorAsync() && id != idLogado)
             throw new RegraDeNegocioInfringidaException("Somente administradores podem alterar os dados de outro usuário");
 
         var usuarioExistente = await _repository.GetByIdGestaoAsync(id)
@@ -213,7 +224,7 @@ public class UsuariosService : IUsuariosService
         if (!string.IsNullOrWhiteSpace(model.Email))
             usuarioExistente.Email = model.Email;
 
-        if (IsAdmin() && model.Permissao != usuarioExistente.Permissao)
+        if (await EhAdministradorAsync() && model.Permissao != usuarioExistente.Permissao)
         {
             var adminsAtivos = await _repository.CountAsync(u =>
                 u.Permissao == PermissoesEnum.ADMIN && u.Status == StatusUsuario.Ativo);
@@ -255,7 +266,11 @@ public class UsuariosService : IUsuariosService
             ?? await _repository.GetByIdGestaoAsync(idUsuario);
         if (usuario is null || usuario.Status != StatusUsuario.Ativo)
             return false;
-        return usuario.Permissao == PermissoesEnum.ADMIN || usuario.PodeGerenciarUnidadesMedida;
+
+        if (await _authorization.PossuiPermissaoAsync(PermissaoCodigos.UnidadesMedidaGerenciar, idUsuario: idUsuario, cancellationToken: cancellationToken))
+            return true;
+
+        return usuario.PodeGerenciarUnidadesMedida;
     }
 
     async Task<bool> ICRUDService<UsuariosModel>.DeletarAsync(int id, bool hardDelete)
@@ -263,6 +278,7 @@ public class UsuariosService : IUsuariosService
 
     public async Task<bool> DeletarAsync(int id, string senhaConfirmacao, bool hardDelete = false)
     {
+        await _authorization.GarantirPermissaoAsync(PermissaoCodigos.UsuariosExcluir);
         GarantirNaoEhAutoAcao(id);
 
         if (hardDelete)
@@ -342,6 +358,7 @@ public class UsuariosService : IUsuariosService
 
     public async Task<bool?> InativarAsync(int id, string senha)
     {
+        await _authorization.GarantirPermissaoAsync(PermissaoCodigos.UsuariosInativar);
         GarantirNaoEhAutoAcao(id);
         await ConfirmarSenhaAdminAsync(senha);
 
@@ -365,6 +382,7 @@ public class UsuariosService : IUsuariosService
 
     public async Task<bool?> ReativarAsync(int id, string senha)
     {
+        await _authorization.GarantirPermissaoAsync(PermissaoCodigos.UsuariosReativar);
         await ConfirmarSenhaAdminAsync(senha);
 
         var usuario = await _repository.GetByIdGestaoAsync(id);
@@ -431,7 +449,8 @@ public class UsuariosService : IUsuariosService
 
     private string Executor => _userSessionService.EditedBy ?? string.Empty;
 
-    private bool IsAdmin() => _userSessionService.Role == "ADMIN";
+    private async Task<bool> EhAdministradorAsync() =>
+        await _authorization.EhAdministradorAsync();
 
     private static Task<bool> ConfirmarSenhaUsuario(UsuariosModel usuario, string senha)
     {

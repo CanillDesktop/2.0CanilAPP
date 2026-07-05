@@ -1,4 +1,5 @@
 using Backend.DTOs.Common;
+using Backend.DTOs.Permissoes;
 using Backend.DTOs.Usuario;
 using Backend.Exceptions;
 using Backend.DTOs.Estoque;
@@ -15,11 +16,16 @@ namespace Backend.Controllers;
 public class UsuariosController : ControllerBase
 {
     private readonly IUsuariosService _service;
+    private readonly IUsuarioPermissaoAtribuicaoService _permissoesAtribuicao;
     private readonly ILogger<UsuariosController> _logger;
 
-    public UsuariosController(IUsuariosService service, ILogger<UsuariosController> logger)
+    public UsuariosController(
+        IUsuariosService service,
+        IUsuarioPermissaoAtribuicaoService permissoesAtribuicao,
+        ILogger<UsuariosController> logger)
     {
         _service = service;
+        _permissoesAtribuicao = permissoesAtribuicao;
         _logger = logger;
     }
 
@@ -32,7 +38,7 @@ public class UsuariosController : ControllerBase
         return Ok(dados);
     }
 
-    [Authorize(Roles = "ADMIN")]
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<PagedResultDto<UsuarioResponseDTO>>> Get(
         [FromQuery] UsuarioListagemParameters parameters,
@@ -64,6 +70,77 @@ public class UsuariosController : ControllerBase
     {
         var unidades = await _service.ObterUnidadesEstoqueAsync(id, cancellationToken);
         return Ok(unidades);
+    }
+
+    [Authorize]
+    [HttpGet("{id}/permissoes-atribuicoes")]
+    public async Task<ActionResult<UsuarioPermissoesEditorDTO>> GetPermissoesAtribuicoes(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await _permissoesAtribuicao.ObterEditorAsync(id, cancellationToken));
+        }
+        catch (RecursoNaoEncontradoException ex)
+        {
+            return NotFound(new ErrorResponse
+            {
+                Title = "Usuário não encontrado",
+                Status = StatusCodes.Status404NotFound,
+                Details = ex.Message,
+            });
+        }
+        catch (AcessoNegadoException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ErrorResponse
+            {
+                Title = "Acesso negado",
+                Status = StatusCodes.Status403Forbidden,
+                Details = ex.Message,
+            });
+        }
+    }
+
+    [Authorize]
+    [HttpPut("{id}/permissoes-atribuicoes")]
+    public async Task<IActionResult> PutPermissoesAtribuicoes(
+        int id,
+        [FromBody] UsuarioPermissoesSalvarDTO dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _permissoesAtribuicao.SalvarAsync(id, dto, cancellationToken);
+            return NoContent();
+        }
+        catch (RecursoNaoEncontradoException ex)
+        {
+            return NotFound(new ErrorResponse
+            {
+                Title = "Usuário não encontrado",
+                Status = StatusCodes.Status404NotFound,
+                Details = ex.Message,
+            });
+        }
+        catch (RegraDeNegocioInfringidaException ex)
+        {
+            return UnprocessableEntity(new ErrorResponse
+            {
+                Title = "Não foi possível salvar as permissões",
+                Status = StatusCodes.Status422UnprocessableEntity,
+                Details = ex.Message,
+            });
+        }
+        catch (AcessoNegadoException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ErrorResponse
+            {
+                Title = "Acesso negado",
+                Status = StatusCodes.Status403Forbidden,
+                Details = ex.Message,
+            });
+        }
     }
 
     [HttpPost]
@@ -119,7 +196,7 @@ public class UsuariosController : ControllerBase
         }
     }
 
-    [Authorize(Roles = "ADMIN")]
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(
         int id,
@@ -181,7 +258,7 @@ public class UsuariosController : ControllerBase
         }
     }
 
-    [Authorize(Roles = "ADMIN")]
+    [Authorize]
     [HttpPatch("{id}/inativar")]
     public async Task<IActionResult> Inativar(int id, [FromBody] ConfirmacaoSenhaRequestDTO dto)
     {
@@ -229,7 +306,7 @@ public class UsuariosController : ControllerBase
         }
     }
 
-    [Authorize(Roles = "ADMIN")]
+    [Authorize]
     [HttpPatch("{id}/reativar")]
     public async Task<IActionResult> Reativar(int id, [FromBody] ConfirmacaoSenhaRequestDTO dto)
     {

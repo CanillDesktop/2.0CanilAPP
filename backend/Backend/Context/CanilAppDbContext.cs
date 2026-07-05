@@ -1,4 +1,5 @@
-﻿using Backend.Models;
+﻿using Backend.Models.Permissoes;
+using Backend.Models;
 using Backend.Models.CodigoAcesso;
 using Backend.Models.Insumos;
 using Backend.Models.Medicamentos;
@@ -53,6 +54,8 @@ public class CanilAppDbContext : DbContext
     public DbSet<MovimentacaoEstoqueModel> MovimentacoesEstoque { get; set; }
     public DbSet<TransferenciaEstoqueModel> TransferenciasEstoque { get; set; }
     public DbSet<TransferenciaEstoqueItemModel> TransferenciasEstoqueItens { get; set; }
+    public DbSet<PermissaoModel> Permissoes { get; set; }
+    public DbSet<UsuarioPermissaoModel> UsuariosPermissoes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -231,6 +234,33 @@ public class CanilAppDbContext : DbContext
             e.Property(i => i.Id).ValueGeneratedOnAdd();
             e.HasOne(i => i.Transferencia).WithMany(t => t.Itens).HasForeignKey(i => i.IdTransferencia);
             e.HasOne(i => i.Item).WithMany().HasForeignKey(i => i.IdItem);
+        });
+
+        modelBuilder.Entity<PermissaoModel>(e =>
+        {
+            e.HasIndex(p => p.Codigo).IsUnique();
+            e.Property(p => p.Codigo).HasMaxLength(120);
+            e.Property(p => p.Nome).HasMaxLength(160);
+            e.Property(p => p.Categoria).HasMaxLength(80);
+        });
+
+        modelBuilder.Entity<UsuarioPermissaoModel>(e =>
+        {
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id).ValueGeneratedOnAdd();
+            e.HasIndex(a => new { a.IdUsuario, a.IdPermissao, a.IdUnidadeEstoque }).IsUnique();
+            e.HasOne(a => a.Usuario)
+                .WithMany()
+                .HasForeignKey(a => a.IdUsuario)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(a => a.Permissao)
+                .WithMany(p => p.Atribuicoes)
+                .HasForeignKey(a => a.IdPermissao)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(a => a.UnidadeEstoque)
+                .WithMany()
+                .HasForeignKey(a => a.IdUnidadeEstoque)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<CodigoAcessoModel>()

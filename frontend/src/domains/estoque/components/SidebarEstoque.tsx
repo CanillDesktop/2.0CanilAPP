@@ -21,8 +21,9 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
+import { PERMISSAO } from '../../../shared/constants/permissoesCodigos';
+import { possuiPermissao } from '../../../shared/utils/possuiPermissao';
 import { podeGerenciarCatalogoUnidadesMedida } from '../../usuarios/utils/exibirPerfilUsuario';
-import type { PapelUsuarioApp } from '../../../shared/types/papelUsuario';
 import type { UsuarioSessao } from '../../../shared/types/usuarioSessao';
 
 export const larguraSidebar = 252;
@@ -31,8 +32,8 @@ type ItemNavegacao = {
   titulo: string;
   rota: string;
   icone: ReactElement;
-  papeis?: PapelUsuarioApp[];
-  /** Exige permissão de catálogo de unidades de medida (ou admin). */
+  /** Exige ao menos uma das permissões (OR). */
+  permissoes?: string[];
   exigeCatalogoMedidas?: boolean;
 };
 
@@ -44,8 +45,24 @@ const itensNavegacao: ItemNavegacao[] = [
   { titulo: 'Histórico retiradas', rota: '/estoque/historico-retiradas', icone: <HistoryOutlinedIcon /> },
   { titulo: 'Transferências', rota: '/estoque/transferencias', icone: <SwapHorizOutlinedIcon /> },
   { titulo: 'Estoque', rota: '/estoque', icone: <WarehouseOutlinedIcon /> },
-  { titulo: 'Usuários', rota: '/usuarios', icone: <PeopleOutlinedIcon /> },
-  { titulo: 'Permissões', rota: '/usuarios/permissoes', icone: <InputOutlinedIcon />, papeis: ['ADMIN'] },
+  {
+    titulo: 'Usuários',
+    rota: '/usuarios',
+    icone: <PeopleOutlinedIcon />,
+    permissoes: [PERMISSAO.usuariosListar],
+  },
+  {
+    titulo: 'Permissões unidade',
+    rota: '/usuarios/permissoes',
+    icone: <InputOutlinedIcon />,
+    permissoes: [PERMISSAO.usuariosGerenciarVinculosUnidade],
+  },
+  {
+    titulo: 'Catálogo permissões',
+    rota: '/permissoes/catalogo',
+    icone: <InputOutlinedIcon />,
+    permissoes: [PERMISSAO.permissoesCatalogoVisualizar, PERMISSAO.permissoesCatalogoGerenciar],
+  },
   {
     titulo: 'Medidas dos itens',
     rota: '/unidades-medida',
@@ -54,9 +71,9 @@ const itensNavegacao: ItemNavegacao[] = [
   },
 ];
 
-function itensVisiveisParaUsuario(papel: PapelUsuarioApp, usuario: UsuarioSessao | null): ItemNavegacao[] {
+function itensVisiveisParaUsuario(usuario: UsuarioSessao | null): ItemNavegacao[] {
   return itensNavegacao.filter((item) => {
-    if (item.papeis && !item.papeis.includes(papel)) return false;
+    if (item.permissoes && !item.permissoes.some((codigo) => possuiPermissao(usuario, codigo))) return false;
     if (item.exigeCatalogoMedidas && !podeGerenciarCatalogoUnidadesMedida(usuario)) return false;
     return true;
   });
@@ -65,21 +82,14 @@ function itensVisiveisParaUsuario(papel: PapelUsuarioApp, usuario: UsuarioSessao
 type SidebarEstoqueProps = {
   aberto: boolean;
   aoFechar: () => void;
-  papelUsuario: PapelUsuarioApp;
 };
 
-function ConteudoSidebar({
-  aoClicarItem,
-  papelUsuario,
-}: {
-  aoClicarItem?: () => void;
-  papelUsuario: PapelUsuarioApp;
-}) {
+function ConteudoSidebar({ aoClicarItem }: { aoClicarItem?: () => void }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { cores } = useTemaApp();
   const { usuario } = useAutenticacao();
-  const itens = itensVisiveisParaUsuario(papelUsuario, usuario);
+  const itens = itensVisiveisParaUsuario(usuario);
 
   const itemAtivoMaisEspecifico = [...itens]
     .filter((i) => location.pathname === i.rota || location.pathname.startsWith(`${i.rota}/`))
@@ -166,7 +176,7 @@ function ConteudoSidebar({
   );
 }
 
-export function SidebarEstoque({ aberto, aoFechar, papelUsuario }: SidebarEstoqueProps) {
+export function SidebarEstoque({ aberto, aoFechar }: SidebarEstoqueProps) {
   return (
     <Drawer
       open={aberto}
@@ -181,7 +191,7 @@ export function SidebarEstoque({ aberto, aoFechar, papelUsuario }: SidebarEstoqu
         },
       }}
     >
-      <ConteudoSidebar aoClicarItem={aoFechar} papelUsuario={papelUsuario} />
+      <ConteudoSidebar aoClicarItem={aoFechar} />
     </Drawer>
   );
 }
