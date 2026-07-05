@@ -3,6 +3,7 @@ using System;
 using Backend.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(CanilAppDbContext))]
-    partial class CanilAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260705180720_TransferenciaResponsaveisDestinoOpcional")]
+    partial class TransferenciaResponsaveisDestinoOpcional
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
@@ -379,7 +382,7 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("IdUnidadeDestino")
+                    b.Property<int>("IdUnidadeDestino")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("IdUnidadeOrigem")
@@ -398,13 +401,6 @@ namespace Backend.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Observacao")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ResponsavelEnvio")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ResponsavelRecebimento")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
@@ -943,7 +939,8 @@ namespace Backend.Migrations
                     b.HasOne("Backend.Models.Estoque.UnidadeEstoqueModel", "UnidadeDestino")
                         .WithMany()
                         .HasForeignKey("IdUnidadeDestino")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Backend.Models.Estoque.UnidadeEstoqueModel", "UnidadeOrigem")
                         .WithMany()

@@ -13,7 +13,9 @@ public class TransferenciaEstoqueItemDTO
 
 public class TransferenciaEstoqueCriacaoDTO
 {
-    public int IdUnidadeDestino { get; set; }
+    public int? IdUnidadeDestino { get; set; }
+    public string ResponsavelEnvio { get; set; } = string.Empty;
+    public string? ResponsavelRecebimento { get; set; }
     public string? Observacao { get; set; }
     public List<TransferenciaEstoqueItemDTO> Itens { get; set; } = [];
 }
@@ -23,7 +25,7 @@ public class TransferenciaEstoqueLeituraDTO
     public int Id { get; set; }
     public int IdUnidadeOrigem { get; set; }
     public string UnidadeOrigemNome { get; set; } = string.Empty;
-    public int IdUnidadeDestino { get; set; }
+    public int? IdUnidadeDestino { get; set; }
     public string UnidadeDestinoNome { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     /// <summary>
@@ -33,6 +35,8 @@ public class TransferenciaEstoqueLeituraDTO
     public DateTime DataTransferencia { get; set; }
     public string UsuarioEnvio { get; set; } = string.Empty;
     public string? UsuarioRecebimento { get; set; }
+    public string ResponsavelEnvio { get; set; } = string.Empty;
+    public string? ResponsavelRecebimento { get; set; }
     public string? Observacao { get; set; }
     public List<TransferenciaEstoqueItemLeituraDTO> Itens { get; set; } = [];
 }

@@ -23,6 +23,12 @@ import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { estilosCampoFormulario } from '../../../shared/theme/estilosCampos';
+import {
+  type ValorCampoInteiro,
+  campoInteiroPositivo,
+  inteiroCampoParaEnvio,
+  valorCampoInteiroDeInput,
+} from '../../../shared/utils/campoInteiroFormulario';
 import { useMutacaoEstoque } from '../hooks/useEstoque';
 import { TipoEntradaEstoque } from '../types/tiposEntradaEstoque';
 import type { TipoEntradaEstoqueValor } from '../types/tiposEntradaEstoque';
@@ -39,7 +45,7 @@ export function FormularioNovoLote() {
   const codItem = useMemo(() => params.get('codItem') ?? '', [params]);
 
   const [tipoEntrada, setTipoEntrada] = useState<TipoEntradaEstoqueValor>(TipoEntradaEstoque.Compra);
-  const [quantidade, setQuantidade] = useState(0);
+  const [quantidade, setQuantidade] = useState<ValorCampoInteiro>('');
   const [dataEntrega, setDataEntrega] = useState(new Date().toISOString().slice(0, 10));
   const [dataValidade, setDataValidade] = useState('');
   const [nfe, setNfe] = useState('');
@@ -48,7 +54,7 @@ export function FormularioNovoLote() {
   const [doadorNome, setDoadorNome] = useState('');
   const [doadorDocumento, setDoadorDocumento] = useState('');
   const [observacao, setObservacao] = useState('');
-  const [nivelMinimo, setNivelMinimo] = useState<number | ''>('');
+  const [nivelMinimo, setNivelMinimo] = useState<ValorCampoInteiro>('');
   const [submitSucesso, setSubmitSucesso] = useState(false);
   const [submitErro, setSubmitErro] = useState(false);
   const [snackbar, setSnackbar] = useState<{
@@ -67,7 +73,7 @@ export function FormularioNovoLote() {
 
   const formularioValido = useMemo(() => {
     if (itemInvalido || semPermissao) return false;
-    if (quantidade <= 0 || !dataEntrega.trim()) return false;
+    if (!campoInteiroPositivo(quantidade) || !dataEntrega.trim()) return false;
     if (tipoEntrada === TipoEntradaEstoque.Compra && !fornecedorNome.trim()) return false;
     if (tipoEntrada === TipoEntradaEstoque.Doacao && !doadorNome.trim()) return false;
     return true;
@@ -82,7 +88,7 @@ export function FormularioNovoLote() {
     const resultado = await registrarEntrada({
       idItem,
       tipoEntrada,
-      quantidade,
+      quantidade: inteiroCampoParaEnvio(quantidade),
       dataEntrega: new Date(dataEntrega).toISOString(),
       dataValidade: dataValidade ? new Date(dataValidade).toISOString() : null,
       nfe: nfe || null,
@@ -91,7 +97,7 @@ export function FormularioNovoLote() {
       doadorNome: tipoEntrada === TipoEntradaEstoque.Doacao ? doadorNome : null,
       doadorDocumento: tipoEntrada === TipoEntradaEstoque.Doacao ? doadorDocumento || null : null,
       observacao: observacao || null,
-      nivelMinimoEstoque: nivelMinimo === '' ? null : Number(nivelMinimo),
+      nivelMinimoEstoque: nivelMinimo === '' ? null : inteiroCampoParaEnvio(nivelMinimo),
     });
 
     if (!resultado.ok) {
@@ -148,7 +154,7 @@ export function FormularioNovoLote() {
                     type="number"
                     label="Quantidade"
                     value={quantidade}
-                    onChange={(e) => setQuantidade(Number(e.target.value))}
+                    onChange={(e) => setQuantidade(valorCampoInteiroDeInput(e.target.value))}
                     slotProps={{ htmlInput: { min: 1 } }}
                     sx={campoSx}
                   />
@@ -240,7 +246,7 @@ export function FormularioNovoLote() {
                     type="number"
                     label="Nível mínimo (opcional)"
                     value={nivelMinimo}
-                    onChange={(e) => setNivelMinimo(e.target.value === '' ? '' : Number(e.target.value))}
+                    onChange={(e) => setNivelMinimo(valorCampoInteiroDeInput(e.target.value))}
                     slotProps={{ htmlInput: { min: 0 } }}
                     sx={campoSx}
                   />

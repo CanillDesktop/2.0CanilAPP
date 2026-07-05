@@ -1,5 +1,6 @@
 ﻿using Backend.DTOs.Estoque;
 using System.Text.Json.Serialization;
+using Backend.Utils;
 
 namespace Backend.Models.Estoque;
 
@@ -49,7 +50,8 @@ public class ItemEstoqueModel : BaseModel
             model.DataEntrega,
             model.NFe,
             model.DataValidade,
-            model.IdUnidadeEstoque
+            model.IdUnidadeEstoque,
+            model.DataHoraCriacao
         );
     }
 

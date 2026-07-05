@@ -5,7 +5,9 @@ export type TransferenciaEstoqueItemDto = {
 };
 
 export type TransferenciaEstoqueCriacaoDto = {
-  idUnidadeDestino: number;
+  idUnidadeDestino?: number | null;
+  responsavelEnvio: string;
+  responsavelRecebimento?: string | null;
   observacao?: string | null;
   itens: TransferenciaEstoqueItemDto[];
 };
@@ -25,7 +27,7 @@ export type TransferenciaEstoqueLeituraDto = {
   id: number;
   idUnidadeOrigem: number;
   unidadeOrigemNome: string;
-  idUnidadeDestino: number;
+  idUnidadeDestino?: number | null;
   unidadeDestinoNome: string;
   status: string;
   /** Saida = enviada pela unidade ativa; Entrada = recebida/aguardando na unidade ativa. */
@@ -33,6 +35,8 @@ export type TransferenciaEstoqueLeituraDto = {
   dataTransferencia: string;
   usuarioEnvio: string;
   usuarioRecebimento?: string | null;
+  responsavelEnvio: string;
+  responsavelRecebimento?: string | null;
   observacao?: string | null;
   itens: TransferenciaEstoqueItemLeituraDto[];
 };

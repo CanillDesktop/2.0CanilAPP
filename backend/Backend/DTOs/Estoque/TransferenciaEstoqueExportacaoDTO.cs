@@ -11,7 +11,7 @@ public sealed class TransferenciaMovimentoExportacaoDTO
     public string UnidadeMovimento { get; init; } = string.Empty;
     public int IdUnidadeOrigem { get; init; }
     public string UnidadeOrigemNome { get; init; } = string.Empty;
-    public int IdUnidadeDestino { get; init; }
+    public int? IdUnidadeDestino { get; init; }
     public string UnidadeDestinoNome { get; init; } = string.Empty;
     /// <summary>Ex.: Secretaria → Canil.</summary>
     public string Direcao { get; init; } = string.Empty;
@@ -20,8 +20,10 @@ public sealed class TransferenciaMovimentoExportacaoDTO
     public string Lote { get; init; } = string.Empty;
     public int Quantidade { get; init; }
     public string Status { get; init; } = string.Empty;
-    public string UsuarioEnvio { get; init; } = string.Empty;
-    public string? UsuarioRecebimento { get; init; }
+    public string ResponsavelEnvio { get; init; } = string.Empty;
+    public string? ResponsavelRecebimento { get; init; }
+    public string UsuarioSistemaEnvio { get; init; } = string.Empty;
+    public string? UsuarioSistemaRecebimento { get; init; }
     public string? Observacao { get; init; }
 }
 

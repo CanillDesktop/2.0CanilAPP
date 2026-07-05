@@ -27,7 +27,9 @@ internal static class EstoqueConsultaQueryable
     public static IQueryable<T> ComNavegacoesUnidade<T>(IQueryable<T> query, int idUnidadeEstoque)
         where T : ItemComEstoqueBaseModel =>
         query
-            .Include(x => x.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted))
+            .Include(x => x.ItensEstoque
+                .Where(e => e.IdUnidadeEstoque == idUnidadeEstoque && !e.IsDeleted)
+                .OrderByDescending(e => e.DataHoraCriacao))
             .Include(x => x.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidadeEstoque && !n.IsDeleted));
 
     public static IQueryable<T> AplicarFiltrosComuns<T>(

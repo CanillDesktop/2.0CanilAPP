@@ -33,8 +33,10 @@ public static class TransferenciaEstoqueExcelExportador
         ("Lote", 14),
         ("Quantidade", 12),
         ("Status", 12),
-        ("Enviado por", 22),
-        ("Recebido por", 22),
+        ("Quem realizou", 22),
+        ("Quem recebe (informado)", 24),
+        ("Usuário sistema (envio)", 22),
+        ("Usuário sistema (receb.)", 22),
         ("Observação", 28),
     ];
 
@@ -158,9 +160,11 @@ public static class TransferenciaEstoqueExcelExportador
         ws.Cell(linha, 10).Value = TextoOuVazio(item.Lote);
         ws.Cell(linha, 11).Value = item.Quantidade;
         ws.Cell(linha, 12).Value = TextoOuVazio(item.Status);
-        ws.Cell(linha, 13).Value = TextoOuVazio(item.UsuarioEnvio);
-        ws.Cell(linha, 14).Value = TextoOuVazio(item.UsuarioRecebimento);
-        ws.Cell(linha, 15).Value = TextoOuVazio(item.Observacao);
+        ws.Cell(linha, 13).Value = TextoOuVazio(item.ResponsavelEnvio);
+        ws.Cell(linha, 14).Value = TextoOuVazio(item.ResponsavelRecebimento);
+        ws.Cell(linha, 15).Value = TextoOuVazio(item.UsuarioSistemaEnvio);
+        ws.Cell(linha, 16).Value = TextoOuVazio(item.UsuarioSistemaRecebimento);
+        ws.Cell(linha, 17).Value = TextoOuVazio(item.Observacao);
 
         var faixa = ws.Range(linha, 1, linha, Colunas.Length);
         if (zebra)
@@ -177,7 +181,7 @@ public static class TransferenciaEstoqueExcelExportador
         ws.Cell(linha, 3).Style.Font.SetBold(true);
         ws.Cell(linha, 11).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
         ws.Cell(linha, 11).Style.NumberFormat.Format = "#,##0";
-        ws.Cell(linha, 15).Style.Alignment.SetWrapText(true);
+        ws.Cell(linha, 17).Style.Alignment.SetWrapText(true);
     }
 
     private static void AplicarEstiloTabela(IXLWorksheet ws, int ultimaLinhaDados, bool incluirCabecalhoContexto)

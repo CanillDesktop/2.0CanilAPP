@@ -13,7 +13,8 @@ namespace Backend.DTOs.Estoque
             DateTime dataEntrega,
             string? nfe,
             DateTime? dataValidade,
-            int idUnidadeEstoque = UnidadeEstoqueIds.Secretaria)
+            int idUnidadeEstoque = UnidadeEstoqueIds.Secretaria,
+            DateTime? dataHoraCriacao = null)
         {
             Id = id;
             Codigo = codigo;
@@ -23,6 +24,7 @@ namespace Backend.DTOs.Estoque
             NFe = nfe;
             DataValidade = dataValidade;
             IdUnidadeEstoque = idUnidadeEstoque;
+            DataHoraCriacao = dataHoraCriacao;
         }
 
         public ItemEstoqueDTO() { }
@@ -43,5 +45,7 @@ namespace Backend.DTOs.Estoque
 
         [Display(Name = "Data de validade")]
         public DateTime? DataValidade { get; set; }
+
+        public DateTime? DataHoraCriacao { get; set; }
     }
 }

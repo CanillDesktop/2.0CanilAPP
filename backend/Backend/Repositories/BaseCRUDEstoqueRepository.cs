@@ -24,7 +24,9 @@ namespace Backend.Repositories
 
             var registros = await _context.Set<T>()
                 .Include(p => p.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidade && !n.IsDeleted))
-                .Include(p => p.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidade && !e.IsDeleted))
+                .Include(p => p.ItensEstoque
+                    .Where(e => e.IdUnidadeEstoque == idUnidade && !e.IsDeleted)
+                    .OrderByDescending(e => e.DataHoraCriacao))
                 .Where(p => !p.IsDeleted
                     && (p.ItensEstoque.Any(e => e.IdUnidadeEstoque == idUnidade && !e.IsDeleted)
                         || p.ItensNivelEstoque.Any(n => n.IdUnidadeEstoque == idUnidade && !n.IsDeleted)))
@@ -39,7 +41,9 @@ namespace Backend.Repositories
             await _unidadeContext.GarantirConsultaAsync(idUnidade);
 
             var registro = await _context.Set<T>()
-                .Include(p => p.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidade && !e.IsDeleted))
+                .Include(p => p.ItensEstoque
+                    .Where(e => e.IdUnidadeEstoque == idUnidade && !e.IsDeleted)
+                    .OrderByDescending(e => e.DataHoraCriacao))
                 .Include(p => p.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidade && !n.IsDeleted))
                 .Where(p => !p.IsDeleted
                     && (p.ItensEstoque.Any(e => e.IdUnidadeEstoque == idUnidade && !e.IsDeleted)
@@ -86,7 +90,9 @@ namespace Backend.Repositories
             await _unidadeContext.GarantirConsultaAsync(idUnidade);
 
             var item = await _context.Set<T>()
-                .Include(p => p.ItensEstoque.Where(e => e.IdUnidadeEstoque == idUnidade && !e.IsDeleted))
+                .Include(p => p.ItensEstoque
+                    .Where(e => e.IdUnidadeEstoque == idUnidade && !e.IsDeleted)
+                    .OrderByDescending(e => e.DataHoraCriacao))
                 .Include(p => p.ItensNivelEstoque.Where(n => n.IdUnidadeEstoque == idUnidade && !n.IsDeleted))
                 .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted);
 

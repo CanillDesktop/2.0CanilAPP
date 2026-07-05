@@ -21,7 +21,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { useUnidadeEstoque } from '../../../app/providers/ContextoUnidadeEstoque';
 import { ErroApi } from '../../../infrastructure/http/erroApi';
@@ -33,6 +33,7 @@ import {
   exportarTransferenciasXlsxApi,
 } from '../api/transferenciasEstoqueApi';
 import { useTransferenciasEstoque } from '../hooks/useTransferencias';
+import { TransferenciaDetalheDrawer } from '../components/TransferenciaDetalheDrawer';
 import type { TransferenciaEstoqueLeituraDto } from '../types/tiposTransferencia';
 
 const ROWS_POR_PAGINA_PADRAO = 10;
@@ -45,6 +46,14 @@ function ehEntrada(tipoMovimento: string) {
   return tipoMovimento.trim().toLowerCase() === 'entrada';
 }
 
+function rotuloDestino(nome?: string | null) {
+  return nome?.trim() ? nome : 'Sem destino';
+}
+
+function rotuloResponsavel(t: TransferenciaEstoqueLeituraDto) {
+  return t.responsavelEnvio?.trim() || t.usuarioEnvio || '—';
+}
+
 function rotuloTipoMovimento(tipoMovimento: string) {
   return ehEntrada(tipoMovimento) ? 'Entrada' : 'Saída';
 }
@@ -55,12 +64,12 @@ export function PaginaListagemTransferencias() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { permissoesAtivas, unidadeAtivaId, contexto } = useUnidadeEstoque();
-  const navegar = useNavigate();
   const { lista, carregando, salvando, erro, carregar, receber } = useTransferenciasEstoque();
   const [exportando, setExportando] = useState(false);
   const [erroExportacao, setErroExportacao] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(ROWS_POR_PAGINA_PADRAO);
+  const [detalheSelecionado, setDetalheSelecionado] = useState<TransferenciaEstoqueLeituraDto | null>(null);
 
   const nomeUnidadeAtiva =
     contexto?.unidadesDisponiveis.find((u) => u.id === unidadeAtivaId)?.nome ??
@@ -91,7 +100,56 @@ export function PaginaListagemTransferencias() {
 
   async function confirmarRecebimento(id: number) {
     const ok = await receber(id);
-    if (ok.ok) void carregar();
+    if (ok.ok) {
+      setDetalheSelecionado(null);
+      void carregar();
+    }
+  }
+
+  function renderAcoes(t: TransferenciaEstoqueLeituraDto) {
+    const pendente = transferenciaPendente(t.status);
+    const entrada = ehEntrada(t.tipoMovimento);
+
+    return (
+      <Stack
+        direction={isMobile ? 'column' : 'row'}
+        spacing={0.75}
+        sx={{ justifyContent: 'flex-end', flexWrap: 'wrap', gap: 0.75, width: isMobile ? '100%' : 'auto' }}
+      >
+        {pendente && entrada && permissoesAtivas?.podeTransferirReceber ? (
+          <Button
+            size="small"
+            fullWidth={isMobile}
+            disabled={salvando}
+            onClick={(e) => {
+              e.stopPropagation();
+              void confirmarRecebimento(t.id);
+            }}
+            sx={{ minHeight: { xs: 40, sm: 'auto' }, textTransform: 'none', fontWeight: 700 }}
+          >
+            Receber
+          </Button>
+        ) : null}
+        <Button
+          size="small"
+          variant="outlined"
+          fullWidth={isMobile}
+          onClick={(e) => {
+            e.stopPropagation();
+            setDetalheSelecionado(t);
+          }}
+          sx={{
+            minHeight: { xs: 40, sm: 'auto' },
+            textTransform: 'none',
+            fontWeight: 700,
+            borderColor: cores.borderForte,
+            color: cores.textPrimary,
+          }}
+        >
+          Detalhes
+        </Button>
+      </Stack>
+    );
   }
 
   const exportar = useCallback(async (formato: 'xlsx' | 'csv') => {
@@ -110,36 +168,6 @@ export function PaginaListagemTransferencias() {
       setExportando(false);
     }
   }, []);
-
-  function renderAcoes(t: TransferenciaEstoqueLeituraDto) {
-    if (transferenciaPendente(t.status)) {
-      // Só a unidade destino (entrada) pode confirmar o recebimento.
-      if (ehEntrada(t.tipoMovimento)) {
-        if (permissoesAtivas?.podeTransferirReceber) {
-          return (
-            <Button size="small" disabled={salvando} onClick={() => void confirmarRecebimento(t.id)}>
-              Receber
-            </Button>
-          );
-        }
-        return (
-          <Typography variant="caption" color="text.secondary">
-            Aguardando recebimento
-          </Typography>
-        );
-      }
-      return (
-        <Typography variant="caption" color="text.secondary">
-          Enviada — aguardando destino
-        </Typography>
-      );
-    }
-    return (
-      <Button size="small" onClick={() => navegar(`/estoque/transferencias`)}>
-        Detalhes
-      </Button>
-    );
-  }
 
   function chipTipoMovimento(tipoMovimento: string) {
     const entrada = ehEntrada(tipoMovimento);
@@ -176,45 +204,60 @@ export function PaginaListagemTransferencias() {
 
   const listaMobile = (
     <Stack spacing={1.25} sx={{ p: 1.5 }}>
-      {itensPagina.map((t) => (
-        <Card
-          key={t.id}
-          elevation={0}
-          sx={{
-            borderRadius: 2,
-            bgcolor: cores.bgCard,
-            border: `1px solid ${cores.border}`,
-          }}
-        >
-          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-            <Stack spacing={1}>
-              <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: cores.textPrimary }}>
-                  #{t.id}
-                </Typography>
-                <Stack direction="row" sx={{ gap: 0.75, flexWrap: 'wrap' }}>
-                  {chipTipoMovimento(t.tipoMovimento)}
-                  <Chip size="small" label={t.status} sx={{ fontWeight: 700 }} />
-                </Stack>
-              </Stack>
-              <Typography variant="body2" sx={{ color: cores.textPrimary, fontWeight: 600 }}>
-                {t.unidadeOrigemNome} → {t.unidadeDestinoNome}
-              </Typography>
-              <Typography variant="caption" sx={{ color: cores.textMuted }}>
-                {new Date(t.dataTransferencia).toLocaleString('pt-BR')}
-              </Typography>
-              <Box>
-                {t.itens.map((i) => (
-                  <Typography key={`${i.idItem}-${i.lote}`} variant="caption" sx={{ display: 'block', color: cores.textSecondary }}>
-                    {i.nomeItem} ({i.lote}) × {i.quantidade}
+      {itensPagina.map((t) => {
+        const selecionado = detalheSelecionado?.id === t.id;
+        return (
+          <Card
+            key={t.id}
+            component="article"
+            elevation={0}
+            onClick={() => setDetalheSelecionado(t)}
+            sx={{
+              ...estilos.cardMobile,
+              p: 0,
+              cursor: 'pointer',
+              borderColor: selecionado ? cores.focus : cores.border,
+              bgcolor: selecionado ? cores.hoverSurfaceStrong : cores.bgCard,
+            }}
+          >
+            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+              <Stack spacing={1}>
+                <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: cores.textPrimary }}>
+                    #{t.id}
                   </Typography>
-                ))}
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 0.25 }}>{renderAcoes(t)}</Box>
-            </Stack>
-          </CardContent>
-        </Card>
-      ))}
+                  <Stack direction="row" sx={{ gap: 0.75, flexWrap: 'wrap' }}>
+                    {chipTipoMovimento(t.tipoMovimento)}
+                    <Chip size="small" label={t.status} sx={{ fontWeight: 700 }} />
+                  </Stack>
+                </Stack>
+                <Typography variant="body2" sx={{ color: cores.textPrimary, fontWeight: 600, wordBreak: 'break-word' }}>
+                  {t.unidadeOrigemNome} → {rotuloDestino(t.unidadeDestinoNome)}
+                </Typography>
+                <Typography variant="caption" sx={{ color: cores.textSecondary, display: 'block', wordBreak: 'break-word' }}>
+                  Realizada por: {rotuloResponsavel(t)}
+                  {t.responsavelRecebimento?.trim() ? ` · Recebimento informado: ${t.responsavelRecebimento}` : ''}
+                </Typography>
+                <Typography variant="caption" sx={{ color: cores.textMuted }}>
+                  {new Date(t.dataTransferencia).toLocaleString('pt-BR')}
+                </Typography>
+                <Box>
+                  {t.itens.map((i) => (
+                    <Typography
+                      key={`${i.idItem}-${i.lote}`}
+                      variant="caption"
+                      sx={{ display: 'block', color: cores.textSecondary, wordBreak: 'break-word' }}
+                    >
+                      {i.nomeItem} ({i.lote}) × {i.quantidade}
+                    </Typography>
+                  ))}
+                </Box>
+                <Box sx={{ pt: 0.25 }}>{renderAcoes(t)}</Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        );
+      })}
     </Stack>
   );
 
@@ -238,7 +281,10 @@ export function PaginaListagemTransferencias() {
               <TableCell>{t.id}</TableCell>
               <TableCell>{chipTipoMovimento(t.tipoMovimento)}</TableCell>
               <TableCell>
-                {t.unidadeOrigemNome} → {t.unidadeDestinoNome}
+                {t.unidadeOrigemNome} → {rotuloDestino(t.unidadeDestinoNome)}
+                <Typography variant="caption" sx={{ display: 'block', color: cores.textMuted }}>
+                  {rotuloResponsavel(t)}
+                </Typography>
               </TableCell>
               <TableCell>
                 <Chip size="small" label={t.status} />
@@ -312,6 +358,7 @@ export function PaginaListagemTransferencias() {
         >
           <BoxExportacao
             cores={cores}
+            isMobile={isMobile}
             exportando={exportando}
             listaVazia={lista.length === 0}
             carregando={carregando}
@@ -320,7 +367,17 @@ export function PaginaListagemTransferencias() {
             onExportar={(f) => void exportar(f)}
           />
           {permissoesAtivas?.podeTransferirEnviar ? (
-            <Button variant="contained" component={Link} to="/estoque/transferencias/nova">
+            <Button
+              variant="contained"
+              component={Link}
+              to="/estoque/transferencias/nova"
+              fullWidth={isMobile}
+              sx={{
+                ...estilos.botaoPrimario,
+                minHeight: { xs: 44, sm: 40 },
+                flexShrink: 0,
+              }}
+            >
               Nova transferência
             </Button>
           ) : null}
@@ -357,12 +414,21 @@ export function PaginaListagemTransferencias() {
           {barraPaginacao ? <Box sx={{ flexShrink: 0 }}>{barraPaginacao}</Box> : null}
         </Card>
       </Stack>
+
+      <TransferenciaDetalheDrawer
+        transferencia={detalheSelecionado}
+        aoFechar={() => setDetalheSelecionado(null)}
+        podeReceber={permissoesAtivas?.podeTransferirReceber}
+        recebendo={salvando}
+        onConfirmarRecebimento={(id) => void confirmarRecebimento(id)}
+      />
     </ShellComSidebar>
   );
 }
 
 type BoxExportacaoProps = {
   cores: ReturnType<typeof useTemaApp>['cores'];
+  isMobile: boolean;
   exportando: boolean;
   listaVazia: boolean;
   carregando: boolean;
@@ -373,6 +439,7 @@ type BoxExportacaoProps = {
 
 function BoxExportacao({
   cores,
+  isMobile,
   exportando,
   listaVazia,
   carregando,
@@ -383,30 +450,39 @@ function BoxExportacao({
   const desabilitado = listaVazia || exportando || carregando;
 
   return (
-    <Stack spacing={1}>
-      <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+    <Stack spacing={1} sx={{ width: isMobile ? '100%' : 'auto' }}>
+      <Stack direction={isMobile ? 'column' : 'row'} sx={{ flexWrap: 'wrap', gap: 1, width: '100%' }}>
         <Tooltip title="Exporta entradas e saídas (Secretaria↔Canil) em planilha .xlsx, com abas por direção quando houver dados.">
-          <span>
+          <span style={{ width: isMobile ? '100%' : undefined }}>
             <Button
               size="small"
+              fullWidth={isMobile}
               variant="contained"
               startIcon={exportando ? <CircularProgress size={16} color="inherit" /> : <TableViewOutlinedIcon />}
               disabled={desabilitado}
               onClick={() => onExportar('xlsx')}
+              sx={{ minHeight: { xs: 44, sm: 'auto' }, textTransform: 'none', fontWeight: 700 }}
             >
               Exportar Excel (.xlsx)
             </Button>
           </span>
         </Tooltip>
         <Tooltip title="CSV com entradas e saídas de transferência entre unidades (integrações externas).">
-          <span>
+          <span style={{ width: isMobile ? '100%' : undefined }}>
             <Button
               size="small"
+              fullWidth={isMobile}
               variant="outlined"
               startIcon={<DownloadOutlinedIcon />}
               disabled={desabilitado}
               onClick={() => onExportar('csv')}
-              sx={{ borderColor: cores.borderForte, color: cores.textPrimary }}
+              sx={{
+                minHeight: { xs: 44, sm: 'auto' },
+                textTransform: 'none',
+                fontWeight: 700,
+                borderColor: cores.borderForte,
+                color: cores.textPrimary,
+              }}
             >
               Exportar CSV
             </Button>

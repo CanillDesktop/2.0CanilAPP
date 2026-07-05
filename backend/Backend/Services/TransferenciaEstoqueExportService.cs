@@ -103,7 +103,7 @@ public sealed class TransferenciaEstoqueExportService : ITransferenciaEstoqueExp
                     lista.Add(CriarLinha(t, item, direcao, tipoMovimento: "Saída", unidadeMovimento: t.UnidadeOrigemNome));
                 }
 
-                if (ehEntrada || (string.IsNullOrEmpty(perspectiva) && status is "RECEBIDA" or "RECEBIDO"))
+                if (ehEntrada || (string.IsNullOrEmpty(perspectiva) && status is "RECEBIDA" or "RECEBIDO" && t.IdUnidadeDestino.HasValue))
                 {
                     lista.Add(CriarLinha(t, item, direcao, tipoMovimento: "Entrada", unidadeMovimento: t.UnidadeDestinoNome));
                 }
@@ -128,24 +128,29 @@ public sealed class TransferenciaEstoqueExportService : ITransferenciaEstoqueExp
             IdUnidadeOrigem = t.IdUnidadeOrigem,
             UnidadeOrigemNome = t.UnidadeOrigemNome,
             IdUnidadeDestino = t.IdUnidadeDestino,
-            UnidadeDestinoNome = t.UnidadeDestinoNome,
+            UnidadeDestinoNome = string.IsNullOrWhiteSpace(t.UnidadeDestinoNome) ? "—" : t.UnidadeDestinoNome,
             Direcao = direcao,
             Codigo = item.Codigo,
             NomeItem = item.NomeItem,
             Lote = item.Lote,
             Quantidade = item.Quantidade,
             Status = t.Status ?? string.Empty,
-            UsuarioEnvio = t.UsuarioEnvio ?? string.Empty,
-            UsuarioRecebimento = t.UsuarioRecebimento,
+            ResponsavelEnvio = t.ResponsavelEnvio?.Trim() ?? string.Empty,
+            ResponsavelRecebimento = string.IsNullOrWhiteSpace(t.ResponsavelRecebimento) ? null : t.ResponsavelRecebimento.Trim(),
+            UsuarioSistemaEnvio = t.UsuarioEnvio ?? string.Empty,
+            UsuarioSistemaRecebimento = t.UsuarioRecebimento,
             Observacao = t.Observacao,
         };
 
     private static string ResolverDirecao(
         int idOrigem,
-        int idDestino,
+        int? idDestino,
         string nomeOrigem,
         string nomeDestino)
     {
+        if (!idDestino.HasValue || idDestino.Value <= 0)
+            return $"{nomeOrigem} → (sem destino)";
+
         if (idOrigem == UnidadeEstoqueIds.Secretaria && idDestino == UnidadeEstoqueIds.Canil)
             return TransferenciaEstoqueExcelExportador.DirecaoSecParaCanil;
 

@@ -220,6 +220,8 @@ public class Program
             builder.Services.AddScoped<IDashboardService, DashboardService>();
             builder.Services.AddScoped<IEstoqueConsultaRepository, EstoqueConsultaRepository>();
             builder.Services.AddScoped<IEstoqueConsultaService, EstoqueConsultaService>();
+            builder.Services.AddScoped<IEstoqueLookupRepository, EstoqueLookupRepository>();
+            builder.Services.AddScoped<IEstoqueLookupService, EstoqueLookupService>();
             builder.Services.AddScoped<IRetiradaEstoqueService, RetiradaEstoqueService>();
             builder.Services.AddScoped<IRetiradaEstoqueHistoricoExportService, RetiradaEstoqueHistoricoExportService>();
             builder.Services.AddScoped<IRetiradaEstoqueRepository, RetiradaEstoqueRepository>();
