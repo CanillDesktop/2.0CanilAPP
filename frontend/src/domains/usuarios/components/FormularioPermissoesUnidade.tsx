@@ -75,13 +75,15 @@ export function FormularioPermissoesUnidade({ usuario, aoSalvar }: Props) {
   const [linhas, setLinhas] = useState<UsuarioUnidadeEstoqueAtribuicaoDto[]>([]);
   const [unidadesAtivas, setUnidadesAtivas] = useState<number[]>([]);
   const [podeGerenciarUnidadesMedida, setPodeGerenciarUnidadesMedida] = useState(
-    Boolean(usuario.podeGerenciarUnidadesMedida) || usuario.permissao === 1,
+    Boolean(usuario.podeGerenciarUnidadesMedida) || Boolean(usuario.ehAdministradorSistema) || usuario.idCargo === 1,
   );
-  const ehAdminAlvo = usuario.permissao === 1;
+  const ehAdminAlvo = Boolean(usuario.ehAdministradorSistema) || usuario.idCargo === 1;
 
   useEffect(() => {
-    setPodeGerenciarUnidadesMedida(Boolean(usuario.podeGerenciarUnidadesMedida) || usuario.permissao === 1);
-  }, [usuario.id, usuario.podeGerenciarUnidadesMedida, usuario.permissao]);
+    setPodeGerenciarUnidadesMedida(
+      Boolean(usuario.podeGerenciarUnidadesMedida) || Boolean(usuario.ehAdministradorSistema) || usuario.idCargo === 1,
+    );
+  }, [usuario.id, usuario.podeGerenciarUnidadesMedida, usuario.idCargo, usuario.ehAdministradorSistema]);
 
   useEffect(() => {
     if (!usuario.id) return;
@@ -152,7 +154,7 @@ export function FormularioPermissoesUnidade({ usuario, aoSalvar }: Props) {
         primeiroNome: usuario.primeiroNome,
         sobrenome: usuario.sobrenome,
         email: usuario.email,
-        permissao: usuario.permissao,
+        idCargo: usuario.idCargo,
         podeGerenciarUnidadesMedida: ehAdminAlvo ? true : podeGerenciarUnidadesMedida,
         unidadesEstoque: unidades,
       });

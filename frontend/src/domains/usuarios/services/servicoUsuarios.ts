@@ -5,8 +5,10 @@ import {
   listarUnidadesEstoqueUsuarioApi,
   listarUsuariosApi,
   obterPermissoesAtribuicoesUsuarioApi,
+  obterResumoSenhaUsuarioApi,
   obterUsuarioPorIdApi,
   reativarUsuarioApi,
+  redefinirSenhaOutroUsuarioApi,
   removerUsuarioApi,
   salvarPermissoesAtribuicoesUsuarioApi,
   trocarSenhaUsuarioApi,
@@ -18,10 +20,12 @@ import type {
 import type {
   ConfirmacaoSenhaDto,
   FiltrosUsuariosListagem,
+  RedefinirSenhaOutroUsuarioDto,
   TrocarSenhaDto,
   UsuarioAtualizacaoDto,
   UsuarioCadastroComConfirmacaoDto,
   UsuarioCriadoDto,
+  UsuarioSenhaResumoDto,
   UsuarioUnidadeEstoqueDto,
   UsuariosPaginadosDto,
 } from '../types/tiposUsuarios';
@@ -38,6 +42,12 @@ export const servicoUsuarios = {
   },
   async trocarSenha(id: number, dto: TrocarSenhaDto): Promise<void> {
     await trocarSenhaUsuarioApi(id, dto);
+  },
+  async obterResumoSenha(id: number): Promise<UsuarioSenhaResumoDto> {
+    return obterResumoSenhaUsuarioApi(id);
+  },
+  async redefinirSenhaOutro(id: number, dto: RedefinirSenhaOutroUsuarioDto): Promise<void> {
+    await redefinirSenhaOutroUsuarioApi(id, dto);
   },
   async inativar(id: number, dto: ConfirmacaoSenhaDto): Promise<void> {
     await inativarUsuarioApi(id, dto);

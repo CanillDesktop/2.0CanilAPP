@@ -29,7 +29,7 @@ export function usePermissoesUnidadeUsuario() {
   }, []);
 
   const salvar = useCallback(
-    async (idUsuario: number, unidades: UsuarioUnidadeEstoqueAtribuicaoDto[], permissao?: number) => {
+    async (idUsuario: number, unidades: UsuarioUnidadeEstoqueAtribuicaoDto[], idCargo?: number) => {
       setSalvando(true);
       setErro(null);
       setErrosValidacao(null);
@@ -39,7 +39,7 @@ export function usePermissoesUnidadeUsuario() {
           primeiroNome: '',
           email: '',
           unidadesEstoque: unidades,
-          ...(permissao !== undefined ? { permissao } : {}),
+          ...(idCargo !== undefined ? { idCargo } : {}),
         });
         setSucesso('Permissões atualizadas com sucesso.');
         return true;

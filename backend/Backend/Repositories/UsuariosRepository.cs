@@ -1,5 +1,6 @@
 using Backend.Context;
 using Backend.DTOs.Usuario;
+using Backend.Models.Cargos;
 using Backend.Models.Enums;
 using Backend.Models.Usuarios;
 using Backend.Repositories.Interfaces;
@@ -15,12 +16,14 @@ public class UsuariosRepository : BaseCRUDRepository<UsuariosModel>, IUsuariosRe
     public new async Task<UsuariosModel?> GetByIdAsync(int id)
     {
         return await _context.Usuarios
+            .Include(u => u.Cargo)
             .FirstOrDefaultAsync(u => u.Id == id && u.Status == StatusUsuario.Ativo);
     }
 
     public async Task<UsuariosModel?> GetByIdGestaoAsync(int id)
     {
         return await _context.Usuarios
+            .Include(u => u.Cargo)
             .FirstOrDefaultAsync(u => u.Id == id && u.Status != StatusUsuario.Excluido);
     }
 
@@ -52,6 +55,7 @@ public class UsuariosRepository : BaseCRUDRepository<UsuariosModel>, IUsuariosRe
         var total = await query.CountAsync(cancellationToken);
 
         var items = await query
+            .Include(u => u.Cargo)
             .OrderBy(u => u.PrimeiroNome)
             .ThenBy(u => u.Sobrenome)
             .Skip((pageNumber - 1) * pageSize)
@@ -74,6 +78,7 @@ public class UsuariosRepository : BaseCRUDRepository<UsuariosModel>, IUsuariosRe
     {
         var emailNormalizado = email.Trim().ToLowerInvariant();
         return await _context.Usuarios
+            .Include(u => u.Cargo)
             .FirstOrDefaultAsync(u => u.Email.ToLower() == emailNormalizado);
     }
 

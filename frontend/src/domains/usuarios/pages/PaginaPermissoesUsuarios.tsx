@@ -6,8 +6,6 @@ import {
   CardContent,
   CircularProgress,
   Stack,
-  Tab,
-  Tabs,
   Typography,
 } from '@mui/material';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
@@ -18,24 +16,20 @@ import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
 import { PainelErro } from '../../../shared/components/PainelErro';
 import { extrairMensagemErroApi } from '../../../infrastructure/http/erroApi';
-import { podeGerenciarAtribuicaoPermissoes } from '../../../shared/utils/possuiPermissao';
-import { FormularioAtribuicaoPermissoesUsuario } from '../components/FormularioAtribuicaoPermissoesUsuario';
+import { podeGerenciarPermissoesUsuarios } from '../../../shared/utils/possuiPermissao';
 import { FormularioPermissoesUnidade } from '../components/FormularioPermissoesUnidade';
 import { usuariosService } from '../services/usuariosService';
+import { descreverCargo } from '../utils/exibirPerfilUsuario';
 import type { UsuarioCriadoDto } from '../types/tiposUsuarios';
-
-type AbaPermissoes = 'unidade' | 'atribuicoes';
 
 export function PaginaPermissoesUsuarios() {
   const { usuario } = useAutenticacao();
   const { cores } = useTemaApp();
   const navigate = useNavigate();
-  const [params, setParams] = useSearchParams();
-  const podeGerenciar = podeGerenciarAtribuicaoPermissoes(usuario);
+  const [params] = useSearchParams();
+  const podeGerenciar = podeGerenciarPermissoesUsuarios(usuario);
 
   const usuarioIdParam = Number(params.get('usuarioId')) || null;
-  const abaParam = params.get('aba');
-  const abaAtiva: AbaPermissoes = abaParam === 'atribuicoes' ? 'atribuicoes' : 'unidade';
 
   const [usuarioAlvo, setUsuarioAlvo] = useState<UsuarioCriadoDto | null>(null);
   const [carregando, setCarregando] = useState(false);
@@ -67,20 +61,10 @@ export function PaginaPermissoesUsuarios() {
     navigate('/usuarios?aba=permissoes');
   }
 
-  function mudarAba(novaAba: AbaPermissoes) {
-    const next = new URLSearchParams(params);
-    if (novaAba === 'unidade') {
-      next.delete('aba');
-    } else {
-      next.set('aba', novaAba);
-    }
-    setParams(next, { replace: true });
-  }
-
   return (
     <ShellComSidebar
       titulo="Permissões do usuário"
-      subtitulo="Vínculos por unidade de estoque e atribuição detalhada de permissões"
+      subtitulo="Cargo do usuário e vínculos por unidade de estoque (Secretaria / Canil)"
     >
       <Stack spacing={2}>
         <Box>
@@ -100,31 +84,13 @@ export function PaginaPermissoesUsuarios() {
         </Box>
 
         {!podeGerenciar ? (
-          <Alert severity="warning">
-            Você não tem permissão para gerenciar permissões de usuários.
-          </Alert>
+          <Alert severity="warning">Você não tem permissão para gerenciar permissões de usuários.</Alert>
         ) : !usuarioIdParam ? (
           <Alert severity="info">
-            Nenhum usuário selecionado. Volte à{' '}
-            <Box
-              component={Link}
-              to="/usuarios?aba=permissoes"
-              sx={{ color: cores.focus, fontWeight: 600 }}
-            >
-              aba Permissões unidade
-            </Box>{' '}
-            e escolha um usuário na listagem.
+            Nenhum usuário selecionado. Volte à aba Permissões unidade e escolha um usuário na listagem.
           </Alert>
         ) : (
           <Card sx={{ borderRadius: 3, bgcolor: cores.bgCard, border: `1px solid ${cores.border}`, boxShadow: cores.sombraCard }}>
-            <Tabs
-              value={abaAtiva}
-              onChange={(_, v: AbaPermissoes) => mudarAba(v)}
-              sx={{ px: 2, pt: 1, borderBottom: `1px solid ${cores.border}` }}
-            >
-              <Tab value="unidade" label="Unidade de estoque" sx={{ textTransform: 'none', fontWeight: 600 }} />
-              <Tab value="atribuicoes" label="Permissões completas" sx={{ textTransform: 'none', fontWeight: 600 }} />
-            </Tabs>
             <CardContent>
               {carregando ? (
                 <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', py: 2 }}>
@@ -136,11 +102,17 @@ export function PaginaPermissoesUsuarios() {
               ) : erro ? (
                 <PainelErro mensagem={erro} />
               ) : usuarioAlvo?.id ? (
-                abaAtiva === 'unidade' ? (
+                <Stack spacing={2}>
+                  <Alert severity="info">
+                    <strong>Cargo:</strong> {descreverCargo(usuarioAlvo)}. Para alterar permissões globais, edite o cargo
+                    em{' '}
+                    <Box component={Link} to="/cargos" sx={{ color: cores.focus, fontWeight: 600 }}>
+                      Cargos
+                    </Box>{' '}
+                    ou mude o cargo do usuário em Usuários.
+                  </Alert>
                   <FormularioPermissoesUnidade usuario={usuarioAlvo} />
-                ) : (
-                  <FormularioAtribuicaoPermissoesUsuario usuario={usuarioAlvo} />
-                )
+                </Stack>
               ) : (
                 <Alert severity="warning">Usuário não encontrado.</Alert>
               )}

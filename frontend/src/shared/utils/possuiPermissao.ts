@@ -9,7 +9,7 @@ function normalizarCodigos(usuario: UsuarioSessao | null | undefined): Set<strin
     if (codigo.trim()) codigos.add(codigo.trim().toLowerCase());
   }
 
-  if ((usuario.permissao ?? 0) === 1) {
+  if ((usuario.permissao ?? 0) === 1 || usuario.ehAdministradorSistema) {
     codigos.add(PERMISSAO.sistemaAdministrador);
   }
 
@@ -26,7 +26,11 @@ export function possuiPermissao(
 }
 
 export function ehAdministradorSistema(usuario: UsuarioSessao | null | undefined): boolean {
-  return possuiPermissao(usuario, PERMISSAO.sistemaAdministrador);
+  return Boolean(usuario?.ehAdministradorSistema) || possuiPermissao(usuario, PERMISSAO.sistemaAdministrador);
+}
+
+export function podeGerenciarCargos(usuario: UsuarioSessao | null | undefined): boolean {
+  return possuiPermissao(usuario, PERMISSAO.cargosGerenciar);
 }
 
 export function podeGerenciarCatalogoPermissoes(usuario: UsuarioSessao | null | undefined): boolean {
@@ -47,9 +51,22 @@ export function podeGerenciarCatalogoUnidadesMedida(usuario: UsuarioSessao | nul
   );
 }
 
-export function podeGerenciarAtribuicaoPermissoes(usuario: UsuarioSessao | null | undefined): boolean {
+export function podeGerenciarPermissoesUsuarios(usuario: UsuarioSessao | null | undefined): boolean {
   return (
-    possuiPermissao(usuario, PERMISSAO.usuariosGerenciarVinculosUnidade) ||
-    podeGerenciarCatalogoPermissoes(usuario)
+    possuiPermissao(usuario, PERMISSAO.usuariosPermissoesGerenciar) ||
+    possuiPermissao(usuario, PERMISSAO.usuariosGerenciarVinculosUnidade)
   );
+}
+
+/** @deprecated use podeGerenciarPermissoesUsuarios */
+export function podeGerenciarAtribuicaoPermissoes(usuario: UsuarioSessao | null | undefined): boolean {
+  return podeGerenciarPermissoesUsuarios(usuario);
+}
+
+export function podeVisualizarSenhaOutrosUsuarios(usuario: UsuarioSessao | null | undefined): boolean {
+  return possuiPermissao(usuario, PERMISSAO.usuariosSenhaVisualizar);
+}
+
+export function podeAlterarSenhaOutrosUsuarios(usuario: UsuarioSessao | null | undefined): boolean {
+  return possuiPermissao(usuario, PERMISSAO.usuariosSenhaAlterar);
 }

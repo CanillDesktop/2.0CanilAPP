@@ -45,6 +45,7 @@ type PropsGestao = PropsBase & {
   modo: 'gestao';
   onCadastrar: () => void;
   onEditar: (usuario: UsuarioCriadoDto) => void;
+  onRedefinirSenha?: (usuario: UsuarioCriadoDto) => void;
   onInativar: (usuario: UsuarioCriadoDto) => void;
   onReativar: (usuario: UsuarioCriadoDto) => void;
   onRemover: (usuario: UsuarioCriadoDto) => void;
@@ -199,6 +200,7 @@ export function ListagemUsuariosAdminConteudo(props: ListagemUsuariosAdminConteu
                   usuarioLogadoId={usuarioLogadoId}
                   carregando={carregandoAcao}
                   onEditar={props.onEditar}
+                  onRedefinirSenha={props.onRedefinirSenha}
                   onInativar={props.onInativar}
                   onReativar={props.onReativar}
                   onRemover={props.onRemover}

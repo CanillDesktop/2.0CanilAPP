@@ -1,6 +1,7 @@
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 import InputOutlinedIcon from '@mui/icons-material/InputOutlined';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import MedicationOutlinedIcon from '@mui/icons-material/MedicationOutlined';
@@ -55,7 +56,13 @@ const itensNavegacao: ItemNavegacao[] = [
     titulo: 'Permissões unidade',
     rota: '/usuarios/permissoes',
     icone: <InputOutlinedIcon />,
-    permissoes: [PERMISSAO.usuariosGerenciarVinculosUnidade],
+    permissoes: [PERMISSAO.usuariosPermissoesGerenciar, PERMISSAO.usuariosGerenciarVinculosUnidade],
+  },
+  {
+    titulo: 'Cargos',
+    rota: '/cargos',
+    icone: <BadgeOutlinedIcon />,
+    permissoes: [PERMISSAO.cargosGerenciar, PERMISSAO.usuariosListar],
   },
   {
     titulo: 'Catálogo permissões',

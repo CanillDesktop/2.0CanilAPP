@@ -1,4 +1,5 @@
 using Backend.Context;
+using Backend.Models.Cargos;
 using Backend.Models.Enums;
 using Backend.Models.Estoque;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,8 @@ public static class UnidadeEstoqueSeed
 
         foreach (var usuario in usuariosSemVinculo)
         {
-            var unidades = usuario.Permissao == PermissoesEnum.ADMIN
+            var ehAdmin = usuario.IdCargo == CargoModel.IdAdministrador;
+            var unidades = ehAdmin
                 ? new[] { UnidadeEstoqueIds.Secretaria, UnidadeEstoqueIds.Canil }
                 : new[] { UnidadeEstoqueIds.Secretaria };
 
@@ -30,7 +32,7 @@ public static class UnidadeEstoqueSeed
                     PodeEntrada = true,
                     PodeSaida = true,
                     PodeTransferirEnviar = true,
-                    PodeTransferirReceber = idUnidade == UnidadeEstoqueIds.Canil || usuario.Permissao == PermissoesEnum.ADMIN,
+                    PodeTransferirReceber = idUnidade == UnidadeEstoqueIds.Canil || ehAdmin,
                 });
             }
         }

@@ -119,11 +119,14 @@ public class UsuarioPermissaoAtribuicaoService : IUsuarioPermissaoAtribuicaoServ
                     $"A permissão \"{permissao.Nome}\" é global e não deve ter unidade associada.");
             }
 
-            if (permissao.Codigo == PermissaoCodigos.SistemaAdministrador
-                && usuario.Permissao != Models.Enums.PermissoesEnum.ADMIN)
+            if (permissao.Codigo == PermissaoCodigos.SistemaAdministrador)
             {
-                throw new RegraDeNegocioInfringidaException(
-                    "A permissão de administrador do sistema só pode ser atribuída a contas com perfil Administrador.");
+                var cargoAdmin = await _context.Cargos.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.Id == usuario.IdCargo && c.EhAdministradorSistema, cancellationToken);
+
+                if (cargoAdmin is null)
+                    throw new RegraDeNegocioInfringidaException(
+                        "A permissão de administrador do sistema só pode ser atribuída via cargo Administrador.");
             }
 
             var chave = Chave(item.IdPermissao, item.IdUnidadeEstoque);
@@ -153,17 +156,29 @@ public class UsuarioPermissaoAtribuicaoService : IUsuarioPermissaoAtribuicaoServ
 
     private async Task GarantirPodeGerenciarAsync(CancellationToken cancellationToken)
     {
-        var podeUnidade = await _authorization.PossuiPermissaoAsync(
+        if (await PossuiPermissaoGerenciarUsuariosAsync(cancellationToken))
+            return;
+
+        throw new AcessoNegadoException("Sem permissão para gerenciar permissões de usuários.");
+    }
+
+    internal static async Task<bool> PossuiPermissaoGerenciarUsuariosAsync(
+        IPermissaoAuthorizationService authorization,
+        CancellationToken cancellationToken = default)
+    {
+        if (await authorization.PossuiPermissaoAsync(
+                PermissaoCodigos.UsuariosPermissoesGerenciar,
+                cancellationToken: cancellationToken))
+            return true;
+
+        // Compatibilidade com permissão anterior (escopo de unidade).
+        return await authorization.PossuiPermissaoAsync(
             PermissaoCodigos.UsuariosGerenciarVinculosUnidade,
             cancellationToken: cancellationToken);
-
-        var podeCatalogo = await _authorization.PossuiPermissaoAsync(
-            PermissaoCodigos.PermissoesCatalogoGerenciar,
-            cancellationToken: cancellationToken);
-
-        if (!podeUnidade && !podeCatalogo)
-            throw new AcessoNegadoException("Sem permissão para gerenciar atribuições de permissões.");
     }
+
+    private Task<bool> PossuiPermissaoGerenciarUsuariosAsync(CancellationToken cancellationToken) =>
+        PossuiPermissaoGerenciarUsuariosAsync(_authorization, cancellationToken);
 
     private static PermissaoAtribuicaoLinhaDTO MontarLinha(
         PermissaoModel permissao,

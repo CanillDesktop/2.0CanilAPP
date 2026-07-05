@@ -1,3 +1,4 @@
+import { CARGO_PADRAO, NOME_CARGO_PADRAO } from '../../cargos/types/tiposCargos';
 import type { UsuarioSessao } from '../../../shared/types/usuarioSessao';
 import { podeGerenciarCatalogoUnidadesMedida as podeGerenciarMedidas } from '../../../shared/utils/possuiPermissao';
 
@@ -20,9 +21,18 @@ export function formatarTempoCadastro(dataHoraCriacao?: Date) {
   return anos === 1 ? '1 ano' : `${anos} anos`;
 }
 
+export function descreverCargo(usuario?: { nomeCargo?: string; idCargo?: number; permissao?: number } | null) {
+  if (usuario?.nomeCargo?.trim()) return usuario.nomeCargo;
+  const id = usuario?.idCargo ?? usuario?.permissao;
+  if (id === CARGO_PADRAO.administrador) return NOME_CARGO_PADRAO.administrador;
+  if (id === CARGO_PADRAO.grupoPadrao) return NOME_CARGO_PADRAO.grupoPadrao;
+  return id ? `Cargo #${id}` : 'Não informado';
+}
+
+/** @deprecated use descreverCargo */
 export function descreverPermissao(permissao: number) {
-  if (permissao === 1) return 'Administrador';
-  if (permissao === 2) return 'Leitura';
+  if (permissao === CARGO_PADRAO.administrador) return NOME_CARGO_PADRAO.administrador;
+  if (permissao === CARGO_PADRAO.grupoPadrao) return NOME_CARGO_PADRAO.grupoPadrao;
   return `Nivel ${permissao}`;
 }
 

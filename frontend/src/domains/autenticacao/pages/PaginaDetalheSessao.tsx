@@ -1,4 +1,5 @@
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
+import { descreverCargo } from '../../usuarios/utils/exibirPerfilUsuario';
 
 export function PaginaDetalheSessao() {
   const { usuario } = useAutenticacao();
@@ -17,8 +18,8 @@ export function PaginaDetalheSessao() {
         </dd>
         <dt>E-mail</dt>
         <dd>{usuario.email}</dd>
-        <dt>Permissão</dt>
-        <dd>{usuario.permissao === 1 ? 'Administrador' : 'Leitura'}</dd>
+        <dt>Cargo</dt>
+        <dd>{descreverCargo(usuario)}</dd>
       </dl>
     </section>
   );

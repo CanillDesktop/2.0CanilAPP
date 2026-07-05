@@ -112,7 +112,10 @@ public class AuthService : IAuthService
             new(JwtRegisteredClaimNames.Sub, usuario.Id.ToString() ?? ""),
             new(JwtRegisteredClaimNames.Email, usuario.Email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(ClaimTypes.Role, usuario.Permissao.ToString()),
+            new("IdCargo", usuario.IdCargo.ToString()),
+            new("NomeCargo", usuario.NomeCargo),
+            new("EhAdministradorSistema", usuario.EhAdministradorSistema ? "true" : "false"),
+            new(ClaimTypes.Role, usuario.NomeCargo),
             new(ClaimTypes.Name, $"{usuario.PrimeiroNome} {usuario.Sobrenome}"),
             new("EditedBy", $"{usuario.PrimeiroNome} {usuario.Sobrenome} ({usuario.Email})"),
             new("TokenVersion", usuario.TokenVersion.ToString())

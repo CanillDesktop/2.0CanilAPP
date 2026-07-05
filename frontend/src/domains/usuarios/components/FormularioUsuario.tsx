@@ -2,32 +2,34 @@ import { Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/materi
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { CampoSenha } from '../../../shared/components/CampoSenha';
+import { CARGO_PADRAO, type CargoLeituraDto } from '../../cargos/types/tiposCargos';
+import { servicoCargos } from '../../cargos/services/servicoCargos';
 import type { EscolhaUnidadeCadastro } from '../../estoque/constants/unidadesEstoque';
 import type { UsuarioCriadoDto } from '../types/tiposUsuarios';
 import { CampoEscolhaUnidadeCadastro } from './CampoEscolhaUnidadeCadastro';
-
-function rotuloPermissao(permissao: number) {
-  if (permissao === 1) return 'Administrador';
-  if (permissao === 2) return 'Leitura';
-  return `Nível ${permissao}`;
-}
+import { descreverCargo } from '../utils/exibirPerfilUsuario';
+import { SecaoSenhaOutroUsuario } from './ModalRedefinirSenhaOutroUsuario';
+import type { UsuarioSenhaResumoDto } from '../types/tiposUsuarios';
 
 type Props = {
   usuario?: UsuarioCriadoDto | null;
   incluirEmailSenha?: boolean;
-  /** Edição: exibe email (preenchido) para qualquer papel. */
   incluirEmailEdicao?: boolean;
-  incluirPermissao?: boolean;
+  incluirCargo?: boolean;
   incluirUnidade?: boolean;
-  /** Na edição de perfil: todos veem a permissão; só admin editando outro usuário usa "editavel". */
-  permissaoEdicao?: 'oculto' | 'somenteLeitura' | 'editavel';
+  cargoEdicao?: 'oculto' | 'somenteLeitura' | 'editavel';
+  resumoSenhaOutro?: UsuarioSenhaResumoDto | null;
+  carregandoResumoSenhaOutro?: boolean;
+  podeVisualizarSenhaOutro?: boolean;
+  podeAlterarSenhaOutro?: boolean;
+  onAbrirRedefinirSenha?: () => void;
   carregando?: boolean;
   onSubmit: (dados: {
     primeiroNome: string;
     sobrenome?: string | null;
     email?: string;
     senha?: string;
-    permissao?: number;
+    idCargo?: number;
     unidadeCadastro?: EscolhaUnidadeCadastro;
   }) => void;
 };
@@ -36,9 +38,14 @@ export function FormularioUsuario({
   usuario,
   incluirEmailSenha = false,
   incluirEmailEdicao = false,
-  incluirPermissao = false,
+  incluirCargo = false,
   incluirUnidade = false,
-  permissaoEdicao = 'oculto',
+  cargoEdicao = 'oculto',
+  resumoSenhaOutro = null,
+  carregandoResumoSenhaOutro = false,
+  podeVisualizarSenhaOutro = false,
+  podeAlterarSenhaOutro = false,
+  onAbrirRedefinirSenha,
   carregando = false,
   onSubmit,
 }: Props) {
@@ -46,15 +53,23 @@ export function FormularioUsuario({
   const [sobrenome, setSobrenome] = useState(usuario?.sobrenome ?? '');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [permissao, setPermissao] = useState<number>(usuario?.permissao ?? 2);
+  const [idCargo, setIdCargo] = useState<number>(usuario?.idCargo ?? CARGO_PADRAO.grupoPadrao);
   const [unidadeCadastro, setUnidadeCadastro] = useState<EscolhaUnidadeCadastro>('secretaria');
+  const [cargos, setCargos] = useState<CargoLeituraDto[]>([]);
+
+  const precisaListaCargos = incluirCargo || cargoEdicao === 'editavel';
+
+  useEffect(() => {
+    if (!precisaListaCargos) return;
+    void servicoCargos.listar().then(setCargos).catch(() => setCargos([]));
+  }, [precisaListaCargos]);
 
   useEffect(() => {
     setPrimeiroNome(usuario?.primeiroNome ?? '');
     setSobrenome(usuario?.sobrenome ?? '');
     setEmail(usuario?.email ?? '');
-    setPermissao(usuario?.permissao ?? 2);
-  }, [usuario?.id, usuario?.primeiroNome, usuario?.sobrenome, usuario?.permissao, usuario?.email]);
+    setIdCargo(usuario?.idCargo ?? CARGO_PADRAO.grupoPadrao);
+  }, [usuario?.id, usuario?.primeiroNome, usuario?.sobrenome, usuario?.idCargo, usuario?.email]);
 
   const formularioValido = useMemo(() => {
     const nomeValido = primeiroNome.trim().length >= 2 && primeiroNome.trim().length <= 60;
@@ -76,10 +91,12 @@ export function FormularioUsuario({
       sobrenome: sobrenome.trim() || null,
       email: incluirEmailSenha || incluirEmailEdicao ? email.trim() : undefined,
       senha: incluirEmailSenha ? senha.trim() : undefined,
-      permissao: incluirPermissao ? permissao : permissaoEdicao === 'editavel' ? permissao : undefined,
+      idCargo: incluirCargo || cargoEdicao === 'editavel' ? idCargo : undefined,
       unidadeCadastro: incluirUnidade ? unidadeCadastro : undefined,
     });
   }
+
+  const cargoAtual = cargos.find((c) => c.id === idCargo) ?? usuario;
 
   return (
     <Box component="form" onSubmit={enviar}>
@@ -111,23 +128,45 @@ export function FormularioUsuario({
             slotProps={{ htmlInput: { maxLength: 255 } }}
           />
         ) : null}
-        {permissaoEdicao === 'somenteLeitura' ? (
+        {cargoEdicao === 'somenteLeitura' ? (
           <Typography variant="body2" color="text.secondary">
-            <strong>Permissão:</strong> {rotuloPermissao(permissao)} (somente um administrador pode alterar permissões de
-            outros usuários)
+            <strong>Cargo:</strong> {descreverCargo(usuario)} (somente quem pode gerenciar permissões altera o cargo de outros
+            usuários)
           </Typography>
         ) : null}
-        {permissaoEdicao === 'editavel' ? (
+        {cargoEdicao === 'editavel' ? (
           <TextField
-            label="Permissão"
-            value={permissao}
-            onChange={(e) => setPermissao(Number(e.target.value))}
+            label="Cargo"
+            value={idCargo}
+            onChange={(e) => setIdCargo(Number(e.target.value))}
             select
             fullWidth
           >
-            <MenuItem value={1}>Administrador</MenuItem>
-            <MenuItem value={2}>Leitura</MenuItem>
+            {cargos.map((cargo) => (
+              <MenuItem key={cargo.id} value={cargo.id}>
+                {cargo.nome}
+                {cargo.ehAdministradorSistema ? ' (acesso total)' : ''}
+              </MenuItem>
+            ))}
           </TextField>
+        ) : null}
+        {podeVisualizarSenhaOutro ? (
+          <>
+            <SecaoSenhaOutroUsuario
+              resumoSenha={resumoSenhaOutro}
+              carregandoResumo={carregandoResumoSenhaOutro}
+              podeAlterar={false}
+              novaSenha=""
+              confirmacaoNovaSenha=""
+              onNovaSenhaChange={() => undefined}
+              onConfirmacaoChange={() => undefined}
+            />
+            {podeAlterarSenhaOutro && onAbrirRedefinirSenha ? (
+              <Button type="button" variant="outlined" onClick={onAbrirRedefinirSenha} disabled={carregando}>
+                Redefinir senha deste usuário
+              </Button>
+            ) : null}
+          </>
         ) : null}
         {incluirEmailSenha ? (
           <>
@@ -147,16 +186,24 @@ export function FormularioUsuario({
               fullWidth
               slotProps={{ htmlInput: { minLength: 6, maxLength: 100 } }}
             />
-            {incluirPermissao ? (
+            {incluirCargo ? (
               <TextField
-                label="Permissão"
-                value={permissao}
-                onChange={(e) => setPermissao(Number(e.target.value))}
+                label="Cargo"
+                value={idCargo}
+                onChange={(e) => setIdCargo(Number(e.target.value))}
                 select
                 fullWidth
+                helperText={
+                  cargoAtual && 'descricao' in cargoAtual && cargoAtual.descricao
+                    ? String(cargoAtual.descricao)
+                    : 'Define o conjunto de permissões do usuário.'
+                }
               >
-                <MenuItem value={1}>Administrador</MenuItem>
-                <MenuItem value={2}>Leitura</MenuItem>
+                {cargos.map((cargo) => (
+                  <MenuItem key={cargo.id} value={cargo.id}>
+                    {cargo.nome}
+                  </MenuItem>
+                ))}
               </TextField>
             ) : null}
             {incluirUnidade ? (
