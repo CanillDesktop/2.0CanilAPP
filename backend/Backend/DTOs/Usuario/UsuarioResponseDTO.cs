@@ -9,7 +9,9 @@ public class UsuarioResponseDTO
     public string Email { get; set; } = string.Empty;
     public string PrimeiroNome { get; set; } = string.Empty;
     public string? Sobrenome { get; set; }
-    public PermissoesEnum Permissao { get; set; }
+    public int IdCargo { get; set; }
+    public string NomeCargo { get; set; } = string.Empty;
+    public bool EhAdministradorSistema { get; set; }
     public bool PodeGerenciarUnidadesMedida { get; set; }
     public DateTime DataHoraCriacao { get; set; } = DateTime.UtcNow;
     public DateTime DataHoraAtualizacao { get; set; } = DateTime.UtcNow;

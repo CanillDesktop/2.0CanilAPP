@@ -31,4 +31,8 @@ public interface IUsuariosService : ICRUDService<UsuariosModel>
     Task<IReadOnlyList<UsuarioUnidadeEstoqueDTO>> ObterUnidadesEstoqueAsync(int idUsuario, CancellationToken cancellationToken = default);
 
     Task<bool> UsuarioPodeGerenciarUnidadesMedidaAsync(int idUsuario, CancellationToken cancellationToken = default);
+
+    Task<UsuarioSenhaResumoDTO> ObterResumoSenhaAsync(int idUsuario, CancellationToken cancellationToken = default);
+
+    Task RedefinirSenhaOutroUsuarioAsync(int idUsuario, string novaSenha, string senhaConfirmacao, CancellationToken cancellationToken = default);
 }

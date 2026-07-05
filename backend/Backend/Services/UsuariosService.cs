@@ -4,6 +4,7 @@ using Backend.DTOs.Common;
 using Backend.DTOs.Estoque;
 using Backend.DTOs.Usuario;
 using Backend.Exceptions;
+using Backend.Models.Cargos;
 using Backend.Models.Enums;
 using Backend.Models.Estoque;
 using Backend.Models.Permissoes;
@@ -68,10 +69,15 @@ public class UsuariosService : IUsuariosService
         var totalUsuarios = await _repository.CountAsync(u => u.Status != StatusUsuario.Excluido);
         var deveSerAdmin = totalUsuarios < 2;
 
-        if (usuario.Permissao != PermissoesEnum.ADMIN && deveSerAdmin)
-            usuario.Permissao = PermissoesEnum.ADMIN;
+        if (deveSerAdmin)
+            usuario.IdCargo = CargoModel.IdAdministrador;
 
-        if (usuario.Permissao == PermissoesEnum.ADMIN)
+        if (usuario.IdCargo <= 0)
+            usuario.IdCargo = CargoModel.IdGrupoPadrao;
+
+        await GarantirCargoExisteAsync(usuario.IdCargo);
+
+        if (await EhCargoAdministradorAsync(usuario.IdCargo))
             usuario.PodeGerenciarUnidadesMedida = true;
 
         usuario.HashSenha = BCrypt.Net.BCrypt.HashPassword(usuario.HashSenha);
@@ -90,33 +96,71 @@ public class UsuariosService : IUsuariosService
         if (criado is null)
             return null;
 
-        await SincronizarUnidadesEstoqueAsync(criado.Id, dto.UnidadesEstoque, criado.Permissao);
+        await SincronizarUnidadesEstoqueAsync(criado.Id, dto.UnidadesEstoque, criado.IdCargo);
         await PermissaoSeed.SincronizarAtribuicoesUsuarioAsync(_context, criado.Id);
         return criado;
     }
 
     public async Task<UsuariosModel?> AtualizarAsync(int id, AtualizarUsuarioRequestDTO dto)
     {
+        var usuarioExistente = await _repository.GetByIdGestaoAsync(id)
+            ?? await _repository.GetByIdAsync(id)
+            ?? throw new ArgumentNullException(null, $"Usuário de id {id} não encontrado");
+
+        _ = int.TryParse(_userSessionService.UserId, out var idLogado);
+        var editandoOutro = idLogado != 0 && id != idLogado;
+        var podeGerenciarPermissoes = await UsuarioPermissaoAtribuicaoService.PossuiPermissaoGerenciarUsuariosAsync(
+            _authorization,
+            cancellationToken: default);
+
+        if (editandoOutro && dto.IdCargo is int idCargoNovo && idCargoNovo != usuarioExistente.IdCargo)
+        {
+            if (!podeGerenciarPermissoes)
+                throw new AcessoNegadoException("Sem permissão para alterar o cargo de outro usuário.");
+
+            await GarantirCargoExisteAsync(idCargoNovo);
+
+            if (await ContarUsuariosAdministradorAtivosAsync() == 0)
+                throw new RegraDeNegocioInfringidaException("Não há administrador ativo cadastrado. Não é possível alterar cargos");
+
+            if (await EhCargoAdministradorAsync(usuarioExistente.IdCargo) && !await EhCargoAdministradorAsync(idCargoNovo))
+            {
+                if (await ContarUsuariosAdministradorAtivosAsync(usuarioExistente.Id) < 1)
+                    throw new RegraDeNegocioInfringidaException("Não é possível rebaixar o último administrador ativo");
+            }
+
+            usuarioExistente.IdCargo = idCargoNovo;
+            if (await EhCargoAdministradorAsync(usuarioExistente.IdCargo))
+                usuarioExistente.PodeGerenciarUnidadesMedida = true;
+
+            await InvalidarSessoesAsync(usuarioExistente);
+            await _repository.UpdateAsync(usuarioExistente);
+            await PermissaoSeed.SincronizarAtribuicoesUsuarioAsync(_context, id);
+        }
+
         UsuariosModel model = dto;
         var atualizado = await AtualizarAsync(id, model);
 
-        if (atualizado is not null && await EhAdministradorAsync())
+        if (atualizado is not null && editandoOutro && podeGerenciarPermissoes)
         {
             if (dto.PodeGerenciarUnidadesMedida is bool podeGerenciar)
             {
                 // Admin sempre pode gerenciar o catálogo; a flag só restringe usuários comuns.
                 atualizado.PodeGerenciarUnidadesMedida =
-                    atualizado.Permissao == PermissoesEnum.ADMIN || podeGerenciar;
+                    await EhCargoAdministradorAsync(atualizado.IdCargo) || podeGerenciar;
                 atualizado.DataHoraAtualizacao = DateTime.UtcNow;
                 atualizado.EditadorPor = Executor;
                 await _repository.UpdateAsync(atualizado);
             }
 
             if (dto.UnidadesEstoque is not null)
-                await SincronizarUnidadesEstoqueAsync(id, dto.UnidadesEstoque, atualizado.Permissao);
+                await SincronizarUnidadesEstoqueAsync(id, dto.UnidadesEstoque, atualizado.IdCargo);
 
             await PermissaoSeed.SincronizarAtribuicoesUsuarioAsync(_context, id);
         }
+
+        if (dto.IdCargo is not null)
+            await PermissaoSeed.SincronizarAtribuicoesUsuarioAsync(_context, id);
 
         return atualizado;
     }
@@ -125,7 +169,9 @@ public class UsuariosService : IUsuariosService
         int idUsuario,
         CancellationToken cancellationToken = default)
     {
-        if (!await EhAdministradorAsync() && int.TryParse(_userSessionService.UserId, out var logado) && logado != idUsuario)
+        _ = int.TryParse(_userSessionService.UserId, out var idLogado);
+        if (idLogado != 0 && idUsuario != idLogado &&
+            !await UsuarioPermissaoAtribuicaoService.PossuiPermissaoGerenciarUsuariosAsync(_authorization, cancellationToken))
             throw new AcessoNegadoException("Sem permissão para consultar unidades de outro usuário.");
 
         return await (
@@ -148,11 +194,11 @@ public class UsuariosService : IUsuariosService
     private async Task SincronizarUnidadesEstoqueAsync(
         int idUsuario,
         IReadOnlyList<UsuarioUnidadeEstoqueAtribuicaoDTO>? unidades,
-        PermissoesEnum permissao)
+        int idCargo)
     {
         var atribuicoes = unidades is { Count: > 0 }
             ? unidades
-            : ObterAtribuicaoPadrao(permissao);
+            : ObterAtribuicaoPadrao(idCargo);
 
         var existentes = await _context.UsuariosUnidadesEstoque
             .Where(v => v.IdUsuario == idUsuario)
@@ -178,9 +224,9 @@ public class UsuariosService : IUsuariosService
         await PermissaoSeed.SincronizarAtribuicoesUsuarioAsync(_context, idUsuario);
     }
 
-    private static List<UsuarioUnidadeEstoqueAtribuicaoDTO> ObterAtribuicaoPadrao(PermissoesEnum permissao)
+    private static List<UsuarioUnidadeEstoqueAtribuicaoDTO> ObterAtribuicaoPadrao(int idCargo)
     {
-        if (permissao == PermissoesEnum.ADMIN)
+        if (idCargo == CargoModel.IdAdministrador)
         {
             return
             [
@@ -199,8 +245,13 @@ public class UsuariosService : IUsuariosService
     {
         _ = int.TryParse(_userSessionService.UserId, out int idLogado);
 
-        if (!await EhAdministradorAsync() && id != idLogado)
-            throw new RegraDeNegocioInfringidaException("Somente administradores podem alterar os dados de outro usuário");
+        if (id != idLogado)
+        {
+            await _authorization.GarantirPermissaoAsync(PermissaoCodigos.UsuariosEditar);
+
+            if (!string.IsNullOrEmpty(model.HashSenha))
+                await _authorization.GarantirPermissaoAsync(PermissaoCodigos.UsuariosSenhaAlterar);
+        }
 
         var usuarioExistente = await _repository.GetByIdGestaoAsync(id)
             ?? await _repository.GetByIdAsync(id);
@@ -223,31 +274,6 @@ public class UsuariosService : IUsuariosService
 
         if (!string.IsNullOrWhiteSpace(model.Email))
             usuarioExistente.Email = model.Email;
-
-        if (await EhAdministradorAsync() && model.Permissao != usuarioExistente.Permissao)
-        {
-            var adminsAtivos = await _repository.CountAsync(u =>
-                u.Permissao == PermissoesEnum.ADMIN && u.Status == StatusUsuario.Ativo);
-
-            if (adminsAtivos == 0)
-                throw new RegraDeNegocioInfringidaException("Não há administrador ativo cadastrado. Não é possível alterar permissões");
-
-            if (usuarioExistente.Permissao == PermissoesEnum.ADMIN
-                && model.Permissao == PermissoesEnum.LEITURA)
-            {
-                var outrosAdmins = await _repository.CountAsync(u =>
-                    u.Permissao == PermissoesEnum.ADMIN
-                    && u.Status == StatusUsuario.Ativo
-                    && u.Id != id);
-
-                if (outrosAdmins < 1)
-                    throw new RegraDeNegocioInfringidaException("Não é possível rebaixar o último administrador ativo");
-            }
-
-            usuarioExistente.Permissao = model.Permissao;
-            if (usuarioExistente.Permissao == PermissoesEnum.ADMIN)
-                usuarioExistente.PodeGerenciarUnidadesMedida = true;
-        }
 
         if (!string.IsNullOrEmpty(model.HashSenha))
             usuarioExistente.HashSenha = BCrypt.Net.BCrypt.HashPassword(model.HashSenha);
@@ -337,6 +363,12 @@ public class UsuariosService : IUsuariosService
 
     public async Task TrocarSenhaAsync(int id, string senhaAtual, string novaSenha)
     {
+        _ = int.TryParse(_userSessionService.UserId, out int idLogado);
+
+        if (idLogado != 0 && id != idLogado)
+            throw new RegraDeNegocioInfringidaException(
+                "Para alterar a senha de outro usuário, use a opção de redefinição de senha.");
+
         var usuario = await _repository.GetByIdAsync(id)
             ?? await _repository.GetByIdGestaoAsync(id);
 
@@ -348,6 +380,58 @@ public class UsuariosService : IUsuariosService
 
         if (!await ConfirmarSenhaUsuario(usuario, senhaAtual))
             throw new ArgumentException("Senha atual incorreta");
+
+        usuario.HashSenha = BCrypt.Net.BCrypt.HashPassword(novaSenha);
+        usuario.DataHoraAtualizacao = DateTime.UtcNow;
+        usuario.EditadorPor = Executor;
+        await InvalidarSessoesAsync(usuario);
+        await _repository.UpdateAsync(usuario);
+    }
+
+    public async Task<UsuarioSenhaResumoDTO> ObterResumoSenhaAsync(
+        int idUsuario,
+        CancellationToken cancellationToken = default)
+    {
+        _ = int.TryParse(_userSessionService.UserId, out int idLogado);
+
+        if (idLogado == 0 || idUsuario != idLogado)
+            await _authorization.GarantirPermissaoAsync(
+                PermissaoCodigos.UsuariosSenhaVisualizar,
+                cancellationToken: cancellationToken);
+
+        var usuario = await _repository.GetByIdGestaoAsync(idUsuario)
+            ?? await _repository.GetByIdAsync(idUsuario)
+            ?? throw new ArgumentNullException(null, "Usuário não encontrado");
+
+        return new UsuarioSenhaResumoDTO
+        {
+            IdUsuario = usuario.Id,
+            PossuiSenhaDefinida = !string.IsNullOrEmpty(usuario.HashSenha),
+            SenhaRecuperavel = false,
+        };
+    }
+
+    public async Task RedefinirSenhaOutroUsuarioAsync(
+        int idUsuario,
+        string novaSenha,
+        string senhaConfirmacao,
+        CancellationToken cancellationToken = default)
+    {
+        GarantirNaoEhAutoAcao(idUsuario);
+        await _authorization.GarantirPermissaoAsync(
+            PermissaoCodigos.UsuariosSenhaAlterar,
+            cancellationToken: cancellationToken);
+        await ConfirmarSenhaAdminAsync(senhaConfirmacao);
+
+        if (string.IsNullOrWhiteSpace(novaSenha))
+            throw new ArgumentException("Nova senha é obrigatória.");
+
+        var usuario = await _repository.GetByIdGestaoAsync(idUsuario)
+            ?? await _repository.GetByIdAsync(idUsuario)
+            ?? throw new ArgumentNullException(null, "Usuário não encontrado");
+
+        if (usuario.Status == StatusUsuario.Excluido)
+            throw new RegraDeNegocioInfringidaException("Não é possível alterar a senha de um usuário excluído.");
 
         usuario.HashSenha = BCrypt.Net.BCrypt.HashPassword(novaSenha);
         usuario.DataHoraAtualizacao = DateTime.UtcNow;
@@ -412,12 +496,31 @@ public class UsuariosService : IUsuariosService
 
     private async Task GarantirNaoEhUltimoAdminAsync(UsuariosModel usuario)
     {
-        if (usuario.Permissao != PermissoesEnum.ADMIN)
+        if (!await EhCargoAdministradorAsync(usuario.IdCargo))
             return;
 
-        if (await _repository.CountAsync(u =>
-                u.Permissao == PermissoesEnum.ADMIN && u.Status == StatusUsuario.Ativo) == 1)
+        if (await ContarUsuariosAdministradorAtivosAsync() == 1)
             throw new ConflitoDeNegocioException("Não é permitido remover o último administrador ativo do sistema.");
+    }
+
+    private async Task<int> ContarUsuariosAdministradorAtivosAsync(int? excluirId = null)
+    {
+        return await (
+            from u in _context.Usuarios.AsNoTracking()
+            join c in _context.Cargos.AsNoTracking() on u.IdCargo equals c.Id
+            where u.Status == StatusUsuario.Ativo && c.EhAdministradorSistema
+            where excluirId == null || u.Id != excluirId
+            select u.Id).CountAsync();
+    }
+
+    private async Task<bool> EhCargoAdministradorAsync(int idCargo) =>
+        await _context.Cargos.AsNoTracking()
+            .AnyAsync(c => c.Id == idCargo && !c.IsDeleted && c.EhAdministradorSistema);
+
+    private async Task GarantirCargoExisteAsync(int idCargo)
+    {
+        if (!await _context.Cargos.AnyAsync(c => c.Id == idCargo && !c.IsDeleted))
+            throw new RegraDeNegocioInfringidaException("Cargo informado não existe.");
     }
 
     private void GarantirNaoEhAutoAcao(int idAlvo)

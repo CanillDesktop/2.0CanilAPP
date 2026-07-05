@@ -17,6 +17,75 @@ namespace Backend.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
 
+            modelBuilder.Entity("Backend.Models.Cargos.CargoModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DataHoraAtualizacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DataHoraCriacao")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EditadorPor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("EhAdministradorSistema")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("EhSistema")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Nome")
+                        .IsUnique();
+
+                    b.ToTable("Cargos");
+                });
+
+            modelBuilder.Entity("Backend.Models.Cargos.CargoPermissaoModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdCargo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdPermissao")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("IdUnidadeEstoque")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdPermissao");
+
+                    b.HasIndex("IdUnidadeEstoque");
+
+                    b.HasIndex("IdCargo", "IdPermissao", "IdUnidadeEstoque")
+                        .IsUnique();
+
+                    b.ToTable("CargosPermissoes");
+                });
+
             modelBuilder.Entity("Backend.Models.CodigoAcesso.CodigoAcessoModel", b =>
                 {
                     b.Property<int>("Id")
@@ -711,6 +780,9 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("IdCargo")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("InactivatedAt")
                         .HasColumnType("TEXT");
 
@@ -718,9 +790,6 @@ namespace Backend.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Permissao")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("PodeGerenciarUnidadesMedida")
@@ -746,6 +815,8 @@ namespace Backend.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IdCargo");
 
                     b.ToTable("Usuarios");
                 });
@@ -827,6 +898,32 @@ namespace Backend.Migrations
                         .HasColumnType("INTEGER");
 
                     b.ToTable("Produtos", (string)null);
+                });
+
+            modelBuilder.Entity("Backend.Models.Cargos.CargoPermissaoModel", b =>
+                {
+                    b.HasOne("Backend.Models.Cargos.CargoModel", "Cargo")
+                        .WithMany()
+                        .HasForeignKey("IdCargo")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Permissoes.PermissaoModel", "Permissao")
+                        .WithMany()
+                        .HasForeignKey("IdPermissao")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Estoque.UnidadeEstoqueModel", "UnidadeEstoque")
+                        .WithMany()
+                        .HasForeignKey("IdUnidadeEstoque")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Cargo");
+
+                    b.Navigation("Permissao");
+
+                    b.Navigation("UnidadeEstoque");
                 });
 
             modelBuilder.Entity("Backend.Models.Estoque.ItemEstoqueModel", b =>
@@ -1024,6 +1121,17 @@ namespace Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Backend.Models.Usuarios.UsuariosModel", b =>
+                {
+                    b.HasOne("Backend.Models.Cargos.CargoModel", "Cargo")
+                        .WithMany()
+                        .HasForeignKey("IdCargo")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cargo");
                 });
 
             modelBuilder.Entity("Backend.Models.Insumos.InsumosModel", b =>

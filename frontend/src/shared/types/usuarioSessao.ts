@@ -4,7 +4,11 @@ export type UsuarioSessao = {
   email: string;
   primeiroNome: string;
   sobrenome: string;
-  permissao: number;
+  idCargo: number;
+  nomeCargo: string;
+  ehAdministradorSistema?: boolean;
+  /** @deprecated use idCargo / nomeCargo */
+  permissao?: number;
   /** Pode cadastrar/editar o catálogo de unidades de medida (Kg, Comprimido, etc.). */
   podeGerenciarUnidadesMedida?: boolean;
   dataHoraCriacao: Date;
@@ -15,3 +19,14 @@ export type UsuarioSessao = {
   /** Permissões globais carregadas no login (códigos estáveis). */
   permissoesCodigos?: string[];
 };
+
+export function normalizarUsuarioSessao(raw: Record<string, unknown>): UsuarioSessao {
+  const idCargo = Number(raw.idCargo ?? raw.permissao ?? 2);
+  return {
+    ...(raw as unknown as UsuarioSessao),
+    idCargo,
+    nomeCargo: String(raw.nomeCargo ?? (idCargo === 1 ? 'Administrador' : 'Grupo Padrão')),
+    ehAdministradorSistema: Boolean(raw.ehAdministradorSistema ?? idCargo === 1),
+    permissao: idCargo,
+  };
+}

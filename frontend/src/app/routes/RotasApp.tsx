@@ -5,6 +5,7 @@ import { RotaProtegida } from '../../shared/components/RotaProtegida';
 import { RotaProtegidaPorPermissao } from '../../shared/components/RotaProtegidaPorPermissao';
 import { PERMISSAO } from '../../shared/constants/permissoesCodigos';
 import { PaginaCatalogoPermissoes } from '../../domains/permissoes/pages/PaginaCatalogoPermissoes';
+import { PaginaCatalogoCargos } from '../../domains/cargos/pages/PaginaCatalogoCargos';
 import { RotaProtegidaCatalogoMedidas } from '../../shared/components/RotaProtegidaCatalogoMedidas';
 import { PaginaAcessoNegado } from '../../shared/pages/PaginaAcessoNegado';
 import { PaginaDetalheSessao } from '../../domains/autenticacao/pages/PaginaDetalheSessao';
@@ -58,7 +59,12 @@ export function RotasApp() {
 
           <Route
             element={
-              <RotaProtegidaPorPermissao permissoes={[PERMISSAO.usuariosGerenciarVinculosUnidade]} />
+              <RotaProtegidaPorPermissao
+                permissoes={[
+                  PERMISSAO.usuariosPermissoesGerenciar,
+                  PERMISSAO.usuariosGerenciarVinculosUnidade,
+                ]}
+              />
             }
           >
             <Route path="usuarios/permissoes" element={<PaginaPermissoesUsuarios />} />
@@ -72,6 +78,16 @@ export function RotasApp() {
             }
           >
             <Route path="permissoes/catalogo" element={<PaginaCatalogoPermissoes />} />
+          </Route>
+
+          <Route
+            element={
+              <RotaProtegidaPorPermissao
+                permissoes={[PERMISSAO.cargosGerenciar, PERMISSAO.usuariosListar]}
+              />
+            }
+          >
+            <Route path="cargos" element={<PaginaCatalogoCargos />} />
           </Route>
 
           <Route element={<RotaProtegidaCatalogoMedidas />}>

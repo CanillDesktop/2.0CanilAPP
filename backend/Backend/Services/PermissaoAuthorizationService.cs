@@ -33,10 +33,23 @@ public class PermissaoAuthorizationService : IPermissaoAuthorizationService
         if (userId <= 0)
             return false;
 
-        if (string.Equals(_userSession.Role, nameof(PermissoesEnum.ADMIN), StringComparison.OrdinalIgnoreCase)
+        if (string.Equals(_userSession.Role, "Administrador", StringComparison.OrdinalIgnoreCase)
             && idUsuario is null)
         {
             _ehAdminCache = true;
+            return true;
+        }
+
+        var ehAdminCargo = await (
+            from u in _context.Usuarios.AsNoTracking()
+            join c in _context.Cargos.AsNoTracking() on u.IdCargo equals c.Id
+            where u.Id == userId && c.EhAdministradorSistema && !c.IsDeleted
+            select u.Id).AnyAsync(cancellationToken);
+
+        if (ehAdminCargo)
+        {
+            if (idUsuario is null)
+                _ehAdminCache = true;
             return true;
         }
 

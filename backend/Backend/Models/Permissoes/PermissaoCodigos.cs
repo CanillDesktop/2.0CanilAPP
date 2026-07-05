@@ -14,12 +14,17 @@ public static class PermissaoCodigos
     public const string UsuariosReativar = "usuarios.reativar";
     public const string UsuariosExcluir = "usuarios.excluir";
     public const string UsuariosGerenciarVinculosUnidade = "usuarios.gerenciar_vinculos_unidade";
+    public const string UsuariosPermissoesGerenciar = "usuarios.permissoes.gerenciar";
+    public const string UsuariosSenhaVisualizar = "usuarios.senha.visualizar";
+    public const string UsuariosSenhaAlterar = "usuarios.senha.alterar";
 
     public const string CodigoSegurancaEditar = "codigo_seguranca.editar";
     public const string UnidadesMedidaGerenciar = "unidades_medida.gerenciar";
 
     public const string PermissoesCatalogoVisualizar = "permissoes.catalogo.visualizar";
     public const string PermissoesCatalogoGerenciar = "permissoes.catalogo.gerenciar";
+
+    public const string CargosGerenciar = "cargos.gerenciar";
 
     public const string EstoqueConsultar = "estoque.consultar";
     public const string EstoqueEntrada = "estoque.entrada";
@@ -37,10 +42,14 @@ public static class PermissaoCodigos
         UsuariosReativar,
         UsuariosExcluir,
         UsuariosGerenciarVinculosUnidade,
+        UsuariosPermissoesGerenciar,
+        UsuariosSenhaVisualizar,
+        UsuariosSenhaAlterar,
         CodigoSegurancaEditar,
         UnidadesMedidaGerenciar,
         PermissoesCatalogoVisualizar,
         PermissoesCatalogoGerenciar,
+        CargosGerenciar,
         EstoqueConsultar,
         EstoqueEntrada,
         EstoqueSaida,

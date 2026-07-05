@@ -13,8 +13,8 @@ export type UsuarioCadastroComConfirmacaoDto = {
   email: string;
   senha: string;
   senhaConfirmacao: string;
-  /** Ignorado no cadastro público: o servidor sempre cria como Leitura. */
-  permissao?: number;
+  /** Ignorado no cadastro público: o servidor sempre cria com o cargo Grupo Padrão. */
+  idCargo?: number;
   unidadesEstoque?: UsuarioUnidadeEstoqueAtribuicaoDto[];
 };
 
@@ -43,7 +43,11 @@ export type UsuarioCriadoDto = {
   email: string;
   primeiroNome: string;
   sobrenome?: string | null;
-  permissao: number;
+  idCargo: number;
+  nomeCargo?: string;
+  ehAdministradorSistema?: boolean;
+  /** @deprecated use idCargo */
+  permissao?: number;
   /** Catálogo de unidades de medida (Kg, Comprimido…). Admin sempre tem. */
   podeGerenciarUnidadesMedida?: boolean;
   dataHoraCriacao: string;
@@ -64,9 +68,22 @@ export type UsuarioAtualizacaoDto = {
   sobrenome?: string | null;
   email: string;
   /** Só aplicado quando um administrador edita outro usuário. */
-  permissao?: number;
+  idCargo?: number;
   podeGerenciarUnidadesMedida?: boolean;
   unidadesEstoque?: UsuarioUnidadeEstoqueAtribuicaoDto[];
+  /** Redefine a senha de outro usuário (requer permissão usuarios.senha.alterar). */
+  senha?: string;
+};
+
+export type UsuarioSenhaResumoDto = {
+  idUsuario: number;
+  possuiSenhaDefinida: boolean;
+  senhaRecuperavel: boolean;
+};
+
+export type RedefinirSenhaOutroUsuarioDto = {
+  novaSenha: string;
+  senhaConfirmacao: string;
 };
 
 export type TrocarSenhaDto = {

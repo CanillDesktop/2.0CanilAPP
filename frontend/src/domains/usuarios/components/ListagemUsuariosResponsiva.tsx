@@ -26,14 +26,17 @@ type Props = {
   modoPermissoes?: boolean;
   onAbrirPermissoes?: (usuario: UsuarioCriadoDto) => void;
   onEditar: (usuario: UsuarioCriadoDto) => void;
+  onRedefinirSenha?: (usuario: UsuarioCriadoDto) => void;
   onInativar: (usuario: UsuarioCriadoDto) => void;
   onReativar: (usuario: UsuarioCriadoDto) => void;
   onRemover: (usuario: UsuarioCriadoDto) => void;
   onRemoverDefinitivo: (usuario: UsuarioCriadoDto) => void;
 };
 
-function rotuloPermissao(permissao: number) {
-  return permissao === 1 ? 'Administrador' : 'Leitura';
+import { descreverCargo } from '../utils/exibirPerfilUsuario';
+
+function rotuloCargo(usuario: { nomeCargo?: string; idCargo?: number }) {
+  return descreverCargo(usuario);
 }
 
 function corStatus(status: number): 'success' | 'default' | 'error' {
@@ -52,6 +55,7 @@ function AcoesUsuario({
   carregando,
   compacto,
   onEditar,
+  onRedefinirSenha,
   onInativar,
   onReativar,
   onRemover,
@@ -62,6 +66,7 @@ function AcoesUsuario({
   carregando?: boolean;
   compacto?: boolean;
   onEditar: (usuario: UsuarioCriadoDto) => void;
+  onRedefinirSenha?: (usuario: UsuarioCriadoDto) => void;
   onInativar: (usuario: UsuarioCriadoDto) => void;
   onReativar: (usuario: UsuarioCriadoDto) => void;
   onRemover: (usuario: UsuarioCriadoDto) => void;
@@ -93,6 +98,18 @@ function AcoesUsuario({
       <Button size="small" onClick={() => onEditar(usuario)} disabled={carregando} sx={sxBotao}>
         Editar
       </Button>
+
+      {onRedefinirSenha && !ehProprioUsuario ? (
+        <Button
+          size="small"
+          color="secondary"
+          onClick={() => onRedefinirSenha(usuario)}
+          disabled={carregando}
+          sx={sxBotao}
+        >
+          Senha
+        </Button>
+      ) : null}
 
       {usuario.status === StatusUsuario.Ativo ? (
         <>
@@ -163,6 +180,7 @@ function CardUsuarioMobile({
   carregando,
   onAbrirPermissoes,
   onEditar,
+  onRedefinirSenha,
   onInativar,
   onReativar,
   onRemover,
@@ -174,6 +192,7 @@ function CardUsuarioMobile({
   carregando?: boolean;
   onAbrirPermissoes?: (usuario: UsuarioCriadoDto) => void;
   onEditar: (usuario: UsuarioCriadoDto) => void;
+  onRedefinirSenha?: (usuario: UsuarioCriadoDto) => void;
   onInativar: (usuario: UsuarioCriadoDto) => void;
   onReativar: (usuario: UsuarioCriadoDto) => void;
   onRemover: (usuario: UsuarioCriadoDto) => void;
@@ -227,7 +246,7 @@ function CardUsuarioMobile({
           </Stack>
 
           <Chip
-            label={rotuloPermissao(usuario.permissao)}
+            label={rotuloCargo(usuario)}
             size="small"
             sx={{
               alignSelf: 'flex-start',
@@ -268,6 +287,7 @@ function CardUsuarioMobile({
                 carregando={carregando}
                 compacto
                 onEditar={onEditar}
+                onRedefinirSenha={onRedefinirSenha}
                 onInativar={onInativar}
                 onReativar={onReativar}
                 onRemover={onRemover}
@@ -288,6 +308,7 @@ export function ListagemUsuariosResponsiva({
   modoPermissoes = false,
   onAbrirPermissoes,
   onEditar,
+  onRedefinirSenha,
   onInativar,
   onReativar,
   onRemover,
@@ -308,6 +329,7 @@ export function ListagemUsuariosResponsiva({
             carregando={carregando}
             onAbrirPermissoes={onAbrirPermissoes}
             onEditar={onEditar}
+            onRedefinirSenha={onRedefinirSenha}
             onInativar={onInativar}
             onReativar={onReativar}
             onRemover={onRemover}
@@ -347,7 +369,7 @@ export function ListagemUsuariosResponsiva({
                   size="small"
                 />
               </TableCell>
-              <TableCell>{rotuloPermissao(usuario.permissao)}</TableCell>
+              <TableCell>{rotuloCargo(usuario)}</TableCell>
               <TableCell align="right">
                 <Button
                   size="small"
@@ -391,13 +413,14 @@ export function ListagemUsuariosResponsiva({
                 size="small"
               />
             </TableCell>
-            <TableCell>{rotuloPermissao(usuario.permissao)}</TableCell>
+            <TableCell>{rotuloCargo(usuario)}</TableCell>
             <TableCell align="right">
               <AcoesUsuario
                 usuario={usuario}
                 usuarioLogadoId={usuarioLogadoId}
                 carregando={carregando}
                 onEditar={onEditar}
+                onRedefinirSenha={onRedefinirSenha}
                 onInativar={onInativar}
                 onReativar={onReativar}
                 onRemover={onRemover}

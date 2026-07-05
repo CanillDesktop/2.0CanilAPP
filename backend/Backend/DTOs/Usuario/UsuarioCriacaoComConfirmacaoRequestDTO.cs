@@ -1,4 +1,4 @@
-using Backend.Models.Enums;
+using Backend.Models.Cargos;
 using Backend.DTOs.Estoque;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -60,8 +60,8 @@ public class UsuarioCriacaoComConfirmacaoRequestDTO
         set => _senhaConfirmacao = string.IsNullOrEmpty(value) ? null : value;
     }
 
-    [DisplayName("Permissão")]
-    public PermissoesEnum Permissao { get; set; } = PermissoesEnum.LEITURA;
+    [DisplayName("Cargo")]
+    public int IdCargo { get; set; } = CargoModel.IdGrupoPadrao;
 
     public List<UsuarioUnidadeEstoqueAtribuicaoDTO> UnidadesEstoque { get; set; } = [];
 
