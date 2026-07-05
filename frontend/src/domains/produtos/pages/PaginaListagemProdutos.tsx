@@ -44,6 +44,7 @@ import type {
   ProdutoFiltro,
   ProdutoLeituraDto,
   ProdutoStatusEstoqueFiltro,
+  CampoOrdenacaoProduto,
 } from '../types/tiposProdutos';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 
@@ -75,6 +76,8 @@ export function PaginaListagemProdutos() {
   });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [orderBy, setOrderBy] = useState<CampoOrdenacaoProduto>('nome');
+  const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('asc');
 
   const temAcessoDuasUnidades = useMemo(() => {
     const ids = new Set((contexto?.unidadesDisponiveis ?? []).map((u) => u.id));
@@ -127,7 +130,7 @@ export function PaginaListagemProdutos() {
 
   useEffect(() => {
     setPage(0);
-  }, [debouncedBusca, categoria, status, dataEntrega, dataValidade, aba]);
+  }, [debouncedBusca, categoria, status, dataEntrega, dataValidade, aba, orderBy, orderDirection]);
 
   function limparFiltros() {
     setBusca('');
@@ -153,8 +156,13 @@ export function PaginaListagemProdutos() {
 
   const recarregar = useCallback(async () => {
     if (unidadeAtivaId == null) return;
-    await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
-  }, [carregar, montarFiltroApi, page, rowsPerPage, unidadeAtivaId]);
+    await carregar(montarFiltroApi(), {
+      pageNumber: page + 1,
+      pageSize: rowsPerPage,
+      orderBy,
+      sortDirection: orderDirection,
+    });
+  }, [carregar, montarFiltroApi, page, rowsPerPage, unidadeAtivaId, orderBy, orderDirection]);
 
   useEffect(() => {
     void recarregar();
@@ -194,11 +202,25 @@ export function PaginaListagemProdutos() {
     const resultado = await excluir(idExclusao);
     if (resultado.ok) {
       setSnackbar({ open: true, mensagem: 'Produto excluído com sucesso.', tipo: 'success' });
-      await carregar(montarFiltroApi(), { pageNumber: page + 1, pageSize: rowsPerPage });
+      await carregar(montarFiltroApi(), {
+        pageNumber: page + 1,
+        pageSize: rowsPerPage,
+        orderBy,
+        sortDirection: orderDirection,
+      });
     } else {
       setSnackbar({ open: true, mensagem: resultado.mensagem, tipo: 'error' });
     }
     setIdExclusao(null);
+  }
+
+  function handleSort(field: CampoOrdenacaoProduto) {
+    if (orderBy === field) {
+      setOrderDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setOrderBy(field);
+      setOrderDirection('asc');
+    }
   }
 
   return (
@@ -321,6 +343,9 @@ export function PaginaListagemProdutos() {
               {itens.length ? (
                 <TabelaProdutos
                   itens={itens}
+                  orderBy={orderBy}
+                  orderDirection={orderDirection}
+                  onSort={handleSort}
                   onVisualizar={(id) => navigate(`/produtos/${id}`)}
                   onEditar={(id) => navigate(`/produtos/${id}`)}
                   onExcluir={(id) => setIdExclusao(id)}

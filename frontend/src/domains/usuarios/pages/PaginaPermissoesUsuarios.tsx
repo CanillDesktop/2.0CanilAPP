@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAutenticacao } from '../../../app/providers/ContextoAutenticacao';
 import { useTemaApp } from '../../../app/providers/ContextoTemaApp';
 import { ShellComSidebar } from '../../../shared/components/ShellComSidebar';
@@ -61,6 +61,10 @@ export function PaginaPermissoesUsuarios() {
     navigate('/usuarios?aba=permissoes');
   }
 
+  if (podeGerenciar && !usuarioIdParam) {
+    return <Navigate to="/usuarios?aba=permissoes" replace />;
+  }
+
   return (
     <ShellComSidebar
       titulo="Permissões do usuário"
@@ -85,10 +89,6 @@ export function PaginaPermissoesUsuarios() {
 
         {!podeGerenciar ? (
           <Alert severity="warning">Você não tem permissão para gerenciar permissões de usuários.</Alert>
-        ) : !usuarioIdParam ? (
-          <Alert severity="info">
-            Nenhum usuário selecionado. Volte à aba Permissões unidade e escolha um usuário na listagem.
-          </Alert>
         ) : (
           <Card sx={{ borderRadius: 3, bgcolor: cores.bgCard, border: `1px solid ${cores.border}`, boxShadow: cores.sombraCard }}>
             <CardContent>

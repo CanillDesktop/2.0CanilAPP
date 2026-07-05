@@ -146,14 +146,16 @@ namespace Backend.Services
 
         public async Task<ItemComEstoqueListaPaginadaDTO<ProdutosLeituraDTO>> BuscarPaginadoAsync(
             ProdutosFiltro filtro,
-            ItensPaginationParameters paginationParameters,
+            EstoqueConsultaParameters paginationParameters,
             CancellationToken cancellationToken = default)
         {
+            ValidarOrdenacao(paginationParameters);
+
             var diasDataLimiteVencimento = _configuration.GetValue("RegrasDeNegocio:DiasDataLimiteVencimentoItens", 30);
 
             var consulta = await _repository.ConsultarPaginadoAsync(filtro, paginationParameters, diasDataLimiteVencimento, cancellationToken);
 
-            var pageNumber = Math.Max(paginationParameters.PageNumber, 1);
+            var pageNumber = Math.Max(paginationParameters.NormalizedPageNumber, 1);
             var pageSize = paginationParameters.PageSize;
             var totalPages = consulta.TotalCount == 0
                 ? 0
@@ -175,6 +177,21 @@ namespace Backend.Services
                     AVencer = consulta.Resumo.AVencer,
                 },
             };
+        }
+
+        private static readonly HashSet<string> OrderByPermitidos = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "codigo", "nome", "categoria", "quantidade", "status", "ultimamovimentacao",
+        };
+
+        private static void ValidarOrdenacao(EstoqueConsultaParameters parameters)
+        {
+            if (!OrderByPermitidos.Contains(parameters.NormalizedOrderBy))
+            {
+                throw new ArgumentException(
+                    "Campo de ordenação inválido. Valores: codigo, nome, categoria, quantidade, status, ultimaMovimentacao.",
+                    nameof(parameters));
+            }
         }
     }
 }

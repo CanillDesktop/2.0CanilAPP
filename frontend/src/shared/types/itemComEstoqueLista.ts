@@ -3,6 +3,8 @@ export type StatusEstoqueFiltro = 'todos' | 'ativo' | 'baixo' | 'sem_estoque' | 
 export type ItensPaginacaoDto = {
   pageNumber?: number;
   pageSize?: number;
+  orderBy?: string;
+  sortDirection?: 'asc' | 'desc';
 };
 
 export type ItemComEstoqueListaResumoDto = {

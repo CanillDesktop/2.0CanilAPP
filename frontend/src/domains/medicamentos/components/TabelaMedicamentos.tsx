@@ -26,6 +26,7 @@ import {
 import { motion } from 'framer-motion';
 import { Fragment, useState } from 'react';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
+import { LotesExpandidosListagem } from '../../../shared/components/listagem/LotesExpandidosListagem';
 import type { MedicamentoLeituraDto } from '../types/tiposMedicamentos';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
 
@@ -187,29 +188,25 @@ function ExpandedRow({
   onRegistrarRetirada: (medicamento: MedicamentoLeituraDto, lote: ItemEstoqueDto) => void;
 }) {
   const estilos = useEstilosListagem();
-  const { cores } = estilos;
 
   return (
     <TableRow>
       <TableCell colSpan={8} sx={{ p: 0 }}>
         <Collapse in={expanded} timeout="auto" unmountOnExit>
           <Box sx={estilos.linhaExpandida}>
-            {medicamento.itensEstoque.length ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                {medicamento.itensEstoque.map((lote, index) => (
-                  <LoteCard
-                    key={`${medicamento.id}-${lote.lote ?? index}`}
-                    medicamento={medicamento}
-                    lote={lote}
-                    onRegistrarRetirada={onRegistrarRetirada}
-                  />
-                ))}
-              </Box>
-            ) : (
-              <Typography variant="body2" sx={{ color: cores.textMuted }}>
-                Nenhum lote cadastrado para este medicamento.
-              </Typography>
-            )}
+            <LotesExpandidosListagem
+              lotes={medicamento.itensEstoque}
+              nivelMinimo={medicamento.itemNivelEstoque?.nivelMinimoEstoque ?? 0}
+              mensagemVazio="Nenhum lote cadastrado para este medicamento."
+              renderLote={(lote, index) => (
+                <LoteCard
+                  key={`${medicamento.id}-${lote.lote ?? index}`}
+                  medicamento={medicamento}
+                  lote={lote}
+                  onRegistrarRetirada={onRegistrarRetirada}
+                />
+              )}
+            />
           </Box>
         </Collapse>
       </TableCell>

@@ -135,8 +135,17 @@ internal static class EstoqueConsultaQueryable
     public static IQueryable<ProdutosModel> AplicarOrdenacaoProdutos(
         IQueryable<ProdutosModel> query,
         EstoqueConsultaParameters p,
-        int idUnidadeEstoque) =>
-        AplicarOrdenacao(query, p, x => x.DescricaoSimples, idUnidadeEstoque);
+        int idUnidadeEstoque)
+    {
+        var asc = p.IsSortAscending;
+
+        return p.NormalizedOrderBy switch
+        {
+            "codigo" => (asc ? query.OrderBy(x => x.Codigo) : query.OrderByDescending(x => x.Codigo)).ThenBy(x => x.Id),
+            "categoria" => (asc ? query.OrderBy(x => x.Categoria) : query.OrderByDescending(x => x.Categoria)).ThenBy(x => x.Id),
+            _ => AplicarOrdenacao(query, p, x => x.DescricaoSimples, idUnidadeEstoque),
+        };
+    }
 
     public static IQueryable<MedicamentosModel> AplicarOrdenacaoMedicamentos(
         IQueryable<MedicamentosModel> query,

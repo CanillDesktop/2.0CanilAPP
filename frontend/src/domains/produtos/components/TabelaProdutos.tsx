@@ -1,5 +1,8 @@
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
@@ -25,12 +28,16 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { Fragment, useState } from 'react';
-import type { ProdutoLeituraDto } from '../types/tiposProdutos';
+import type { ProdutoLeituraDto, CampoOrdenacaoProduto } from '../types/tiposProdutos';
 import type { ItemEstoqueDto } from '../../../shared/types/itemEstoque';
 import { useEstilosListagem } from '../../../shared/theme/useEstilosListagem';
+import { LotesExpandidosListagem } from '../../../shared/components/listagem/LotesExpandidosListagem';
 
 type Props = {
   itens: ProdutoLeituraDto[];
+  orderBy: CampoOrdenacaoProduto;
+  orderDirection: 'asc' | 'desc';
+  onSort: (field: CampoOrdenacaoProduto) => void;
   onVisualizar: (id: number) => void;
   onEditar: (id: number) => void;
   onExcluir: (id: number) => void;
@@ -101,6 +108,50 @@ function mapearLinha(item: ProdutoLeituraDto): LinhaProduto {
     status,
     ultimaMovimentacao: ultimaData ? ultimaData.toLocaleDateString('pt-BR') : 'Sem movimentação',
   };
+}
+
+function CabecalhoOrdenavel({
+  label,
+  field,
+  orderBy,
+  orderDirection,
+  onSort,
+}: {
+  label: string;
+  field: CampoOrdenacaoProduto;
+  orderBy: CampoOrdenacaoProduto;
+  orderDirection: 'asc' | 'desc';
+  onSort: (field: CampoOrdenacaoProduto) => void;
+}) {
+  const { cores, celulaCabecalho } = useEstilosListagem();
+  const ativo = orderBy === field;
+
+  return (
+    <TableCell
+      onClick={() => onSort(field)}
+      sx={{
+        ...celulaCabecalho,
+        borderColor: cores.borderSuave,
+        cursor: 'pointer',
+        userSelect: 'none',
+        whiteSpace: 'nowrap',
+        '&:hover': { bgcolor: cores.hoverSurface },
+      }}
+    >
+      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+        <span>{label}</span>
+        {ativo ? (
+          orderDirection === 'asc' ? (
+            <ArrowUpwardIcon sx={{ fontSize: 18, color: cores.focus }} />
+          ) : (
+            <ArrowDownwardIcon sx={{ fontSize: 18, color: cores.focus }} />
+          )
+        ) : (
+          <UnfoldMoreIcon sx={{ fontSize: 18, color: cores.textMuted, opacity: 0.6 }} />
+        )}
+      </Stack>
+    </TableCell>
+  );
 }
 
 function statusChip(status: LinhaProduto['status']) {
@@ -192,29 +243,25 @@ function ExpandedRow({
   onRegistrarRetirada: (produto: ProdutoLeituraDto, lote: ItemEstoqueDto) => void;
 }) {
   const estilos = useEstilosListagem();
-  const { cores } = estilos;
 
   return (
     <TableRow>
       <TableCell colSpan={8} sx={{ p: 0 }}>
         <Collapse in={expanded} timeout="auto" unmountOnExit>
           <Box sx={estilos.linhaExpandida}>
-            {produto.itensEstoque.length ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                {produto.itensEstoque.map((lote, index) => (
-                  <LoteCard
-                    key={`${produto.id}-${lote.lote ?? index}`}
-                    produto={produto}
-                    lote={lote}
-                    onRegistrarRetirada={onRegistrarRetirada}
-                  />
-                ))}
-              </Box>
-            ) : (
-              <Typography variant="body2" sx={{ color: cores.textMuted }}>
-                Nenhum lote cadastrado para este produto.
-              </Typography>
-            )}
+            <LotesExpandidosListagem
+              lotes={produto.itensEstoque}
+              nivelMinimo={produto.itemNivelEstoque?.nivelMinimoEstoque ?? 0}
+              mensagemVazio="Nenhum lote cadastrado para este produto."
+              renderLote={(lote, index) => (
+                <LoteCard
+                  key={`${produto.id}-${lote.lote ?? index}`}
+                  produto={produto}
+                  lote={lote}
+                  onRegistrarRetirada={onRegistrarRetirada}
+                />
+              )}
+            />
           </Box>
         </Collapse>
       </TableCell>
@@ -291,7 +338,17 @@ function AcoesLinha({
   );
 }
 
-export function TabelaProdutos({ itens, onVisualizar, onEditar, onExcluir, onMovimentar, onRegistrarRetirada }: Props) {
+export function TabelaProdutos({
+  itens,
+  orderBy,
+  orderDirection,
+  onSort,
+  onVisualizar,
+  onEditar,
+  onExcluir,
+  onMovimentar,
+  onRegistrarRetirada,
+}: Props) {
   const estilos = useEstilosListagem();
   const { cores } = estilos;
   const theme = useTheme();
@@ -346,12 +403,18 @@ export function TabelaProdutos({ itens, onVisualizar, onEditar, onExcluir, onMov
         <TableHead>
           <TableRow sx={estilos.cabecalhoTabela}>
             <TableCell sx={{ width: 54 }} />
-            <TableCell sx={estilos.celulaCabecalho}>Código</TableCell>
-            <TableCell sx={estilos.celulaCabecalho}>Nome</TableCell>
-            <TableCell sx={estilos.celulaCabecalho}>Categoria</TableCell>
-            <TableCell sx={estilos.celulaCabecalho}>Quantidade</TableCell>
-            <TableCell sx={estilos.celulaCabecalho}>Status</TableCell>
-            <TableCell sx={estilos.celulaCabecalho}>Última movimentação</TableCell>
+            <CabecalhoOrdenavel label="Código" field="codigo" orderBy={orderBy} orderDirection={orderDirection} onSort={onSort} />
+            <CabecalhoOrdenavel label="Nome" field="nome" orderBy={orderBy} orderDirection={orderDirection} onSort={onSort} />
+            <CabecalhoOrdenavel label="Categoria" field="categoria" orderBy={orderBy} orderDirection={orderDirection} onSort={onSort} />
+            <CabecalhoOrdenavel label="Quantidade" field="quantidade" orderBy={orderBy} orderDirection={orderDirection} onSort={onSort} />
+            <CabecalhoOrdenavel label="Status" field="status" orderBy={orderBy} orderDirection={orderDirection} onSort={onSort} />
+            <CabecalhoOrdenavel
+              label="Última movimentação"
+              field="ultimaMovimentacao"
+              orderBy={orderBy}
+              orderDirection={orderDirection}
+              onSort={onSort}
+            />
             <TableCell sx={estilos.celulaCabecalho}>Ações</TableCell>
           </TableRow>
         </TableHead>

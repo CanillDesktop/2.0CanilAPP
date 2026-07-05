@@ -1,8 +1,11 @@
-import { Box, Button, Card, CardContent, Grid, Stack, TablePagination, Typography } from '@mui/material';
+import { Button, Card, CardContent, Stack, TablePagination, Typography } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { LoteDetalhe } from '../../types/loteDetalhe';
 import { useEstilosListagem } from '../../theme/useEstilosListagem';
+import { useOrdenacaoLotes } from '../../hooks/useOrdenacaoLotes';
+import { ordenarLotesDetalhe } from '../../utils/ordenacaoLotes';
+import { CabecalhoLotesOrdenavel } from './CabecalhoLotesOrdenavel';
 import { LinhaLoteDetalheItem } from './LinhaLoteDetalheItem';
 
 const LOTES_POR_PAGINA_PADRAO = 5;
@@ -35,18 +38,24 @@ export function ListaLotesDetalheItem({
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(LOTES_POR_PAGINA_PADRAO);
+  const { orderBy, orderDirection, handleSort } = useOrdenacaoLotes();
+
+  const lotesOrdenados = useMemo(
+    () => ordenarLotesDetalhe(lotes, orderBy, orderDirection),
+    [lotes, orderBy, orderDirection],
+  );
 
   useEffect(() => {
     setPage(0);
-  }, [idItem, total]);
+  }, [idItem, total, orderBy, orderDirection]);
 
   const paginaMaxima = Math.max(0, Math.ceil(total / rowsPerPage) - 1);
   const pageSegura = Math.min(page, paginaMaxima);
 
   const lotesPagina = useMemo(() => {
     const inicio = pageSegura * rowsPerPage;
-    return lotes.slice(inicio, inicio + rowsPerPage);
-  }, [lotes, pageSegura, rowsPerPage]);
+    return lotesOrdenados.slice(inicio, inicio + rowsPerPage);
+  }, [lotesOrdenados, pageSegura, rowsPerPage]);
 
   return (
     <Card
@@ -65,45 +74,11 @@ export function ListaLotesDetalheItem({
         </Typography>
 
         {!isMobile && total > 0 ? (
-          <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-            <Grid
-              container
-              spacing={2}
-              sx={{
-                alignItems: 'center',
-                pb: 1.5,
-                px: 0.5,
-                borderBottom: `1px solid ${cores.border}`,
-                mb: 1.5,
-              }}
-            >
-              <Grid size={{ sm: 3 }}>
-                <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 700 }}>
-                  Lote
-                </Typography>
-              </Grid>
-              <Grid size={{ sm: 2 }}>
-                <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 700 }}>
-                  Qtd
-                </Typography>
-              </Grid>
-              <Grid size={{ sm: 3 }}>
-                <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 700 }}>
-                  Validade
-                </Typography>
-              </Grid>
-              <Grid size={{ sm: 2 }}>
-                <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 700 }}>
-                  Status
-                </Typography>
-              </Grid>
-              <Grid size={{ sm: 2 }} sx={{ textAlign: 'right' }}>
-                <Typography variant="caption" sx={{ color: cores.textMuted, fontWeight: 700 }}>
-                  Ação
-                </Typography>
-              </Grid>
-            </Grid>
-          </Box>
+          <CabecalhoLotesOrdenavel
+            orderBy={orderBy}
+            orderDirection={orderDirection}
+            onSort={handleSort}
+          />
         ) : null}
 
         <Stack spacing={1.25}>

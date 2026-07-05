@@ -53,6 +53,14 @@ export type ProdutoFiltro = {
 
 export type ProdutoPaginacaoDto = ItensPaginacaoDto;
 
+export type CampoOrdenacaoProduto =
+  | 'codigo'
+  | 'nome'
+  | 'categoria'
+  | 'quantidade'
+  | 'status'
+  | 'ultimaMovimentacao';
+
 export type ProdutosListaResumoDto = ItemComEstoqueListaResumoDto;
 
 export type ProdutosListaPaginadaDto = ItemComEstoqueListaPaginadaDto<ProdutoLeituraDto>;
